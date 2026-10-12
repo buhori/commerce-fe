@@ -1,0 +1,8 @@
+# Used when building docker/production/Dockerfile.
+.git
+.github
+node_modules
+.next
+.env
+.env.*
+!.env.example
