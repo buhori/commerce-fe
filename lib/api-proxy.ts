@@ -1,9 +1,10 @@
 import type { NextRequest } from "next/server";
+import { storeIdFromHost } from "./store-id";
 
 export async function apiProxy(request: NextRequest, path: string) {
   const headers = new Headers({
     Accept: request.headers.get("accept") || "application/json",
-    "X-Store-Id": process.env.STORE_ID || "404",
+    "X-Store-Id": storeIdFromHost(request.headers.get("host")),
   });
   const cookie = request.headers.get("cookie");
   if (cookie) headers.set("Cookie", cookie);

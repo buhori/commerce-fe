@@ -3,7 +3,8 @@
 import { Spinner } from "./spinner";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
-import { productQueryString, readProductPage, type ProductQuery, type ProductSummary } from "@/lib/store-api";
+import type { ProductSummary } from "@/lib/store-api";
+import { productQueryString, readProductPage, type ProductQuery } from "@/lib/store-shared";
 import { Catalog } from "./catalog";
 
 type Status = "idle" | "loading" | "error";

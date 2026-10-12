@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { preorderDays, type ProductSummary } from "@/lib/store-api";
+import type { ProductSummary } from "@/lib/store-api";
+import { preorderDays } from "@/lib/store-shared";
 import { formatPrice } from "@/lib/format";
 import { ProductImage } from "./product-image";
 import { Icon } from "./icons";

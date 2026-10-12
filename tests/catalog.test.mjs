@@ -24,7 +24,12 @@ function loadModule(file, fetch = () => {}) {
     process: {
       env: { STORE_API_URL: "http://backend.test/api", STORE_ID: "404" },
     },
-    require: () => ({ cache: (callback) => callback }),
+    require: (name) => {
+      if (name.startsWith("./")) return loadModule(`../lib/${name.slice(2)}.ts`, fetch);
+      // No subdomain in tests: requests fall back to STORE_ID.
+      if (name === "next/headers") return { headers: async () => new Headers() };
+      return { cache: (callback) => callback };
+    },
   });
   return exports;
 }

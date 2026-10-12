@@ -25,9 +25,11 @@ function load(file, fetch) {
     process: {
       env: { STORE_API_URL: "http://backend.test/api", STORE_ID: "404" },
     },
-    require: () => ({
-      getProduct: async (id) => ({ id, name: "Test product", price: 100 }),
-    }),
+    require: (name) => name === "./store-id"
+      ? load("../lib/store-id.ts", fetch)
+      : {
+        getProduct: async (id) => ({ id, name: "Test product", price: 100 }),
+      },
     window: {
       get sessionStorage() {
         throw new Error("Legacy storage must not be accessed");

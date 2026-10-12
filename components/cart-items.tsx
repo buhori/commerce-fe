@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { cartItemsOptions } from "@/lib/cart-queries";
 import { getCartStockLimit, getCartUnitPrice, getCartVariantId, type CartItem } from "@/lib/cart";
 import { addDays, formatDate, formatPrice } from "@/lib/format";
-import { preorderDays } from "@/lib/store-api";
+import { preorderDays } from "@/lib/store-shared";
 import { ProductImage } from "./product-image";
 import { useCart, type CartAction } from "./cart-provider";
 import { Icon } from "./icons";
