@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { backendFetch, CUSTOMER_COOKIE, OAUTH_NEXT_COOKIE, OAUTH_STATE_COOKIE, safeNext, secureCookie } from "@/lib/auth";
+import { isForeignOrigin, publicUrl } from "@/lib/request-origin";
 
 // Apple answers with a cross-site form POST (response_mode=form_post). Browsers do not send
 // SameSite=Lax cookies on that request, so neither the state nor the guest cart is visible.
@@ -35,12 +36,11 @@ function relayPage(form: FormData) {
 
 export async function POST(request: NextRequest) {
   const form = await request.formData().catch(() => null);
-  if (!form) return NextResponse.redirect(new URL("/login?error=apple", request.url), 303);
+  if (!form) return NextResponse.redirect(publicUrl(request, "/login?error=apple"), 303);
   if (form.get("relay") !== "1") return relayPage(form);
 
   // The relay only ever comes from our own page.
-  const origin = request.headers.get("origin");
-  if (origin && origin !== request.nextUrl.origin) {
+  if (isForeignOrigin(request)) {
     return Response.json({ message: "Permintaan tidak diizinkan." }, { status: 403 });
   }
 
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
   // 303: the browser follows with a GET, never repeating this POST.
   const redirect = (path: string) => {
-    const response = NextResponse.redirect(new URL(path, request.url), 303);
+    const response = NextResponse.redirect(publicUrl(request, path), 303);
     // The state is single-use.
     response.cookies.delete({ name: OAUTH_STATE_COOKIE, path: "/auth" });
     response.cookies.delete({ name: OAUTH_NEXT_COOKIE, path: "/auth" });
