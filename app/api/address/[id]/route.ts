@@ -1,9 +1,9 @@
 import type { NextRequest } from "next/server";
 import { apiProxy } from "@/lib/api-proxy";
+import { isForeignOrigin } from "@/lib/request-origin";
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const origin = request.headers.get("origin");
-  if (origin && origin !== request.nextUrl.origin) {
+  if (isForeignOrigin(request)) {
     return Response.json({ message: "Permintaan tidak diizinkan." }, { status: 403 });
   }
   const { id } = await params;

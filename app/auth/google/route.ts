@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { backendFetch, OAUTH_NEXT_COOKIE, OAUTH_STATE_COOKIE, safeNext, secureCookie } from "@/lib/auth";
+import { publicUrl } from "@/lib/request-origin";
 
 // Starts "Masuk dengan Google": the state cookie ties Google's answer to this browser.
 export async function GET(request: NextRequest) {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   } catch {
     // Handled below like any other failure.
   }
-  if (!url) return NextResponse.redirect(new URL(`/login?error=google&next=${encodeURIComponent(next)}`, request.url));
+  if (!url) return NextResponse.redirect(publicUrl(request, `/login?error=google&next=${encodeURIComponent(next)}`));
 
   const redirect = NextResponse.redirect(url);
   const options = { httpOnly: true, secure: secureCookie, sameSite: "lax" as const, path: "/auth", maxAge: 600 };

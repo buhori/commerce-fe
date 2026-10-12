@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { backendFetch, CUSTOMER_COOKIE, OAUTH_NEXT_COOKIE, OAUTH_STATE_COOKIE, safeNext, secureCookie } from "@/lib/auth";
+import { publicUrl } from "@/lib/request-origin";
 
 // Google sends the buyer back here. The code is exchanged server-side for a
 // Passport token, which the browser only ever holds as an HttpOnly cookie.
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
   const code = params.get("code");
 
   const redirect = (path: string) => {
-    const response = NextResponse.redirect(new URL(path, request.url));
+    const response = NextResponse.redirect(publicUrl(request, path));
     // The state is single-use.
     response.cookies.delete({ name: OAUTH_STATE_COOKIE, path: "/auth" });
     response.cookies.delete({ name: OAUTH_NEXT_COOKIE, path: "/auth" });

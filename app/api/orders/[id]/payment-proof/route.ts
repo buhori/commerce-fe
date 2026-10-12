@@ -1,12 +1,12 @@
 import type { NextRequest } from "next/server";
 import { apiProxy } from "@/lib/api-proxy";
+import { isForeignOrigin } from "@/lib/request-origin";
 
 // The backend caps the file at 5 MB; leave room for the multipart envelope and text fields.
 const MAX_BODY_BYTES = 6 * 1024 * 1024;
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const origin = request.headers.get("origin");
-  if (origin && origin !== request.nextUrl.origin) {
+  if (isForeignOrigin(request)) {
     return Response.json({ message: "Permintaan tidak diizinkan." }, { status: 403 });
   }
   const { id } = await params;
