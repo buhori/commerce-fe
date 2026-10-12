@@ -74,4 +74,4 @@ jobs:
           for uuid in $UUIDS; do
             api -X PATCH -d "{\"docker_registry_image_tag\":\"$TAG\"}" "$COOLIFY_URL/api/v1/applications/$uuid" >/dev/null
           done
-          api "$COOLIFY_URL/api/v1/deploy?uuid=$(echo $UUIDS | tr ' ' ',')"
+          api -X POST "$COOLIFY_URL/api/v1/deploy?uuid=$(echo $UUIDS | tr ' ' ',')"
