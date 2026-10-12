@@ -1,0 +1,77 @@
+name: deploy
+
+# On every push to master: build the production image, push it to GHCR tagged with the commit,
+# point the Coolify applications at that tag and deploy them. Coolify starts the new container,
+# waits for its health check and then stops the old one.
+# Rollback: re-run this workflow for an older commit, or pick the previous tag in Coolify.
+#
+# Repository settings:
+#   secret    COOLIFY_TOKEN       Coolify API token with the "deploy" and "write" permissions
+#   variable  COOLIFY_URL         e.g. https://coolify.sellosy.com
+#   variable  COOLIFY_APP_UUIDS   application UUID of the storefront
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+# Pushes deploy one after another; a running deploy is never cancelled halfway.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/production/Dockerfile
+          pull: true
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+            ghcr.io/${{ github.repository }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Deploy on Coolify
+        env:
+          COOLIFY_URL: ${{ vars.COOLIFY_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          UUIDS: ${{ vars.COOLIFY_APP_UUIDS }}
+          TAG: ${{ github.sha }}
+        run: |
+          api() { curl -fsS -H "Authorization: Bearer $COOLIFY_TOKEN" -H 'Content-Type: application/json' "$@"; }
+          for uuid in $UUIDS; do
+            api -X PATCH -d "{\"docker_registry_image_tag\":\"$TAG\"}" "$COOLIFY_URL/api/v1/applications/$uuid" >/dev/null
+          done
+          api "$COOLIFY_URL/api/v1/deploy?uuid=$(echo $UUIDS | tr ' ' ',')"
