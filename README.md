@@ -15,13 +15,14 @@ Buka http://localhost:3000. Backend secara default berjalan di http://localhost:
 | Environment (server) | Default                     | Keterangan                          |
 | -------------------- | --------------------------- | ----------------------------------- |
 | `STORE_API_URL`      | `http://localhost:8001/api` | Base URL API, termasuk `/api`       |
-| `STORE_ID`           | `404`                       | Dikirim sebagai header `X-Store-Id` |
+| `STORE_ID`           | `404`                       | Dikirim sebagai header `X-Store-Id` bila toko tidak ditentukan dari subdomain |
+| `STORE_ROOT_DOMAIN`  | (kosong)                    | Misalnya `sellosy.com`: `demo.sellosy.com` mengirim `X-Store-Id: demo` (identifier toko) |
 
 Restart server Next.js setelah mengubah environment. Pada deployment, isi `STORE_API_URL` dengan URL backend yang dapat dijangkau server Next.js.
 
 ## Integrasi API
 
-Request dilakukan dari server, menggunakan `Accept: application/json` dan `X-Store-Id: 404`. Tidak ada parameter query `store_id`.
+Request dilakukan dari server, menggunakan `Accept: application/json` dan `X-Store-Id` (dari subdomain bila `STORE_ROOT_DOMAIN` diisi, selain itu `STORE_ID`). Tidak ada parameter query `store_id`.
 
 - `GET /store`: identitas, deskripsi, mata uang, dan kontak toko.
 - `GET /products?page=1&per_page=10`: katalog dari properti `data`.

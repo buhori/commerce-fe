@@ -1,4 +1,5 @@
-import { preorderDays, type Product, type ProductVariant } from "./store-api";
+import type { Product, ProductVariant } from "./store-api";
+import { preorderDays } from "./store-shared";
 
 export type CartVariant = ProductVariant;
 

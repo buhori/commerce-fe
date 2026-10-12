@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { getCartUnitPrice } from "@/lib/cart";
 import { jsonHeaders, readOrderId, type AddressDetails, type BankAccount, type PaymentMethod, type ShippingCost, type ShippingMethod } from "@/lib/checkout";
 import { addDays, formatDate, formatPrice, formatWeight } from "@/lib/format";
-import { preorderDays } from "@/lib/store-api";
+import { preorderDays } from "@/lib/store-shared";
 import { ProductImage } from "./product-image";
 import { AddressForm } from "./address-form";
 import { DeliveryOptions } from "./delivery-options";
