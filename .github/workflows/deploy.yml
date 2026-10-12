@@ -1,0 +1,44 @@
+name: deploy
+
+# Blue-green deploy to the production server on every push to master.
+# The server builds the latest master, health-checks the idle color,
+# switches nginx to it and stops the old color (~/deploy/bin/deploy on the server).
+#
+# Repository settings:
+#   secret   DEPLOY_SSH_KEY       private key ~/.ssh/github-actions-deploy on the server
+#   variable DEPLOY_HOST          server address, e.g. 43.156.12.183
+#   variable DEPLOY_KNOWN_HOSTS   the server's host key line (ssh-keyscan -t ed25519 <host>)
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Pushes deploy one after another; a running deploy is never cancelled halfway.
+concurrency:
+  group: deploy-production-fe
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Deploy on server
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ vars.DEPLOY_HOST }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # The key is restricted on the server: it can only run "deploy be" or "deploy fe".
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes \
+            -o ServerAliveInterval=30 "ubuntu@$HOST" "deploy fe"
