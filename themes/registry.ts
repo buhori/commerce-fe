@@ -11,8 +11,20 @@ export const defaultTheme: ThemeId = "natural";
 
 /** Cookie pratinjau tema; hanya dibaca bila THEME_PREVIEW=true (lingkungan developer). */
 export const THEME_PREVIEW_COOKIE = "theme_preview";
-/** Token pratinjau dari panel toko (tombol "Pratinjau"); diperiksa ke backend di setiap halaman. */
-export const THEME_PREVIEW_TOKEN_COOKIE = "theme_preview_token";
+/** Token pratinjau dari panel toko (tema dan/atau draf beranda); diperiksa ke backend di setiap halaman. */
+export const PREVIEW_COOKIE = "preview_token";
+/** Iframe builder memakai ?preview=…; proxy.ts meneruskannya lewat header ini (tanpa cookie). */
+export const PREVIEW_HEADER = "x-sellosy-preview";
+
+/**
+ * Halaman pratinjau membawa token di URL: jangan disimpan cache, jangan diindeks, dan jangan
+ * bocor ke situs lain lewat header Referer (mis. saat gambar atau video pihak ketiga dimuat).
+ */
+export const PREVIEW_RESPONSE_HEADERS = {
+  "Cache-Control": "private, no-store",
+  "X-Robots-Tag": "noindex, nofollow",
+  "Referrer-Policy": "no-referrer",
+} as const;
 
 export function isThemeId(value: unknown): value is ThemeId {
   return typeof value === "string" && Object.hasOwn(themes, value);

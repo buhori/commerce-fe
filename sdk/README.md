@@ -6,7 +6,7 @@ data pembeli, dan pesanan tetap diurus platform.
 | Bagian toko | Siapa yang mengatur |
 | --- | --- |
 | Header dan footer (tampil di semua halaman, termasuk keranjang dan checkout) | Tema (opsional) |
-| Beranda `/` | Tema (opsional) |
+| Beranda `/` | Pemilik toko di builder (`/builder`); tema hanya mengatur tampilan widget |
 | Katalog: kategori `/c/{slug}`, pencarian `/?q=`, urutan `/?sort=` | Tema (opsional) |
 | Halaman produk `/products/{slug}` | Tema (opsional) |
 | Halaman informasi `/{slug}` dari editor teks panel | Tema (opsional) |
@@ -22,13 +22,13 @@ Bagian yang tidak dibuat tema memakai tampilan bawaan, jadi tema boleh dimulai d
 
    ```tsx
    import { defineTheme } from "@sellosy/theme";
-   import { HomePage } from "./home";
+   import { ProductPage } from "./product";
 
    export default defineTheme({
      id: "aurora",
      name: "Aurora",
      description: "Satu kalimat untuk pemilik toko.",
-     components: { HomePage },
+     components: { ProductPage },
    });
    ```
 
@@ -58,12 +58,40 @@ merender `<main>` sendiri; header dan footer dipasang platform di sekitarnya.
 | --- | --- | --- |
 | `Header` | `store`, `navigation`, `query`, `accounts` | Tampilkan tombol akun hanya bila `accounts` true. |
 | `Footer` | `store`, `pages` | **Wajib** memuat `<BuiltWith />`. |
-| `HomePage` | `store`, `banners`, `categories`, `products` | `products` null bila produk gagal dimuat. |
 | `CatalogPage` | `store`, `categories`, `category`, `q`, `sort`, `title`, `products` | `category` null untuk pencarian atau urutan di semua produk. |
 | `ProductPage` | `store`, `product`, `view` | `view` berisi `gallery`, `availability`, `specs`, `preorder`, `stock` yang sudah dihitung. |
 | `InfoPage` | `store`, `page` | Isi halaman lewat `<PageContent page={page} />`. |
 
 Tipe lengkap ada di [`sdk/types.ts`](./types.ts).
+
+## Widget beranda (builder)
+
+Pemilik toko menyusun beranda di builder (`/builder`, menu **Toko → Sesuaikan tampilan**) dari
+7 widget. Beranda **hanya** berisi susunan yang diterbitkan untuk tema yang aktif; tidak ada
+beranda cadangan. Susunan kosong berarti beranda kosong.
+
+Tema boleh menyediakan tampilan sendiri lewat `components.sections`. Widget yang tidak disediakan
+memakai tampilan bawaan, yang sudah mengikuti token warna dan font tema.
+
+```tsx
+export default defineTheme({
+  // …
+  components: { sections: { banner: MyBanner, "product-list": MyProductList } },
+});
+```
+
+| Widget | Props selain `store` | Catatan |
+| --- | --- | --- |
+| `banner` | `settings.height` (`tall`/`short`), `settings.slides` (`image`, `mobile_image`, `title`, `subtitle`, `button_label`, `link`) | Slide diatur di widget; sudah bergambar dan dibatasi paket. Pakai `<BannerSlider slides>` untuk slider siap pakai. |
+| `product-list` | `settings` (judul, keterangan, `layout`: `grid`/`row`), `products`, `moreHref` | Produk sudah dimuat dan dipotong sesuai `limit`. |
+| `category-grid` | `settings.title`, `settings.categories` (`name`, `slug`, `image`) | `image` boleh null. |
+| `text` | `settings` (`eyebrow`, `title`, `body`, `align`, `button_label`, `link`) | Pecah `body` dengan `paragraphs()`. `link` sudah aman. |
+| `image` | `settings` (`image`, `alt`, `caption`, `link`, `width`) | |
+| `testimonials` | `settings.title`, `settings.items` (`quote`, `name`, `detail`) | |
+| `video` | `settings.video_id`, `title`, `caption` | Wajib lewat `<VideoEmbed>`: YouTube tanpa cookie, dimuat setelah diklik. |
+
+Satu widget merender satu elemen selebar halaman (`<section>`). Platform yang mengatur urutannya.
+Widget dengan data kosong tidak dirender, jadi komponen tema tidak perlu menangani keadaan kosong.
 
 ## Yang disediakan SDK
 
@@ -82,10 +110,10 @@ Semuanya diimpor dari `@sellosy/theme`.
 
 **Tampilan yang sudah menangani kasus sulit:** `<BannerSlider>`, `<ProductGallery>` (geser + zoom),
 `<ProductImage>` (gambar gagal dimuat), `<StoreLogo>`, `<SmartLink>` (tautan menu internal atau eksternal),
-`<PageContent>`, `<Price>`, `<BuiltWith>`.
+`<PageContent>`, `<Price>`, `<BuiltWith>`, `<VideoEmbed>`.
 
 **Helper:** `formatPrice`, `formatDate`, `productUrl`, `categoryUrl`, `pageUrl`, `catalogUrl`,
-`catalogSorts`, `preorderDays`.
+`catalogSorts`, `preorderDays`, `paragraphs`.
 
 Komponen yang memakai hook harus diberi `"use client"` di baris pertama filenya. Contohnya
 `themes/editorial/buy-box.tsx` (hook `useAddToCart`) dan `product-grid.tsx` (hook `useProductFeed`).
@@ -105,7 +133,7 @@ Pemeriksa tetap membaca kode tema sebelum dipasang. Yang diperiksa di luar lint:
 - Tidak ada skrip atau layanan pihak ketiga (analytics, chat, font dari luar Google Fonts).
 - Teks yang tampil ke pembeli memakai bahasa yang sama dengan bagian toko lainnya.
 - Tampilan sudah dicek di lebar 390px (HP) dan 1440px (desktop), tanpa halaman melebar ke samping.
-- Halaman tetap rapi dengan data kosong: toko tanpa banner, tanpa kategori, tanpa produk, dan produk tanpa foto.
+- Halaman tetap rapi dengan data kosong: beranda tanpa widget Banner, tanpa kategori, tanpa produk, dan produk tanpa foto.
 
 ## CSS
 

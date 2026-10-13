@@ -3,12 +3,12 @@
 import { Button, buttonClasses } from "@/components/ui/button";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import type { Banner } from "@/lib/store-api";
+import type { BannerSlide } from "@/lib/home-sections";
 import { Icon } from "./icons";
 
 const INTERVAL = 6000;
 
-export function BannerSlider({ banners }: { banners: Banner[] }) {
+export function BannerSlider({ slides: banners }: { slides: BannerSlide[] }) {
   const track = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -67,7 +67,7 @@ export function BannerSlider({ banners }: { banners: Banner[] }) {
       <div className="banner-viewport">
         <div className="banner-track" ref={track} aria-live={autoplay ? "off" : "polite"}>
           {banners.map((banner, index) => (
-            <div className="banner-slide" key={banner.id} role="group" aria-roledescription="slide"
+            <div className="banner-slide" key={index} role="group" aria-roledescription="slide"
               aria-label={`${index + 1} dari ${banners.length}${banner.title ? `: ${banner.title}` : ""}`}
               aria-hidden={index !== active} inert={index !== active}>
               <SlideLink link={banner.link} label={banner.title || `Banner ${index + 1}`}>
@@ -99,7 +99,7 @@ export function BannerSlider({ banners }: { banners: Banner[] }) {
           </span>
           <div className="banner-dots" role="group" aria-label="Pilih banner">
             {banners.map((banner, index) => (
-              <button type="button" key={banner.id} className="banner-dot" aria-current={index === active}
+              <button type="button" key={index} className="banner-dot" aria-current={index === active}
                 aria-label={`Banner ${index + 1}`} onClick={() => show(index)} />
             ))}
           </div>

@@ -3,7 +3,9 @@ import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/components/cart-provider";
 import { QueryProvider } from "@/components/query-provider";
+import { PreviewBridge } from "@/components/preview-bridge";
 import { ThemePreviewBar } from "@/components/theme-preview-bar";
+import { getPreviewState } from "@/lib/preview";
 import { getStore, StoreApiError } from "@/lib/store-api";
 import { getActiveTheme } from "@/themes/active";
 
@@ -34,7 +36,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     () => false,
     (error: unknown) => error instanceof StoreApiError && error.status === 404,
   );
-  const theme = await getActiveTheme();
+  const [theme, preview] = await Promise.all([getActiveTheme(), getPreviewState()]);
   return (
     <html
       lang="id"
@@ -50,7 +52,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         ) : (
           <QueryProvider><CartProvider>{children}</CartProvider></QueryProvider>
         )}
-        {theme.previewing && <ThemePreviewBar name={theme.previewing} />}
+        {preview && !preview.embedded && <ThemePreviewBar themeName={preview.theme?.name ?? null} draft={preview.draft} />}
+        {preview?.embedded && <PreviewBridge />}
       </body>
     </html>
   );

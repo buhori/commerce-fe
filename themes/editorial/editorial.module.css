@@ -278,6 +278,48 @@
   letter-spacing: 0.1em;
 }
 
+/* Widget banner builder dengan tinggi "pendek". */
+.bannerShort .slideCover { height: min(56vh, 520px); min-height: 340px; }
+.bannerShort .slide:not(.slideCover) img { max-height: 520px; object-fit: cover; }
+
+.moreLink {
+  flex-shrink: 0;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 2px;
+}
+.moreLink:hover { color: var(--accent); }
+
+.row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 3 * 24px) / 3.4);
+  gap: 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 12px;
+}
+.row > * { scroll-snap-align: start; }
+@media (max-width: 640px) { .row { grid-auto-columns: 68%; gap: 12px; } }
+
+.textCenter { max-width: 760px; text-align: center; }
+.textCenter .textBody { margin-top: 18px; }
+.textSplit { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: start; }
+@media (max-width: 760px) { .textSplit { grid-template-columns: minmax(0, 1fr); gap: 16px; } }
+.textTitle {
+  margin: 0;
+  font-family: var(--ed-serif), Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(32px, 4.4vw, 58px);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+.textBody { font-size: 17px; color: var(--muted); }
+.textBody p { margin: 0 0 14px !important; }
+.textBody .outlineButton { margin-top: 10px; }
+
 /* ---------- kategori ---------- */
 
 .categoryStrip { text-align: center; }

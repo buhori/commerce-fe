@@ -3,9 +3,9 @@ import { defineTheme } from "@sellosy/theme";
 import { CatalogPage } from "./catalog";
 import { Footer } from "./footer";
 import { Header } from "./header";
-import { HomePage } from "./home";
 import { InfoPage } from "./info";
 import { ProductPage } from "./product";
+import { sections } from "./sections";
 
 /**
  * Editorial — gaya majalah untuk fashion dan gaya hidup: logo di tengah, judul serif,
@@ -21,5 +21,5 @@ export default defineTheme({
   name: "Editorial",
   description: "Majalah mode: logo di tengah, judul serif, foto besar.",
   className: `${serif.variable} ${sans.variable}`,
-  components: { Header, Footer, HomePage, CatalogPage, ProductPage, InfoPage },
+  components: { Header, Footer, CatalogPage, ProductPage, InfoPage, sections },
 });

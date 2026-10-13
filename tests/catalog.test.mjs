@@ -163,22 +163,3 @@ test("slug detail rejects mismatched products and hides drafts and deleted produ
   assert.equal(await getProduct("requested-product"), null);
 });
 
-test("banners keep safe links only and drop rows without an image", async () => {
-  const { getBanners } = loadModule("../lib/store-api.ts", async (url) => {
-    assert.equal(url, "http://backend.test/api/banners");
-    return Response.json({ data: [
-      { id: 1, title: " Promo ", subtitle: "", button_label: "Belanja", link: "/products/tas", image: "http://img/a.jpg", mobile_image: "http://img/a-m.jpg" },
-      { id: 2, title: null, button_label: "Klik", link: "javascript:alert(1)", image: "http://img/b.jpg" },
-      { id: 3, link: "//evil.test", image: "http://img/c.jpg" },
-      { id: 4, link: "https://partner.test/promo", image: "http://img/d.jpg" },
-      { id: 5, title: "Tanpa gambar", image: "" },
-    ] });
-  });
-  const banners = JSON.parse(JSON.stringify(await getBanners()));
-  assert.deepEqual(banners, [
-    { id: 1, title: "Promo", subtitle: null, button_label: "Belanja", link: "/products/tas", image: "http://img/a.jpg", mobile_image: "http://img/a-m.jpg" },
-    { id: 2, title: null, subtitle: null, button_label: null, link: null, image: "http://img/b.jpg", mobile_image: null },
-    { id: 3, title: null, subtitle: null, button_label: null, link: null, image: "http://img/c.jpg", mobile_image: null },
-    { id: 4, title: null, subtitle: null, button_label: null, link: "https://partner.test/promo", image: "http://img/d.jpg", mobile_image: null },
-  ]);
-});

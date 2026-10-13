@@ -19,6 +19,8 @@ export { ProductGallery } from "@/components/product-gallery";
 export { ProductImage } from "@/components/product-image";
 export { StoreBrand as StoreLogo } from "@/components/store-brand";
 export { BuiltWith, PageContent, Price, SearchForm, SmartLink } from "./components";
+export { VideoEmbed } from "@/components/video-embed";
+export { paragraphs } from "@/lib/home-sections";
 
 // Helper.
 export { formatDate, formatPrice } from "@/lib/format";

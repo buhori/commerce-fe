@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { currentStoreHeaders } from "./store-host";
+import { readHomeSections, type HomeSection } from "./home-sections";
 import { productQueryString, readProductPage, type ProductQuery } from "./store-shared";
 
 // Client components import these from ./store-shared; server code may keep using this module.
@@ -88,7 +89,6 @@ export interface Category {
   logo?: string | null;
 }
 
-
 export class StoreApiError extends Error {
   constructor(public readonly status: number) {
     super(`Store API returned ${status}`);
@@ -103,11 +103,12 @@ export function storeThemeKey(store: Pick<Store, "theme"> | null | undefined): u
   return typeof key === "string" ? key.trim().toLowerCase() : undefined;
 }
 
-async function storeFetch<T>(path: string): Promise<T> {
+async function storeFetch<T>(path: string, extraHeaders?: Record<string, string>): Promise<T> {
   const baseUrl = process.env.STORE_API_URL || "http://localhost:8000/api";
   const response = await fetch(`${baseUrl.replace(/\/$/, "")}${path}`, {
     headers: {
       Accept: "application/json",
+      ...extraHeaders,
       ...(await currentStoreHeaders()),
     },
     cache: "no-store",
@@ -117,21 +118,46 @@ async function storeFetch<T>(path: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-const PREVIEW_TOKEN = /^[A-Za-z0-9]{48}$/;
+/**
+ * Token pratinjau bertanda tangan HMAC dari Laravel (`payload.signature`, base64url). Storefront
+ * tidak memegang kuncinya: bentuknya saja yang dicek di sini, isinya diperiksa backend.
+ */
+export const PREVIEW_TOKEN = /^[A-Za-z0-9_-]{20,400}\.[A-Za-z0-9_-]{43}$/;
+
+export interface StorefrontPreview {
+  /** Tema yang dipratinjau, atau null untuk tema toko yang aktif. */
+  theme: { key: string; name: string } | null;
+  /** Draf beranda dari builder ditampilkan, bukan versi yang tayang. */
+  draft: boolean;
+}
 
 /**
- * The theme a store owner is previewing from the panel ("Pratinjau"), or null. The token is only
- * valid for this store and expires on the backend, so visitors cannot pick a theme themselves.
+ * What a store owner is previewing from the panel (a theme, the home draft, or both), or null.
+ * Tokens are valid for this store only and expire on the backend, so visitors cannot use them.
  */
-export const getThemePreview = cache(async (token: string | undefined): Promise<{ key: string; name: string } | null> => {
+export const getPreview = cache(async (token: string | null | undefined): Promise<StorefrontPreview | null> => {
   if (!token || !PREVIEW_TOKEN.test(token)) return null;
   try {
-    const result = await storeFetch<{ data?: { key?: unknown; name?: unknown } }>(`/theme-preview/${token}`);
-    const theme = result?.data;
-    return typeof theme?.key === "string" && typeof theme.name === "string" ? { key: theme.key, name: theme.name } : null;
+    // Lewat header, bukan path, supaya token tidak tercatat di log akses backend.
+    const result = await storeFetch<{ data?: { theme?: { key?: unknown; name?: unknown } | null; draft?: unknown } }>("/preview", { "X-Preview-Token": token });
+    const data = result?.data;
+    if (!data) return null;
+    const theme = data.theme && typeof data.theme.key === "string" && typeof data.theme.name === "string"
+      ? { key: data.theme.key, name: data.theme.name }
+      : null;
+    return { theme, draft: data.draft === true };
   } catch {
     return null;
   }
+});
+
+/**
+ * Builder widgets for the home page of the theme being shown, or null when that theme has no
+ * published layout (the built-in home is used). With a preview token the backend picks the
+ * previewed theme's layout, and its draft for a draft preview.
+ */
+export const getHomeSections = cache(async (previewToken: string | null): Promise<HomeSection[] | null> => {
+  return readHomeSections(await storeFetch<unknown>("/home", previewToken ? { "X-Preview-Token": previewToken } : undefined));
 });
 
 /** Store uploads use Laravel's public disk; remote logo URLs remain supported. */
@@ -170,24 +196,6 @@ export const getProduct = cache(async (slug: string): Promise<Product | null> =>
     throw error;
   }
 });
-
-export interface Banner {
-  id: number;
-  title: string | null;
-  subtitle: string | null;
-  button_label: string | null;
-  link: string | null;
-  image: string;
-  mobile_image: string | null;
-}
-
-const text = (value: unknown) => (typeof value === "string" && value.trim() ? value.trim() : null);
-
-// Only same-site paths and web addresses become links; anything else is dropped.
-function safeLink(value: unknown) {
-  const link = text(value);
-  return link && (/^\/(?!\/)/.test(link) || /^https?:\/\//i.test(link)) ? link : null;
-}
 
 export interface PageLink {
   slug: string;
@@ -253,27 +261,6 @@ export const getPage = cache(async (slug: string): Promise<StorePage | null> => 
     throw error;
   }
 });
-
-export async function getBanners(): Promise<Banner[]> {
-  const result = await storeFetch<{ data?: unknown } | unknown[]>("/banners");
-  const rows = Array.isArray(result) ? result : Array.isArray((result as { data?: unknown })?.data) ? (result as { data: unknown[] }).data : null;
-  if (!rows) throw new Error("Invalid banner response");
-  return rows.flatMap((row) => {
-    const banner = row as Record<string, unknown>;
-    const image = text(banner?.image);
-    if (!banner || !Number.isSafeInteger(banner.id) || !image) return [];
-    const link = safeLink(banner.link);
-    return [{
-      id: banner.id as number,
-      title: text(banner.title),
-      subtitle: text(banner.subtitle),
-      button_label: link ? text(banner.button_label) : null,
-      link,
-      image,
-      mobile_image: text(banner.mobile_image),
-    }];
-  });
-}
 
 export async function getCategories() {
   const result = await storeFetch<Category[] | { data: Category[] }>(

@@ -25,3 +25,7 @@
   --radius: 0;
   --radius-sm: 0;
 }
+/* Blok Editorial sudah berjarak sendiri (padding atas), jadi beranda builder tanpa jarak tambahan. */
+[data-theme="editorial"] .home-builder {
+  gap: 0;
+}
