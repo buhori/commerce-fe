@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { LandingFrame } from "@/components/landing-frame";
 import { SiteFooter } from "@/components/site-footer";
 import { StoreHeader } from "@/components/store-header";
 import { formatDate } from "@/lib/format";
@@ -12,14 +13,39 @@ export async function generateMetadata({ params }: StorePageProps): Promise<Meta
   const { slug } = await params;
   const [page, store] = await Promise.all([getPage(slug).catch(() => null), getStore().catch(() => null)]);
   if (!page) return { title: "Halaman tidak ditemukan" };
-  return { title: store ? `${page.title} — ${store.name}` : page.title };
+  return {
+    title: store ? `${page.title} — ${store.name}` : page.title,
+    description: page.meta_description ?? undefined,
+    openGraph: page.meta_description ? { title: page.title, description: page.meta_description } : undefined,
+  };
 }
 
-/** Store information pages such as /about, /privacy-policy and /terms-condition. */
+/**
+ * Halaman toko: halaman informasi (/about, /privacy-policy, ...) dari editor teks, atau landing
+ * page HTML penuh dari panel, dengan atau tanpa header dan footer toko.
+ */
 export default async function StoreInfoPage({ params }: StorePageProps) {
   const { slug } = await params;
   const [page, store] = await Promise.all([getPage(slug), getStore()]);
   if (!page) notFound();
+
+  // Landing page layar penuh: tanpa header dan footer toko.
+  if (page.document && page.layout === "blank") {
+    return <LandingFrame title={page.title} document={page.document} fill />;
+  }
+
+  if (page.document) {
+    return (
+      <>
+        <StoreHeader name={store.name} logo={store.logo} />
+        <main className="landing-page">
+          <h1 className="sr-only">{page.title}</h1>
+          <LandingFrame title={page.title} document={page.document} />
+        </main>
+        <SiteFooter store={store} />
+      </>
+    );
+  }
 
   return (
     <>

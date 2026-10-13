@@ -263,8 +263,39 @@ p {
   flex-shrink: 0;
 }
 .footer-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
   padding-block: 20px 28px;
   font-size: 0.8125rem;
+}
+/* "Built with Sellosy": redup supaya tidak bersaing dengan merek toko, jelas saat disorot. */
+.built-with {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  opacity: 0.85;
+  transition: opacity 0.15s;
+}
+.built-with img {
+  width: auto;
+  height: 20px;
+  filter: grayscale(1);
+  opacity: 0.75;
+  transition: filter 0.15s, opacity 0.15s;
+}
+.built-with:hover,
+.built-with:focus-visible {
+  opacity: 1;
+}
+.built-with:hover img,
+.built-with:focus-visible img {
+  filter: none;
+  opacity: 1;
 }
 
 /* ---------------------------------------------------------------- Banners */
@@ -1738,4 +1769,136 @@ p {
   margin-top: 32px;
   color: var(--muted);
   font-size: 0.875rem;
+}
+
+/* ------------------------------------------------------------ Store menu */
+/* Menu navigasi dari panel (StoreNav). Sub-menu terbuka lewat :hover dan :focus-within. */
+.store-nav {
+  position: relative;
+  border-top: 1px solid var(--line);
+}
+.store-nav-list {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-block: 0;
+  padding: 0;
+  list-style: none;
+}
+.store-nav-item {
+  position: relative;
+}
+.store-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.store-nav-link:hover,
+.store-nav-item:focus-within > .store-nav-link {
+  color: var(--primary);
+}
+.store-nav-link:focus-visible,
+.store-nav-sub-link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+.has-children > .store-nav-link::after {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background: var(--chevron) center / 14px no-repeat;
+  transition: transform 0.15s;
+}
+.has-children:hover > .store-nav-link::after,
+.has-children:focus-within > .store-nav-link::after {
+  transform: rotate(180deg);
+}
+.store-nav-sub {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 40;
+  display: none;
+  min-width: 220px;
+  max-height: min(60vh, 420px);
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--page);
+  box-shadow: var(--shadow-pop);
+}
+.has-children:hover > .store-nav-sub,
+.has-children:focus-within > .store-nav-sub {
+  display: block;
+}
+.store-nav-sub-link {
+  display: block;
+  padding: 9px 12px;
+  border-radius: calc(var(--radius-sm) - 4px);
+  color: var(--text);
+  font-size: 0.875rem;
+}
+.store-nav-sub-link:hover {
+  background: var(--surface);
+  color: var(--primary);
+}
+
+@media (max-width: 900px) {
+  /* Baris menu bisa digeser. Item tidak diposisikan, supaya sub-menu memakai .store-nav sebagai
+     acuan: tampil selebar layar dan tidak terpotong oleh baris yang bisa digeser. */
+  .store-nav-list {
+    overflow-x: auto;
+    scrollbar-width: none;
+    width: 100%;
+    padding-inline: 12px;
+  }
+  .store-nav-list::-webkit-scrollbar {
+    display: none;
+  }
+  .store-nav-item {
+    position: static;
+    flex-shrink: 0;
+  }
+  .store-nav-link {
+    height: 42px;
+    padding: 0 10px;
+  }
+  .store-nav-sub {
+    left: 12px;
+    right: 12px;
+    min-width: 0;
+  }
+}
+
+/* ---------------------------------------------------------- Landing page */
+/* HTML penuh dari panel (LandingFrame). Tinggi awal sebelum dokumen melaporkan tingginya. */
+.landing-page {
+  flex: 1;
+}
+.landing-frame {
+  display: block;
+  width: 100%;
+  min-height: 70vh;
+  border: 0;
+  background: #fff;
+}
+.landing-frame-fill {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  min-height: 0;
 }

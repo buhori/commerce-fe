@@ -178,8 +178,15 @@ export interface PageLink {
 }
 
 export interface StorePage extends PageLink {
+  /** rich: `content` dari editor teks; html: `document` landing page (HTML penuh). */
+  format: "rich" | "html";
+  /** store: di dalam header dan footer toko; blank: landing page layar penuh. */
+  layout: "store" | "blank";
   // Sanitised HTML from the backend's rich text renderer.
   content: string;
+  /** Dokumen HTML penuh; wajib dirender di iframe sandbox (LandingFrame), jangan langsung. */
+  document: string | null;
+  meta_description: string | null;
   updated_at: string | null;
 }
 
@@ -213,7 +220,17 @@ export const getPage = cache(async (slug: string): Promise<StorePage | null> => 
     if (!page || page.slug !== slug || typeof page.title !== "string" || typeof page.content !== "string") {
       throw new Error("Invalid page response");
     }
-    return { slug, title: page.title, content: page.content, updated_at: typeof page.updated_at === "string" ? page.updated_at : null };
+    const html = page.format === "html" && typeof page.document === "string";
+    return {
+      slug,
+      title: page.title,
+      format: html ? "html" : "rich",
+      layout: html && page.layout === "blank" ? "blank" : "store",
+      content: page.content,
+      document: html ? (page.document as string) : null,
+      meta_description: typeof page.meta_description === "string" && page.meta_description.trim() ? page.meta_description.trim() : null,
+      updated_at: typeof page.updated_at === "string" ? page.updated_at : null,
+    };
   } catch (error) {
     if (error instanceof StoreApiError && error.status === 404) return null;
     throw error;
@@ -266,3 +283,36 @@ export async function getCategories() {
 export async function getProducts(query: ProductQuery = {}) {
   return readProductPage(await storeFetch<unknown>(`/products?${productQueryString(query)}`));
 }
+
+export interface NavigationLink {
+  label: string;
+  /** Path toko ("/c/kopi") atau URL lengkap; null untuk induk dropdown yang tidak bisa diklik. */
+  href: string | null;
+  new_tab: boolean;
+  children: NavigationLink[];
+}
+
+/** Hanya tautan internal ("/…") atau http(s); selain itu (mis. javascript:) dibuang. */
+function safeHref(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  return value.startsWith("/") && !value.startsWith("//") ? value : /^https?:\/\//i.test(value) ? value : null;
+}
+
+function readNavigation(value: unknown, depth = 0): NavigationLink[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    const item = entry as Partial<Record<keyof NavigationLink, unknown>> | null;
+    if (!item || typeof item.label !== "string" || item.label.trim() === "") return [];
+    const children = depth === 0 ? readNavigation(item.children, 1) : [];
+    const href = safeHref(item.href);
+    // Tanpa tujuan dan tanpa isi dropdown, tidak ada yang bisa dibuka pembeli.
+    if (!href && children.length === 0) return [];
+    return [{ label: item.label, href, new_tab: item.new_tab === true, children }];
+  });
+}
+
+/** Menu navigasi toko, sudah diurutkan dari panel; satu tingkat sub-menu. */
+export const getNavigation = cache(async (): Promise<NavigationLink[]> => {
+  const result = await storeFetch<{ data?: unknown }>("/navigations");
+  return readNavigation(result?.data);
+});

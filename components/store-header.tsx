@@ -5,6 +5,7 @@ import { AccountMenu } from "./account-menu";
 import { CartIndicator } from "./cart-indicator";
 import { Icon } from "./icons";
 import { StoreBrand } from "./store-brand";
+import { StoreNav } from "./store-nav";
 
 export async function StoreHeader({ name, logo, query = "" }: { name: string; logo?: string | null; query?: string }) {
   // getStore di-cache per request, jadi tidak menambah panggilan API.
@@ -27,6 +28,7 @@ export async function StoreHeader({ name, logo, query = "" }: { name: string; lo
           <CartIndicator />
         </div>
       </div>
+      <StoreNav />
     </header>
   );
 }

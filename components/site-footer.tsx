@@ -1,7 +1,11 @@
+import Image from "next/image";
 import Link from "next/link";
 import { getPages, type Store } from "@/lib/store-api";
 import { Icon } from "./icons";
 import { StoreBrand } from "./store-brand";
+
+/** Tautan "Built with Sellosy" ke situs platform, dengan UTM supaya kunjungan dari toko terukur. */
+const PLATFORM_LINK = `${(process.env.PLATFORM_URL || "https://sellosy.com").replace(/\/$/, "")}/?utm_source=storefront&utm_medium=footer&utm_campaign=built-with`;
 
 export async function SiteFooter({ store }: { store: Store }) {
   const pages = await getPages();
@@ -31,7 +35,13 @@ export async function SiteFooter({ store }: { store: Store }) {
           </div>
         )}
       </div>
-      <div className="container footer-bottom">© {new Date().getFullYear()} {store.name}</div>
+      <div className="container footer-bottom">
+        <span>© {new Date().getFullYear()} {store.name}</span>
+        <a className="built-with" href={PLATFORM_LINK} target="_blank" rel="noopener">
+          Built with
+          <Image src="/sellosy-logo.png" alt="Sellosy" width={80} height={24} />
+        </a>
+      </div>
     </footer>
   );
 }
