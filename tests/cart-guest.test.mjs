@@ -25,11 +25,12 @@ function load(file, fetch) {
     process: {
       env: { STORE_API_URL: "http://backend.test/api", STORE_ID: "404" },
     },
-    require: (name) => name === "./store-id"
-      ? load("../lib/store-id.ts", fetch)
-      : {
-        getProduct: async (id) => ({ id, name: "Test product", price: 100 }),
-      },
+    require: (name) =>
+      name === "./store-host" || name === "./store-id"
+        ? load(`../lib/${name.slice(2)}.ts`, fetch)
+        : name === "next/headers"
+          ? { headers: async () => new Headers() }
+          : { getProduct: async (id) => ({ id, name: "Test product", price: 100 }) },
     window: {
       get sessionStorage() {
         throw new Error("Legacy storage must not be accessed");
@@ -52,7 +53,11 @@ function request(cookie, incoming = {}, action) {
   return {
     method: action ? "POST" : "GET",
     text: async () => JSON.stringify({ action }),
-    headers: new Headers(incoming),
+    // Proxy meneruskan body sebagai byte mentah; tiruan ini mengikuti text() yang berlaku.
+    async arrayBuffer() {
+      return new TextEncoder().encode(await this.text()).buffer;
+    },
+    headers: new Headers({ host: "kopi-senja.sellosy.test", ...incoming }),
     cookies: {
       get: (name) =>
         name === "guest_token" && cookie ? { value: cookie } : undefined,
@@ -132,6 +137,7 @@ test("proxy sends guest cookie as X-Guest-Token on count, items and every action
   for (const { url, init } of calls) {
     assert.equal(init.headers.get("X-Guest-Token"), "guest-value");
     assert.equal(init.headers.get("X-Store-Id"), "404");
+    assert.equal(init.headers.get("X-Store-Host"), "kopi-senja.sellosy.test");
     assert.equal(url.search, "");
   }
   assert.deepEqual(

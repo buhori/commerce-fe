@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { CUSTOMER_COOKIE, type Customer } from "./auth";
-import { currentStoreId } from "./store-id";
+import { currentStoreHeaders } from "./store-host";
 
 /** Server-side call to the store API as the signed-in buyer; null without a session. */
 async function customerFetch(path: string) {
@@ -11,7 +11,7 @@ async function customerFetch(path: string) {
   const response = await fetch(`${baseUrl.replace(/\/$/, "")}${path}`, {
     headers: {
       Accept: "application/json",
-      "X-Store-Id": await currentStoreId(),
+      ...(await currentStoreHeaders()),
       Authorization: `Bearer ${token}`,
     },
     cache: "no-store",

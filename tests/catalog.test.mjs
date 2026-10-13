@@ -4,6 +4,9 @@ import test from "node:test";
 import vm from "node:vm";
 import ts from "typescript";
 
+// Host yang dibuka pembeli; storefront meneruskannya ke API sebagai X-Store-Host.
+const REQUEST_HOST = "kopi-senja.sellosy.test";
+
 function loadModule(file, fetch = () => {}) {
   const exports = {};
   const source = ts.transpileModule(
@@ -21,14 +24,16 @@ function loadModule(file, fetch = () => {}) {
     URL,
     URLSearchParams,
     AbortSignal,
+    Headers,
     process: {
       env: { STORE_API_URL: "http://backend.test/api", STORE_ID: "404" },
     },
     require: (name) => {
-      if (name.startsWith("./")) return loadModule(`../lib/${name.slice(2)}.ts`, fetch);
-      // No subdomain in tests: requests fall back to STORE_ID.
-      if (name === "next/headers") return { headers: async () => new Headers() };
-      return { cache: (callback) => callback };
+      if (name === "react") return { cache: (callback) => callback };
+      if (name === "next/headers") return { headers: async () => new Headers({ host: REQUEST_HOST }) };
+      // Modul relatif di lib/ dimuat sungguhan, dengan fetch palsu yang sama.
+      if (name.startsWith("./")) return loadModule(new URL(`${name}.ts`, new URL(file, import.meta.url)).href, fetch);
+      return {};
     },
   });
   return exports;
@@ -78,6 +83,7 @@ test("categories support raw/wrapped responses and exclude non-product categorie
         "http://backend.test/api/categories?page=1&per_page=10",
       );
       assert.equal(init.headers["X-Store-Id"], "404");
+      assert.equal(init.headers["X-Store-Host"], REQUEST_HOST);
       return Response.json(wrapped ? { data: categories } : categories);
     },
   );

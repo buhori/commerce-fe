@@ -1,4 +1,4 @@
-import type { ProductSummary } from "./store-api";
+import type { ProductSummary, Store } from "./store-api";
 
 // Pure helpers shared with client components. lib/store-api.ts reads request headers, so it is server-only.
 
@@ -46,4 +46,13 @@ export function readProductPage(result: unknown): ProductPage {
     hasMore: body.meta?.has_more === true && lastProductId !== null,
     lastProductId,
   };
+}
+
+
+/**
+ * Akun pembeli (login, profil, wishlist) hanya ada bila paket toko menyertakannya.
+ * Backend lama tidak mengirim `features`, jadi dianggap tersedia.
+ */
+export function accountsEnabled(store: Pick<Store, "features"> | null | undefined): boolean {
+  return !store?.features || store.features.includes("account");
 }

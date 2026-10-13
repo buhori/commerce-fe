@@ -1,10 +1,14 @@
 import Link from "next/link";
+import { getStore } from "@/lib/store-api";
+import { accountsEnabled } from "@/lib/store-shared";
 import { AccountMenu } from "./account-menu";
 import { CartIndicator } from "./cart-indicator";
 import { Icon } from "./icons";
 import { StoreBrand } from "./store-brand";
 
-export function StoreHeader({ name, logo, query = "" }: { name: string; logo?: string | null; query?: string }) {
+export async function StoreHeader({ name, logo, query = "" }: { name: string; logo?: string | null; query?: string }) {
+  // getStore di-cache per request, jadi tidak menambah panggilan API.
+  const accounts = accountsEnabled(await getStore().catch(() => null));
   return (
     <header className="store-header">
       <div className="container store-header-inner">
@@ -18,7 +22,8 @@ export function StoreHeader({ name, logo, query = "" }: { name: string; logo?: s
             aria-label="Cari produk" maxLength={100} enterKeyHint="search" />
         </form>
         <div className="store-header-actions">
-          <AccountMenu />
+          {/* Paket tanpa akun pembeli: semua belanja sebagai tamu, tanpa tombol Masuk. */}
+          {accounts && <AccountMenu />}
           <CartIndicator />
         </div>
       </div>

@@ -1,9 +1,9 @@
 import { cache } from "react";
+import { currentStoreHeaders } from "./store-host";
 import { productQueryString, readProductPage, type ProductQuery } from "./store-shared";
-import { currentStoreId } from "./store-id";
 
 // Client components import these from ./store-shared; server code may keep using this module.
-export { PRODUCTS_PER_PAGE, preorderDays, productQueryString, readProductPage } from "./store-shared";
+export { accountsEnabled, PRODUCTS_PER_PAGE, preorderDays, productQueryString, readProductPage } from "./store-shared";
 export type { ProductPage, ProductQuery } from "./store-shared";
 
 export interface Store {
@@ -12,6 +12,8 @@ export interface Store {
   id: number;
   name: string;
   logo: string | null;
+  // Ikon tab browser; kosong berarti memakai logo.
+  favicon?: string | null;
   currency: string;
   language: string;
   description: string | null;
@@ -23,6 +25,10 @@ export interface Store {
   auth_required?: boolean;
   // Login methods whose keys the backend has; older backends omit it.
   login_providers?: string[];
+  // Fitur yang terbuka penuh di paket toko, mis. "account" untuk akun pembeli.
+  features?: string[];
+  // Batas paket yang berlaku, mis. { cart: 3 }; kosong berarti tanpa batas.
+  limits?: Record<string, number>;
 }
 
 export interface ProductVariant {
@@ -102,7 +108,7 @@ async function storeFetch<T>(path: string): Promise<T> {
   const response = await fetch(`${baseUrl.replace(/\/$/, "")}${path}`, {
     headers: {
       Accept: "application/json",
-      "X-Store-Id": await currentStoreId(),
+      ...(await currentStoreHeaders()),
     },
     cache: "no-store",
     signal: AbortSignal.timeout(10_000),
@@ -129,7 +135,7 @@ export function storeLogoUrl(value: unknown): string | null {
 
 export const getStore = cache(async () => {
   const store = await storeFetch<Store>("/store");
-  return { ...store, logo: storeLogoUrl(store.logo) };
+  return { ...store, logo: storeLogoUrl(store.logo), favicon: storeLogoUrl(store.favicon) };
 });
 
 export const getProduct = cache(async (slug: string): Promise<Product | null> => {

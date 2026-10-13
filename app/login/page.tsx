@@ -6,6 +6,7 @@ import { StoreHeader } from "@/components/store-header";
 import { CUSTOMER_COOKIE, safeNext } from "@/lib/auth";
 import { getCustomer } from "@/lib/customer-api";
 import { getStore } from "@/lib/store-api";
+import { accountsEnabled } from "@/lib/store-shared";
 
 export const metadata: Metadata = { title: "Masuk", robots: { index: false } };
 
@@ -42,6 +43,14 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
                 : "Keranjang, alamat, dan pesanan tersimpan di akun Anda dan bisa dibuka dari perangkat mana pun."}
             </p>
             {message && <p className="login-error" role="alert">{message}</p>}
+            {!accountsEnabled(store) && (
+              <>
+                <p className="login-error" role="status">
+                  Toko ini melayani pembelian tanpa akun. Kamu bisa langsung checkout sebagai tamu.
+                </p>
+                <a className="button" href={next}>Lanjut belanja</a>
+              </>
+            )}
             {/* Plain links: the route handlers redirect to Google or Apple. */}
             {providers.includes("google") && (
               <a className="button button-secondary login-google" href={`/auth/google?next=${encodeURIComponent(next)}`}>
@@ -55,7 +64,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
                 Masuk dengan Apple
               </a>
             )}
-            {!providers.includes("google") && !providers.includes("apple") && (
+            {accountsEnabled(store) && !providers.includes("google") && !providers.includes("apple") && (
               <p className="login-error" role="alert">Login belum tersedia di toko ini. Silakan hubungi toko.</p>
             )}
           </div>

@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { storeIdFromHost } from "./store-id";
+import { requestHost, storeHeaders } from "./store-host";
 
 export const CUSTOMER_COOKIE = "customer_token";
 export const OAUTH_STATE_COOKIE = "oauth_state";
@@ -24,7 +24,7 @@ export function safeNext(value: string | null | undefined) {
 export function backendFetch(request: NextRequest, path: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
-  headers.set("X-Store-Id", storeIdFromHost(request.headers.get("host")));
+  for (const [name, value] of Object.entries(storeHeaders(requestHost(request.headers)))) headers.set(name, value);
   const guestToken = request.cookies.get("guest_token")?.value;
   if (guestToken) headers.set("X-Guest-Token", guestToken);
   const customerToken = request.cookies.get(CUSTOMER_COOKIE)?.value;
