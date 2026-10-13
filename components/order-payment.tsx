@@ -264,7 +264,7 @@ export function OrderPayment({ orderId, currency }: { orderId: string; currency:
             )}
           </section>
           <p className="payment-save-note"><Icon name="info" />Simpan halaman ini untuk melihat rincian dan status pembayaran Anda.</p>
-          <div className="payment-navigation"><ButtonLink variant="secondary" href="/">Lanjut belanja<Icon name="arrow" /></ButtonLink><ButtonLink variant="text" href="/cart">Lihat keranjang</ButtonLink></div>
+          <div className="payment-navigation"><ButtonLink variant="secondary" href="/">Lanjut belanja<Icon name="arrow" /></ButtonLink><ButtonLink variant="text" href={`/invoice/${order.id}`}>Lihat invoice</ButtonLink><ButtonLink variant="text" href="/cart">Lihat keranjang</ButtonLink></div>
         </aside>
       </div>
     </div>

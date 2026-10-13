@@ -1,0 +1,57 @@
+/* Invoice pembeli: lembar A4 putih di layar, hanya lembarnya yang ikut tercetak. */
+.invoice-page { background: var(--canvas); min-height: 100vh; padding: 24px 16px 48px; }
+.invoice-toolbar { display: flex; justify-content: space-between; gap: 12px; max-width: 210mm; margin: 0 auto 16px; }
+.invoice-sheet {
+  max-width: 210mm; margin: 0 auto; padding: 40px 44px; background: #fff; color: #1f1f1f;
+  border: 1px solid var(--line); border-radius: 12px; font-size: .8125rem; line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+.invoice-sheet p { margin: 0; }
+.invoice-header { display: flex; justify-content: space-between; gap: 24px; padding-bottom: 24px; border-bottom: 2px solid #1f1f1f; }
+.invoice-store { display: flex; gap: 14px; align-items: flex-start; }
+.invoice-store img { width: 56px; height: 56px; object-fit: contain; }
+.invoice-store strong { display: block; font-size: 1rem; margin-bottom: 4px; }
+.invoice-store p { color: #555; }
+.invoice-identity { display: grid; justify-items: end; gap: 6px; text-align: right; }
+.invoice-identity h1 { font-size: 1.5rem; letter-spacing: .12em; line-height: 1; }
+.invoice-identity p { font-weight: 600; }
+.invoice-stamp { padding: 3px 10px; border: 1.5px solid currentColor; border-radius: 999px; font-size: .6875rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.invoice-stamp[data-state="paid"] { color: #15803d; }
+.invoice-stamp[data-state="unpaid"] { color: #b45309; }
+.invoice-stamp[data-state="void"], .invoice-stamp[data-state="refunded"] { color: #6b7280; }
+.invoice-parties { display: flex; justify-content: space-between; gap: 24px; padding: 24px 0; }
+.invoice-parties h2 { color: #6b7280; font-size: .6875rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; }
+.invoice-parties strong { display: block; font-size: .9375rem; }
+.invoice-parties dl { display: grid; gap: 4px; margin: 0; min-width: 220px; }
+.invoice-parties dl div { display: grid; grid-template-columns: 90px 1fr; gap: 12px; }
+.invoice-parties dt { color: #6b7280; }
+.invoice-parties dd { margin: 0; text-align: right; }
+.invoice-items { width: 100%; border-collapse: collapse; }
+.invoice-items th { padding: 8px 0; border-bottom: 1px solid #1f1f1f; color: #6b7280; font-size: .6875rem; font-weight: 700; letter-spacing: .08em; text-align: left; text-transform: uppercase; }
+.invoice-items td { padding: 10px 0; border-bottom: 1px solid #e5e5e5; vertical-align: top; }
+.invoice-items small { display: block; color: #6b7280; }
+.invoice-items .num { text-align: right; padding-left: 16px; white-space: nowrap; }
+.invoice-totals { display: grid; gap: 6px; width: min(100%, 300px); margin: 16px 0 0 auto; }
+.invoice-totals div { display: flex; justify-content: space-between; gap: 16px; }
+.invoice-totals dt { color: #555; }
+.invoice-totals dd { margin: 0; }
+.invoice-grand-total { padding-top: 8px; border-top: 2px solid #1f1f1f; font-size: 1rem; font-weight: 700; }
+.invoice-grand-total dt { color: inherit; }
+.invoice-note { margin-top: 24px !important; padding: 12px 14px; background: #fffbeb; border-radius: 8px; color: #78350f; }
+.invoice-footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e5e5; color: #6b7280; text-align: center; }
+
+@media (max-width: 640px) {
+  .invoice-sheet { padding: 24px 18px; }
+  .invoice-header, .invoice-parties { flex-direction: column; }
+  .invoice-identity { justify-items: start; text-align: left; }
+  .invoice-items th:nth-child(3), .invoice-items td:nth-child(3) { display: none; }
+}
+
+@page { size: A4; margin: 14mm; }
+@media print {
+  body { background: #fff; }
+  .invoice-page { padding: 0; background: #fff; min-height: 0; }
+  .invoice-toolbar { display: none; }
+  .invoice-sheet { max-width: none; padding: 0; border: 0; border-radius: 0; }
+  .invoice-note { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
