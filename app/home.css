@@ -141,3 +141,6 @@
   .home-products-row .product-grid { grid-auto-columns: 44%; }
   .home-categories { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Rating dan jumlah terjual di kartu produk (katalog dan widget). */
+.product-stats { display: block; margin-top: 2px; color: var(--muted); font-size: 0.75rem; }

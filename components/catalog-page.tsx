@@ -1,36 +1,43 @@
 import { ButtonLink } from "@/components/ui/button";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { HomeBuilderPage } from "./home-builder-page";
 import { ProductFeed } from "./product-feed";
 import { CategoryTabs } from "./category-tabs";
 import { Icon } from "./icons";
 import { SiteFooter } from "./site-footer";
 import { SortSelect } from "./sort-select";
 import { StoreHeader } from "./store-header";
-import { catalogUrl, isCatalogSort } from "@/lib/catalog-url";
-import { getPreviewState } from "@/lib/preview";
-import { getCategories, getHomeSections, getProducts, getStore } from "@/lib/store-api";
+import { catalogUrl, readCatalogFilter, type CatalogFilter } from "@/lib/catalog-url";
+import { getCategories, getProducts, getStore, type Category } from "@/lib/store-api";
 import type { ProductListing } from "@/sdk";
 import { getActiveTheme } from "@/themes/active";
 
-export interface CatalogSearchParams {
-  q?: string | string[];
-  sort?: string | string[];
+export type CatalogSearchParams = Record<string, string | string[] | undefined>;
+
+const SORT_TITLES: Record<string, string> = {
+  latest: "Produk terbaru",
+  top_sale: "Produk terlaris",
+  top_rating: "Rating tertinggi",
+};
+
+/** Judul katalog menurut pilihannya: pencarian, produk pilihan, kategori, atau urutan. */
+export function catalogTitle(filter: CatalogFilter, categories: Category[], category?: Category) {
+  if (filter.q) return `Hasil pencarian “${filter.q}”${category ? ` di ${category.name}` : ""}`;
+  if (category) return category.name;
+  if (filter.productIds.length) return "Produk pilihan";
+  if (filter.categoryIds.length) {
+    const names = filter.categoryIds.map((id) => categories.find((entry) => entry.id === id)?.name).filter(Boolean);
+    if (names.length) return names.join(", ");
+  }
+  return (filter.sort && SORT_TITLES[filter.sort]) || "Semua produk";
 }
 
-const single = (value: string | string[] | undefined) => (typeof value === "string" ? value : undefined);
-
 /**
- * "/" tanpa filter adalah beranda dari builder: murni susunan yang diterbitkan (kosong pun tetap kosong).
- * Pencarian, urutan, dan kategori (/c/{slug}) memakai katalog produk.
+ * Katalog produk: /products (semua, atau filter=id|category|sort) dan /c/{slug} (satu kategori).
+ * Beranda "/" tidak memakai ini; isinya murni dari builder (components/home-page.tsx).
  */
 export async function CatalogPage({ params, categorySlug }: { params: CatalogSearchParams; categorySlug?: string }) {
-  const q = single(params.q)?.trim().slice(0, 100) ?? "";
-  const rawSort = single(params.sort);
-  const sort = isCatalogSort(rawSort) ? rawSort : undefined;
-  // Beranda hanya halaman pertama tanpa kategori, pencarian, atau urutan.
-  const isHome = !categorySlug && !q && !sort;
+  const filter = readCatalogFilter(params);
 
   const [[storeResult, categoriesResult], theme] = await Promise.all([
     Promise.allSettled([getStore(), getCategories()]),
@@ -48,54 +55,39 @@ export async function CatalogPage({ params, categorySlug }: { params: CatalogSea
   }
 
   const store = storeResult.value;
-
-  // Beranda: susunan milik tema yang tampil (tema aktif, atau tema/draf yang dipratinjau pemilik).
-  // Tidak ada beranda cadangan: yang tampil hanya yang disusun di editor.
-  if (isHome) {
-    const preview = await getPreviewState();
-    const sections = await getHomeSections(preview?.token ?? null).catch(() => undefined);
-    return (
-      <>
-        <StoreHeader name={store.name} logo={store.logo} />
-        {sections === undefined ? (
-          <main className="page home-page">
-            <div className="container empty-state" role="alert">
-              <h1>Beranda belum dapat dimuat</h1>
-              <ButtonLink reloadDocument href="/">Coba lagi</ButtonLink>
-            </div>
-          </main>
-        ) : (
-          <HomeBuilderPage store={store} sections={sections ?? []} components={theme.components.sections} />
-        )}
-        <SiteFooter store={store} />
-      </>
-    );
-  }
-
   const categories = categoriesResult.status === "fulfilled" ? categoriesResult.value : [];
   const category = categorySlug ? categories.find((entry) => entry.slug === categorySlug) : undefined;
   // Only a successfully loaded list can prove a slug does not exist.
   if (categorySlug && !category && categoriesResult.status === "fulfilled") notFound();
 
-  const productsResult = categorySlug && !category
-    ? null
-    : await getProducts({ categoryId: category?.id, q: q || undefined, sort }).catch(() => null);
-  const title = q ? `Hasil pencarian “${q}”${category ? ` di ${category.name}` : ""}` : category?.name ?? "Semua produk";
+  // Halaman kategori: filter kategori dari slug; filter lain di URL diabaikan.
+  const effective: CatalogFilter = category
+    ? { productIds: [], categoryIds: [category.id], sort: filter.sort, q: filter.q }
+    : filter;
+  // Satu kategori terpilih di /products tetap menyorot tabnya.
+  const selected = category ?? (effective.categoryIds.length === 1 ? categories.find((entry) => entry.id === effective.categoryIds[0]) : undefined);
+
+  const productQuery = {
+    productIds: effective.productIds,
+    categoryIds: effective.categoryIds,
+    q: effective.q,
+    sort: effective.sort,
+  };
+  const productsResult = categorySlug && !category ? null : await getProducts(productQuery).catch(() => null);
+  const title = catalogTitle(effective, categories, category);
   const currency = store.currency || "IDR";
-  const here = { category: categorySlug, q, sort };
-  const productQuery = { categoryId: category?.id, q: q || undefined, sort };
+  const here = category ? catalogUrl({ category: category.slug, q: effective.q, sort: effective.sort }) : catalogUrl(effective);
   const listing: ProductListing | null = productsResult && {
     items: productsResult.data, hasMore: productsResult.hasMore, lastProductId: productsResult.lastProductId, query: productQuery,
   };
 
   const { CatalogPage: ThemeCatalogPage } = theme.components;
-  const themed = ThemeCatalogPage && <ThemeCatalogPage store={store} categories={categories} category={category ?? null}
-    q={q} sort={sort} title={title} products={listing} />;
-  if (themed) {
+  if (ThemeCatalogPage) {
     return (
       <>
-        <StoreHeader name={store.name} logo={store.logo} query={q} />
-        {themed}
+        <StoreHeader name={store.name} logo={store.logo} query={effective.q} />
+        <ThemeCatalogPage store={store} categories={categories} category={selected ?? null} filter={effective}
+          q={effective.q ?? ""} sort={effective.sort} title={title} products={listing} />
         <SiteFooter store={store} />
       </>
     );
@@ -103,33 +95,39 @@ export async function CatalogPage({ params, categorySlug }: { params: CatalogSea
 
   return (
     <>
-      <StoreHeader name={store.name} logo={store.logo} query={q} />
+      <StoreHeader name={store.name} logo={store.logo} query={effective.q} />
       <main className="page storefront-catalog catalog-results-page">
         <section className="container catalog-section" id="produk">
-          <nav className="catalog-breadcrumb" aria-label="Breadcrumb"><Link href="/">Beranda</Link><span aria-hidden="true">/</span><span>{category?.name ?? (q ? "Pencarian" : "Koleksi produk")}</span></nav>
-          <CategoryTabs categories={categories} selectedSlug={categorySlug}
-            failed={categoriesResult.status === "rejected"} q={q} sort={sort} />
+          <nav className="catalog-breadcrumb" aria-label="Breadcrumb">
+            <Link href="/">Beranda</Link>
+            <span aria-hidden="true">/</span>
+            {category || effective.q || effective.productIds.length || effective.categoryIds.length || effective.sort ? (
+              <><Link href="/products">Produk</Link><span aria-hidden="true">/</span><span>{category?.name ?? (effective.q ? "Pencarian" : title)}</span></>
+            ) : <span>Produk</span>}
+          </nav>
+          <CategoryTabs categories={categories} selectedSlug={selected?.slug}
+            failed={categoriesResult.status === "rejected"} q={effective.q} sort={effective.sort} />
           <div className="catalog-toolbar">
             <div className="catalog-heading">
               <h1 className="catalog-title">{title}</h1>
             </div>
-            <SortSelect category={categorySlug} q={q} sort={sort} />
+            <SortSelect filter={effective} category={category?.slug} />
           </div>
 
           {!productsResult ? (
             <div className="empty-state" role="alert">
               <h2>Produk belum dapat dimuat</h2>
-              <ButtonLink reloadDocument href={catalogUrl(here)}>Coba lagi</ButtonLink>
+              <ButtonLink reloadDocument href={here}>Coba lagi</ButtonLink>
             </div>
           ) : productsResult.data.length === 0 ? (
             <div className="empty-state">
               <Icon name="search" />
-              <h2>{q ? "Produk tidak ditemukan" : "Belum ada produk"}</h2>
-              {(q || categorySlug) && <ButtonLink variant="secondary" href="/">Lihat semua produk</ButtonLink>}
+              <h2>{effective.q ? "Produk tidak ditemukan" : "Belum ada produk"}</h2>
+              {here !== "/products" && <ButtonLink variant="secondary" href="/products">Lihat semua produk</ButtonLink>}
             </div>
           ) : (
             // Keyed by the filters, so a new category, search or sort starts a fresh list.
-            <ProductFeed key={`${category?.id ?? ""}|${q}|${sort ?? ""}`}
+            <ProductFeed key={here}
               initial={productsResult.data} initialLastId={productsResult.lastProductId} initialHasMore={productsResult.hasMore}
               query={productQuery} currency={currency} />
           )}

@@ -14,9 +14,11 @@ export interface BannerSettings { height: "tall" | "short"; slides: BannerSlide[
 export interface ProductListSettings {
   title: string | null;
   subtitle: string | null;
-  source: "latest" | "category";
-  category_id: number | null;
-  category_slug: string | null;
+  /** latest, top_sale, top_rating: semua produk menurut urutan itu; category; manual (produk pilihan). */
+  source: "latest" | "top_sale" | "top_rating" | "category" | "manual";
+  category_ids: number[];
+  /** ID ter-encode, sesuai urutan pilihan pemilik. */
+  product_ids: number[];
   limit: number;
   layout: "grid" | "row";
 }
@@ -83,14 +85,16 @@ function settingsFor(type: unknown, raw: Raw): HomeSection | Omit<HomeSection, "
       return slides.length ? { type, settings: { height: choice(raw.height, ["tall", "short"] as const), slides } } : null;
     }
     case "product-list": {
-      const source = choice(raw.source, ["latest", "category"] as const);
-      const slug = text(raw.category_slug, 200);
-      const id = Number.isSafeInteger(raw.category_id) && (raw.category_id as number) > 0 ? (raw.category_id as number) : null;
-      if (source === "category" && (!slug || !id)) return null;
+      const source = choice(raw.source, ["latest", "top_sale", "top_rating", "category", "manual"] as const);
+      const ids = (value: unknown) => (Array.isArray(value) ? value : [])
+        .filter((id): id is number => Number.isSafeInteger(id) && id > 0)
+        .slice(0, 12);
+      const category_ids = source === "category" ? ids(raw.category_ids) : [];
+      const product_ids = source === "manual" ? ids(raw.product_ids) : [];
+      if ((source === "category" && !category_ids.length) || (source === "manual" && !product_ids.length)) return null;
       const limit = [4, 8, 12].includes(raw.limit as number) ? (raw.limit as number) : 8;
       return { type, settings: {
-        title: text(raw.title, 80), subtitle: text(raw.subtitle, 160), source,
-        category_id: source === "category" ? id : null, category_slug: source === "category" ? slug : null,
+        title: text(raw.title, 80), subtitle: text(raw.subtitle, 160), source, category_ids, product_ids,
         limit, layout: choice(raw.layout, ["grid", "row"] as const),
       } };
     }

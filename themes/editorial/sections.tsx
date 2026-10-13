@@ -60,7 +60,7 @@ function ProductList({ store, settings, products, moreHref }: ProductListSection
           {settings.subtitle && <p className={s.eyebrow}>{settings.subtitle}</p>}
           {settings.title && <h2 className={s.blockTitle}>{settings.title}</h2>}
         </div>
-        <Link href={moreHref} className={s.moreLink}>Lihat semua</Link>
+        {moreHref && <Link href={moreHref} className={s.moreLink}>Lihat semua</Link>}
       </div>
       <div className={settings.layout === "row" ? s.row : s.grid}>
         {products.map((product) => <ProductCard key={product.id} product={product} currency={store.currency || "IDR"} />)}

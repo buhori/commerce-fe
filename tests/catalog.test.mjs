@@ -39,15 +39,13 @@ function loadModule(file, fetch = () => {}) {
   return exports;
 }
 
-test("categories live at /c/{slug}; search and sort follow, the cursor only when paginating", () => {
+test("categories live at /c/{slug} and the rest of the catalog at /products; search and sort follow", () => {
   const { catalogUrl } = loadModule("../lib/catalog-url.ts");
-  assert.equal(catalogUrl(), "/");
+  assert.equal(catalogUrl(), "/products");
   assert.equal(catalogUrl({ category: "baju-anak" }), "/c/baju-anak");
   assert.equal(catalogUrl({ category: "baju anak/2" }), "/c/baju%20anak%2F2");
   assert.equal(catalogUrl({ category: "tas", q: " kulit ", sort: "price_asc" }), "/c/tas?q=kulit&sort=price_asc");
-  const url = new URL(catalogUrl({ category: "tas", cursor: "cursor/+=" }), "http://store.test");
-  assert.equal(url.pathname, "/c/tas");
-  assert.equal(url.searchParams.get("cursor"), "cursor/+=");
+  assert.equal(catalogUrl({ q: "kulit" }), "/products?q=kulit");
 });
 
 test("store logo resolves public uploads against the backend and preserves remote URLs", async () => {
@@ -97,7 +95,9 @@ test("product API receives category and last_product_id while preserving publish
     "../lib/store-api.ts",
     async (url, init) => {
       const parsed = new URL(url);
-      assert.equal(parsed.searchParams.get("category_id"), "2");
+      // Kategori lewat filter=category, sama dengan halaman /products.
+      assert.equal(parsed.searchParams.get("filter"), "category");
+      assert.deepEqual(parsed.searchParams.getAll("filter_value[]"), ["2"]);
       assert.equal(parsed.searchParams.get("last_product_id"), "375139977");
       assert.equal(parsed.searchParams.get("per_page"), "20");
       assert.equal(parsed.searchParams.has("cursor"), false);

@@ -1,4 +1,5 @@
-import type { HomeSection } from "@/lib/home-sections";
+import { catalogUrl } from "@/lib/catalog-url";
+import type { HomeSection, ProductListSettings } from "@/lib/home-sections";
 import { getProducts, type ProductSummary, type Store } from "@/lib/store-api";
 import type { SectionComponents } from "@/sdk/types";
 import { defaultSections } from "./home-sections";
@@ -14,8 +15,8 @@ export async function HomeBuilderPage({ store, sections, components = {} }: {
   components?: SectionComponents;
 }) {
   const products = await Promise.all(sections.map((section) => section.type === "product-list"
-    ? getProducts({ categoryId: section.settings.category_id ?? undefined, sort: "newest" })
-      .then((page) => page.data.slice(0, section.settings.limit))
+    ? getProducts(productQuery(section.settings))
+      .then((page) => (section.settings.source === "manual" ? page.data : page.data.slice(0, section.settings.limit)))
       .catch(() => [])
     : Promise.resolve([])));
 
@@ -49,7 +50,7 @@ function renderSection({ store, section, components, products }: {
     }
     case "product-list": {
       const List = components["product-list"] ?? defaultSections["product-list"];
-      const moreHref = section.settings.category_slug ? `/c/${encodeURIComponent(section.settings.category_slug)}` : "/?sort=newest";
+      const moreHref = moreLink(section.settings);
       return products.length > 0 ? <List store={store} settings={section.settings} products={products} moreHref={moreHref} /> : null;
     }
     case "category-grid": {
@@ -72,5 +73,29 @@ function renderSection({ store, section, components, products }: {
       const Video = components.video ?? defaultSections.video;
       return <Video store={store} settings={section.settings} />;
     }
+  }
+}
+
+/** Produk untuk Daftar produk, lewat filter /api/products yang sama dengan halaman /products. */
+function productQuery(settings: ProductListSettings) {
+  switch (settings.source) {
+    case "manual":
+      return { productIds: settings.product_ids };
+    case "category":
+      return { categoryIds: settings.category_ids, sort: "latest" };
+    default:
+      return { sort: settings.source };
+  }
+}
+
+/** "Lihat semua": katalog dengan pilihan yang sama. Produk pilihan sudah tampil semua, jadi tanpa tautan. */
+function moreLink(settings: ProductListSettings): string | null {
+  switch (settings.source) {
+    case "manual":
+      return null;
+    case "category":
+      return catalogUrl({ categoryIds: settings.category_ids });
+    default:
+      return catalogUrl({ sort: settings.source });
   }
 }

@@ -6,6 +6,14 @@ export function formatPrice(price: number, currency: string) {
   }).format(price);
 }
 
+/** "★ 4,8 (12) · 30 terjual"; kosong bila belum ada ulasan maupun penjualan. */
+export function formatProductStats({ rating, rating_count, sold_count }: { rating?: number | null; rating_count?: number; sold_count?: number }) {
+  const parts = [];
+  if (rating && rating_count) parts.push(`★ ${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(rating)} (${rating_count})`);
+  if (sold_count) parts.push(`${new Intl.NumberFormat("id-ID", { notation: sold_count >= 1000 ? "compact" : "standard" }).format(sold_count)} terjual`);
+  return parts.join(" · ");
+}
+
 export function formatWeight(grams: number) {
   return grams >= 1000
     ? `${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(grams / 1000)} kg`

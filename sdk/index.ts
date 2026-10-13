@@ -23,7 +23,7 @@ export { VideoEmbed } from "@/components/video-embed";
 export { paragraphs } from "@/lib/home-sections";
 
 // Helper.
-export { formatDate, formatPrice } from "@/lib/format";
+export { formatDate, formatPrice, formatProductStats } from "@/lib/format";
 export { catalogSorts, catalogUrl } from "@/lib/catalog-url";
 export { preorderDays } from "@/lib/store-shared";
 

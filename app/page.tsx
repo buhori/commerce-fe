@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { CatalogPage, type CatalogSearchParams } from "@/components/catalog-page";
+import { redirect } from "next/navigation";
+import { HomePage } from "@/components/home-page";
+import { catalogUrl, readCatalogFilter } from "@/lib/catalog-url";
 import { getStore } from "@/lib/store-api";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -14,6 +16,11 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function Home({ searchParams }: { searchParams: Promise<CatalogSearchParams> }) {
-  return <CatalogPage params={await searchParams} />;
+export default async function Home({ searchParams }: PageProps<"/">) {
+  const params = await searchParams;
+  // Pencarian dan urutan dulu tinggal di "/"; sekarang katalog ada di /products.
+  if (params.q !== undefined || params.sort !== undefined || params.filter !== undefined) {
+    redirect(catalogUrl(readCatalogFilter(params)));
+  }
+  return <HomePage />;
 }

@@ -18,7 +18,7 @@ export function BuiltWith({ className = "built-with" }: { className?: string }) 
 }
 
 /**
- * Pencarian produk: form GET biasa ke "/", jadi tetap jalan sebelum JavaScript dimuat.
+ * Pencarian produk: form GET biasa ke /products, jadi tetap jalan sebelum JavaScript dimuat.
  * `children` tampil sebelum kolom isian (mis. ikon); tombol kirim opsional.
  */
 export function SearchForm({ defaultValue = "", placeholder = "Cari produk", className, buttonLabel, children }: {
@@ -29,7 +29,7 @@ export function SearchForm({ defaultValue = "", placeholder = "Cari produk", cla
   children?: ReactNode;
 }) {
   return (
-    <form className={className} action="/" method="get" role="search">
+    <form className={className} action="/products" method="get" role="search">
       {children}
       <input type="search" name="q" defaultValue={defaultValue} placeholder={placeholder}
         aria-label="Cari produk" maxLength={100} enterKeyHint="search" />

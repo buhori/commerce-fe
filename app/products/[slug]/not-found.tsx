@@ -7,7 +7,7 @@ export default function NotFound() {
       <Icon name="box" />
       <h1>Produk tidak ditemukan</h1>
       <p>Produk tidak tersedia atau sudah tidak ditampilkan di toko.</p>
-      <ButtonLink href="/">
+      <ButtonLink href="/products">
         Lihat semua produk <Icon name="arrow" />
       </ButtonLink>
     </main>

@@ -26,7 +26,7 @@ export async function StoreHeader({ name, logo, query = "" }: { name: string; lo
           <StoreBrand key={logo} name={name} logo={logo} />
         </Link>
         {/* A plain GET form: search works before JavaScript loads. */}
-        <form className="header-search" action="/" method="get" role="search">
+        <form className="header-search" action="/products" method="get" role="search">
           <Icon name="search" aria-hidden="true" />
           <input type="search" name="q" defaultValue={query} placeholder={`Cari di ${name}`}
             aria-label="Cari produk" maxLength={100} enterKeyHint="search" />

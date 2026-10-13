@@ -7,7 +7,7 @@ data pembeli, dan pesanan tetap diurus platform.
 | --- | --- |
 | Header dan footer (tampil di semua halaman, termasuk keranjang dan checkout) | Tema (opsional) |
 | Beranda `/` | Pemilik toko di builder (`/builder`); tema hanya mengatur tampilan widget |
-| Katalog: kategori `/c/{slug}`, pencarian `/?q=`, urutan `/?sort=` | Tema (opsional) |
+| Katalog: semua produk `/products` (filter `id`/`category`/`sort`, pencarian `q`) dan kategori `/c/{slug}` | Tema (opsional) |
 | Halaman produk `/products/{slug}` | Tema (opsional) |
 | Halaman informasi `/{slug}` dari editor teks panel | Tema (opsional) |
 | Landing page HTML penuh dari panel | Platform (iframe sandbox) |
@@ -58,7 +58,7 @@ merender `<main>` sendiri; header dan footer dipasang platform di sekitarnya.
 | --- | --- | --- |
 | `Header` | `store`, `navigation`, `query`, `accounts` | Tampilkan tombol akun hanya bila `accounts` true. |
 | `Footer` | `store`, `pages` | **Wajib** memuat `<BuiltWith />`. |
-| `CatalogPage` | `store`, `categories`, `category`, `q`, `sort`, `title`, `products` | `category` null untuk pencarian atau urutan di semua produk. |
+| `CatalogPage` | `store`, `categories`, `category`, `filter`, `q`, `sort`, `title`, `products` | `category` null kecuali tepat satu kategori. Teruskan `filter` ke `<SortSelect filter>` supaya produk pilihan dan kategori tidak hilang saat urutan diganti. |
 | `ProductPage` | `store`, `product`, `view` | `view` berisi `gallery`, `availability`, `specs`, `preorder`, `stock` yang sudah dihitung. |
 | `InfoPage` | `store`, `page` | Isi halaman lewat `<PageContent page={page} />`. |
 
@@ -83,7 +83,7 @@ export default defineTheme({
 | Widget | Props selain `store` | Catatan |
 | --- | --- | --- |
 | `banner` | `settings.height` (`tall`/`short`), `settings.slides` (`image`, `mobile_image`, `title`, `subtitle`, `button_label`, `link`) | Slide diatur di widget; sudah bergambar dan dibatasi paket. Pakai `<BannerSlider slides>` untuk slider siap pakai. |
-| `product-list` | `settings` (judul, keterangan, `layout`: `grid`/`row`), `products`, `moreHref` | Produk sudah dimuat dan dipotong sesuai `limit`. |
+| `product-list` | `settings` (judul, keterangan, `source`, `layout`: `grid`/`row`), `products`, `moreHref` | `source`: `latest`, `top_sale`, `top_rating`, `category`, `manual`. Produk sudah dimuat dan dipotong sesuai `limit`; `moreHref` null untuk produk pilihan. |
 | `category-grid` | `settings.title`, `settings.categories` (`name`, `slug`, `image`) | `image` boleh null. |
 | `text` | `settings` (`eyebrow`, `title`, `body`, `align`, `button_label`, `link`) | Pecah `body` dengan `paragraphs()`. `link` sudah aman. |
 | `image` | `settings` (`image`, `alt`, `caption`, `link`, `width`) | |
@@ -92,6 +92,21 @@ export default defineTheme({
 
 Satu widget merender satu elemen selebar halaman (`<section>`). Platform yang mengatur urutannya.
 Widget dengan data kosong tidak dirender, jadi komponen tema tidak perlu menangani keadaan kosong.
+
+## Katalog `/products`
+
+Semua produk, atau sebagian lewat satu filter. `filter_value` boleh satu nilai atau array.
+
+| URL | Isi |
+| --- | --- |
+| `/products?filter=sort&filter_value=top_sale` | Terlaris (`latest`, `top_sale`, `top_rating`, `price_asc`, `price_desc`) |
+| `/products?filter=category&filter_value[]=3&filter_value[]=5` | Produk di salah satu kategori |
+| `/products?filter=id&filter_value[]=81623` | Produk pilihan (ID ter-encode), sesuai urutan |
+| `/products?q=kopi&sort=price_asc` | Pencarian; `sort` bisa digabung dengan filter apa pun |
+
+Buat URL ini dengan `catalogUrl({ sort, categoryIds, productIds, q })`, jangan dirangkai sendiri.
+Kartu produk punya `sold_count`, `rating`, dan `rating_count`; `formatProductStats()` membuat
+teks "★ 4,8 (12) · 30 terjual".
 
 ## Yang disediakan SDK
 
@@ -113,7 +128,7 @@ Semuanya diimpor dari `@sellosy/theme`.
 `<PageContent>`, `<Price>`, `<BuiltWith>`, `<VideoEmbed>`.
 
 **Helper:** `formatPrice`, `formatDate`, `productUrl`, `categoryUrl`, `pageUrl`, `catalogUrl`,
-`catalogSorts`, `preorderDays`, `paragraphs`.
+`catalogSorts`, `preorderDays`, `paragraphs`, `formatProductStats`.
 
 Komponen yang memakai hook harus diberi `"use client"` di baris pertama filenya. Contohnya
 `themes/editorial/buy-box.tsx` (hook `useAddToCart`) dan `product-grid.tsx` (hook `useProductFeed`).

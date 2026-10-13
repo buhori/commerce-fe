@@ -9,9 +9,14 @@ export function preorderDays(product: Pick<ProductSummary, "preorder_duration" |
 
 export interface ProductQuery {
   categoryId?: number;
+  /** Produk di salah satu kategori ini. */
+  categoryIds?: number[];
+  /** Produk pilihan (ID ter-encode); tanpa `sort` tampil sesuai urutan ini, satu halaman. */
+  productIds?: number[];
   // Encoded id of the last product already shown; the next page continues after it.
   lastProductId?: number;
   q?: string;
+  /** latest, top_sale, top_rating, price_asc, price_desc. */
   sort?: string;
 }
 
@@ -23,9 +28,17 @@ export interface ProductPage {
 
 export const PRODUCTS_PER_PAGE = 20;
 
-export function productQueryString({ categoryId, lastProductId, q, sort }: ProductQuery) {
+/** Query /api/products backend: filter=id|category dengan filter_value[], plus sort dan q. */
+export function productQueryString({ categoryId, categoryIds = [], productIds = [], lastProductId, q, sort }: ProductQuery) {
   const params = new URLSearchParams({ per_page: String(PRODUCTS_PER_PAGE) });
-  if (categoryId) params.set("category_id", String(categoryId));
+  const categories = categoryIds.length ? categoryIds : categoryId ? [categoryId] : [];
+  if (productIds.length) {
+    params.set("filter", "id");
+    productIds.forEach((id) => params.append("filter_value[]", String(id)));
+  } else if (categories.length) {
+    params.set("filter", "category");
+    categories.forEach((id) => params.append("filter_value[]", String(id)));
+  }
   if (lastProductId) params.set("last_product_id", String(lastProductId));
   if (q) params.set("q", q);
   if (sort) params.set("sort", sort);

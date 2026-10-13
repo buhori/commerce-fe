@@ -60,6 +60,11 @@ export interface ProductSummary {
   deleted_at?: string | null;
   variants?: ProductVariant[];
   variants_count?: number;
+  /** Dari pesanan yang dihitung sebagai pendapatan. */
+  sold_count?: number;
+  /** Rata-rata ulasan (1–5), null bila belum ada ulasan. */
+  rating?: number | null;
+  rating_count?: number;
 }
 
 export interface Product extends ProductSummary {

@@ -14,7 +14,7 @@ export function ProductPage({ store, product, view }: ProductPageProps) {
         </div>
         <div className={s.productInfo}>
           <nav className={s.crumbs} aria-label="Breadcrumb">
-            <Link href="/">Beranda</Link> / <Link href="/#produk">Koleksi</Link>
+            <Link href="/">Beranda</Link> / <Link href="/products">Koleksi</Link>
           </nav>
           <h1 className={s.productName}>{product.name}</h1>
           <p className={s.availability} data-tone={view.availability.tone}>

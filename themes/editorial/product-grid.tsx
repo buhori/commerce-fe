@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { formatPrice, preorderDays, ProductImage, productUrl, useProductFeed, type ProductListing, type ProductSummary } from "@sellosy/theme";
+import { formatPrice, formatProductStats, preorderDays, ProductImage, productUrl, useProductFeed, type ProductListing, type ProductSummary } from "@sellosy/theme";
 import s from "./editorial.module.css";
 
 export function ProductCard({ product, currency }: { product: ProductSummary; currency: string }) {
@@ -16,6 +16,7 @@ export function ProductCard({ product, currency }: { product: ProductSummary; cu
       </div>
       <p className={s.cardName}>{product.name}</p>
       <p className={s.cardPrice}>{formatPrice(product.price, currency)}</p>
+      {formatProductStats(product) && <p className={s.cardStats}>{formatProductStats(product)}</p>}
     </Link>
   );
 }

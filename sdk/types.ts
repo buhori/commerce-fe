@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import type { CatalogSort } from "@/lib/catalog-url";
+import type { CatalogFilter, CatalogSort } from "@/lib/catalog-url";
 import type {
   BannerSettings, CategoryGridSettings, ImageSettings, ProductListSettings, TestimonialsSettings, TextSettings, VideoSettings,
 } from "@/lib/home-sections";
@@ -9,7 +9,7 @@ import type { ProductQuery } from "@/lib/store-shared";
 
 export type { Availability, ProductView, Spec } from "@/lib/product-view";
 export type { Category, NavigationLink, PageLink, Product, ProductSummary, ProductVariant, Store, StorePage } from "@/lib/store-api";
-export type { CatalogSort } from "@/lib/catalog-url";
+export type { CatalogFilter, CatalogSort } from "@/lib/catalog-url";
 export type {
   BannerSettings, BannerSlide, CategoryGridSettings, CategoryTile, HomeSection, ImageSettings, ProductListSettings, Testimonial,
   TestimonialsSettings, TextSettings, VideoSettings,
@@ -45,6 +45,8 @@ export interface FooterProps {
 
 /** "/c/{slug}", and "/" with a search (?q=) or sort (?sort=). */
 export interface CatalogPageProps {
+  /** Pilihan lengkap dari URL (produk pilihan, kategori, urutan, pencarian); teruskan ke <SortSelect filter>. */
+  filter: CatalogFilter;
   store: Store;
   categories: Category[];
   /** Null for search or sort across all products. */
@@ -83,8 +85,8 @@ export type BannerSectionProps = SectionProps<BannerSettings>;
 export interface ProductListSectionProps extends SectionProps<ProductListSettings> {
   /** Sudah dipotong ke `settings.limit`. Tidak pernah kosong. */
   products: ProductSummary[];
-  /** Halaman katalog lengkap untuk tautan "Lihat semua". */
-  moreHref: string;
+  /** Katalog /products dengan pilihan yang sama, untuk "Lihat semua"; null untuk produk pilihan (sudah tampil semua). */
+  moreHref: string | null;
 }
 export type CategoryGridSectionProps = SectionProps<CategoryGridSettings>;
 export type TextSectionProps = SectionProps<TextSettings>;

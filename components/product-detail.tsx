@@ -18,7 +18,7 @@ export function ProductDetail({ store, product, view }: ProductPageProps) {
         <nav className="product-breadcrumb" aria-label="Breadcrumb">
           <Link href="/">Beranda</Link>
           <span aria-hidden="true">›</span>
-          <Link href="/#produk">Produk</Link>
+          <Link href="/products">Produk</Link>
           <span aria-hidden="true">›</span>
           <span aria-current="page">{product.name}</span>
         </nav>
@@ -69,7 +69,7 @@ export function ProductDetail({ store, product, view }: ProductPageProps) {
             )}
           </div>
         </section>
-        <Link className="detail-back-link" href="/#produk"><Icon name="arrow" /> Jelajahi produk lainnya</Link>
+        <Link className="detail-back-link" href="/products"><Icon name="arrow" /> Jelajahi produk lainnya</Link>
       </div>
     </main>
   );

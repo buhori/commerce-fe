@@ -31,7 +31,7 @@ export function Header({ store, navigation, query, accounts }: HeaderProps) {
           <div className={s.mobilePanel}>
             <SearchForm className={s.search} defaultValue={query} placeholder="Cari produk"><SearchIcon /></SearchForm>
             <ul>
-              <li><Link href="/">Semua produk</Link></li>
+              <li><Link href="/products">Semua produk</Link></li>
               {navigation.map((link, index) => (
                 <li key={`${index}-${link.label}`}>
                   <SmartLink link={link} />

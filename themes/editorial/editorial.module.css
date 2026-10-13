@@ -358,6 +358,7 @@
   line-height: 1.25;
 }
 .cardPrice { color: var(--muted); font-size: 14px; }
+.cardStats { margin-top: 2px !important; color: var(--muted); font-size: 12px; letter-spacing: 0.02em; }
 .badge {
   position: absolute;
   z-index: 1;

@@ -14,7 +14,7 @@ import { VideoEmbed } from "./video-embed";
 
 /** Tampilan bawaan widget builder, dipakai bila tema tidak menyediakan versinya sendiri. */
 
-function SectionHeading({ title, subtitle, moreHref }: { title: string | null; subtitle?: string | null; moreHref?: string }) {
+function SectionHeading({ title, subtitle, moreHref }: { title: string | null; subtitle?: string | null; moreHref?: string | null }) {
   if (!title && !subtitle && !moreHref) return null;
   return (
     <div className="home-section-heading">

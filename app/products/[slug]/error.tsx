@@ -10,7 +10,7 @@ export default function Error() {
       <Button onClick={() => window.location.reload()}>
         Coba lagi
       </Button>
-      <ButtonLink variant="secondary" href="/">
+      <ButtonLink variant="secondary" href="/products">
         Lihat semua produk
       </ButtonLink>
     </main>

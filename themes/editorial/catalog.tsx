@@ -3,7 +3,8 @@ import { catalogUrl, SortSelect, type CatalogPageProps } from "@sellosy/theme";
 import { ProductGrid } from "./product-grid";
 import s from "./editorial.module.css";
 
-export function CatalogPage({ store, categories, category, q, sort, title, products }: CatalogPageProps) {
+export function CatalogPage({ store, categories, category, filter, q, sort, title, products }: CatalogPageProps) {
+  const here = category ? catalogUrl({ category: category.slug, q, sort }) : catalogUrl(filter);
   return (
     <main className={`${s.main} ${s.block}`}>
       <header className={s.pageHead}>
@@ -22,13 +23,13 @@ export function CatalogPage({ store, categories, category, q, sort, title, produ
 
       <div className={s.toolbar}>
         <span>{products ? `${products.items.length}${products.hasMore ? "+" : ""} produk` : ""}</span>
-        <SortSelect category={category?.slug} q={q} sort={sort} />
+        <SortSelect filter={filter} category={category?.slug} />
       </div>
 
       {!products ? (
-        <p className={s.empty}>Produk belum dapat dimuat. <a href={catalogUrl({ category: category?.slug, q, sort })}>Coba lagi</a></p>
+        <p className={s.empty}>Produk belum dapat dimuat. <a href={here}>Coba lagi</a></p>
       ) : products.items.length === 0 ? (
-        <p className={s.empty}>{q ? "Produk tidak ditemukan." : "Belum ada produk di sini."} <Link href="/">Lihat semua produk</Link></p>
+        <p className={s.empty}>{q ? "Produk tidak ditemukan." : "Belum ada produk di sini."} <Link href="/products">Lihat semua produk</Link></p>
       ) : (
         <ProductGrid key={JSON.stringify(products.query)} listing={products} currency={store.currency || "IDR"} />
       )}

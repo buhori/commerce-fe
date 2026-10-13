@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ProductSummary } from "@/lib/store-api";
 import { preorderDays } from "@/lib/store-shared";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, formatProductStats } from "@/lib/format";
 import { ProductImage } from "./product-image";
 import { Icon } from "./icons";
 
@@ -11,6 +11,7 @@ export function Catalog({ products, currency }: { products: ProductSummary[]; cu
       {products.map((product) => {
         const preorder = preorderDays(product);
         const soldOut = !preorder && product.stock === 0;
+        const stats = formatProductStats(product);
         return (
           <li key={product.id}>
             <Link className="product-card" href={`/products/${encodeURIComponent(product.slug)}`} data-sold-out={soldOut}>
@@ -24,6 +25,7 @@ export function Catalog({ products, currency }: { products: ProductSummary[]; cu
                   <Icon name="arrow" aria-hidden="true" />
                 </div>
                 <strong className="product-price">{formatPrice(product.price, currency)}</strong>
+                {stats && <span className="product-stats">{stats}</span>}
                 {preorder > 0 && <span className="product-preorder">Pre-order · {preorder} hari</span>}
                 {(product.variants_count ?? 0) > 0 && <span className="product-meta">{product.variants_count} varian</span>}
               </div>

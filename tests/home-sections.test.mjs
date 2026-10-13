@@ -28,20 +28,26 @@ test("known widgets are kept in order, unknown or incomplete ones are skipped", 
     ] } },
     { id: "section-9", type: "banner", settings: { slides: [{ title: "Tanpa gambar" }] } },
     { id: "section-1", type: "script", settings: { html: "<script>" } },
-    { id: "section-2", type: "product-list", settings: { title: "Kopi", source: "category", category_id: 3, category_slug: "kopi", limit: 4, layout: "row" } },
-    { id: "section-3", type: "product-list", settings: { source: "category", category_id: null, category_slug: null } },
+    { id: "section-2", type: "product-list", settings: { title: "Kopi", source: "category", category_ids: [3, 5, "x", -1], product_ids: [9], limit: 4, layout: "row" } },
+    { id: "section-3", type: "product-list", settings: { source: "category", category_ids: [] } },
+    { id: "section-10", type: "product-list", settings: { source: "manual", product_ids: [] } },
+    { id: "section-11", type: "product-list", settings: { source: "top_sale", limit: 99 } },
     { id: "section-4", type: "video", settings: { video_id: "dQw4w9WgXcQ" } },
     { id: "section-5", type: "video", settings: { video_id: "\"><script>" } },
     { id: "section-6", type: "image", settings: { image: "javascript:alert(1)" } },
     { id: "section-7", type: "testimonials", settings: { items: [{ quote: "Enak", name: "Rina" }, { quote: "", name: "x" }] } },
   ] });
 
-  assert.deepEqual(sections.map((section) => section.id), ["section-0", "section-2", "section-4", "section-7"]);
+  assert.deepEqual(sections.map((section) => section.id), ["section-0", "section-2", "section-11", "section-4", "section-7"]);
+  // Urutan sumber (terlaris) tanpa pilihan; jumlah di luar daftar menjadi 8.
+  assert.equal(sections[2].settings.source, "top_sale");
+  assert.equal(sections[2].settings.limit, 8);
   assert.equal(sections[0].settings.height, "short");
   // Slide tanpa gambar aman dibuang; tombol hanya ada bila slide punya tautan.
   assert.deepEqual(sections[0].settings.slides.map((slide) => [slide.title, slide.button_label, slide.link]), [["Promo", "Belanja", "/c/kopi"], [null, null, null]]);
-  assert.deepEqual({ ...sections[1].settings }, { title: "Kopi", subtitle: null, source: "category", category_id: 3, category_slug: "kopi", limit: 4, layout: "row" });
-  assert.equal(sections[3].settings.items.length, 1);
+  // Kategori yang tidak sah dibuang; produk pilihan hanya untuk sumber "manual".
+  assert.deepEqual(JSON.parse(JSON.stringify(sections[1].settings)), { title: "Kopi", subtitle: null, source: "category", category_ids: [3, 5], product_ids: [], limit: 4, layout: "row" });
+  assert.equal(sections[4].settings.items.length, 1);
 });
 
 test("links stay on the store or on the web", () => {
