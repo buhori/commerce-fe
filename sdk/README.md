@@ -83,7 +83,7 @@ export default defineTheme({
 | Widget | Props selain `store` | Catatan |
 | --- | --- | --- |
 | `banner` | `settings.height` (`tall`/`short`), `settings.slides` (`image`, `mobile_image`, `title`, `subtitle`, `button_label`, `link`) | Slide diatur di widget; sudah bergambar dan dibatasi paket. Pakai `<BannerSlider slides>` untuk slider siap pakai. |
-| `product-list` | `settings` (judul, keterangan, `source`, `layout`: `grid`/`row`), `products`, `moreHref` | `source`: `latest`, `top_sale`, `top_rating`, `category`, `manual`. Produk sudah dimuat dan dipotong sesuai `limit`; `moreHref` null untuk produk pilihan. |
+| `product-list` | `settings` (judul, keterangan, `source`, `layout`: `grid`/`row`), `products`, `moreHref` | `source`: `latest`, `top_sale`, `top_rating`, `category`, `manual`. Produk sudah dimuat dan dipotong sesuai `limit`; `moreHref` menuju `/products` dengan filter yang sama. |
 | `category-grid` | `settings.title`, `settings.categories` (`name`, `slug`, `image`) | `image` boleh null. |
 | `text` | `settings` (`eyebrow`, `title`, `body`, `align`, `button_label`, `link`) | Pecah `body` dengan `paragraphs()`. `link` sudah aman. |
 | `image` | `settings` (`image`, `alt`, `caption`, `link`, `width`) | |

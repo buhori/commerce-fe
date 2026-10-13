@@ -28,8 +28,12 @@ export interface ProductPage {
 
 export const PRODUCTS_PER_PAGE = 20;
 
-/** Query /api/products backend: filter=id|category dengan filter_value[], plus sort dan q. */
-export function productQueryString({ categoryId, categoryIds = [], productIds = [], lastProductId, q, sort }: ProductQuery) {
+/**
+ * Query /api/products backend, sama dengan URL halaman /products: filter=id|category dengan
+ * filter_value[], atau filter=sort&filter_value=… bila hanya urutan; `sort` ikut bila digabung.
+ */
+export function productQueryString({ categoryId, categoryIds = [], productIds = [], lastProductId, q, sort: requestedSort }: ProductQuery) {
+  let sort = requestedSort;
   const params = new URLSearchParams({ per_page: String(PRODUCTS_PER_PAGE) });
   const categories = categoryIds.length ? categoryIds : categoryId ? [categoryId] : [];
   if (productIds.length) {
@@ -38,6 +42,10 @@ export function productQueryString({ categoryId, categoryIds = [], productIds = 
   } else if (categories.length) {
     params.set("filter", "category");
     categories.forEach((id) => params.append("filter_value[]", String(id)));
+  } else if (sort && !q) {
+    params.set("filter", "sort");
+    params.set("filter_value", sort);
+    sort = undefined;
   }
   if (lastProductId) params.set("last_product_id", String(lastProductId));
   if (q) params.set("q", q);

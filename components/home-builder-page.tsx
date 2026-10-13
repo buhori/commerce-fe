@@ -88,11 +88,14 @@ function productQuery(settings: ProductListSettings) {
   }
 }
 
-/** "Lihat semua": katalog dengan pilihan yang sama. Produk pilihan sudah tampil semua, jadi tanpa tautan. */
-function moreLink(settings: ProductListSettings): string | null {
+/**
+ * "Lihat semua": halaman /products dengan filter yang sama persis, yang lalu dikirim apa adanya ke
+ * backend (filter=id|category|sort dan filter_value).
+ */
+function moreLink(settings: ProductListSettings): string {
   switch (settings.source) {
     case "manual":
-      return null;
+      return catalogUrl({ productIds: settings.product_ids });
     case "category":
       return catalogUrl({ categoryIds: settings.category_ids });
     default:

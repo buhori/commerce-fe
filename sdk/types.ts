@@ -85,7 +85,7 @@ export type BannerSectionProps = SectionProps<BannerSettings>;
 export interface ProductListSectionProps extends SectionProps<ProductListSettings> {
   /** Sudah dipotong ke `settings.limit`. Tidak pernah kosong. */
   products: ProductSummary[];
-  /** Katalog /products dengan pilihan yang sama, untuk "Lihat semua"; null untuk produk pilihan (sudah tampil semua). */
+  /** Katalog /products dengan filter yang sama persis, untuk "Lihat semua". */
   moreHref: string | null;
 }
 export type CategoryGridSectionProps = SectionProps<CategoryGridSettings>;

@@ -50,3 +50,25 @@ test("catalog URLs use the filter grammar, and read back to the same choice", ()
     assert.deepEqual(read, plain({ productIds: [], categoryIds: [], ...choice }));
   }
 });
+
+test("the backend receives the same filter parameters as the /products URL", () => {
+  const shared = {};
+  vm.runInNewContext(
+    ts.transpileModule(readFileSync(new URL("../lib/store-shared.ts", import.meta.url), "utf8"), {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+    }).outputText,
+    { exports: shared, URLSearchParams, Number },
+  );
+  const sent = (query) => Object.fromEntries([...new URLSearchParams(shared.productQueryString(query))].filter(([key]) => key !== "per_page").reduce((all, [key, value]) => {
+    all.set(key, all.has(key) ? [].concat(all.get(key), value) : value);
+    return all;
+  }, new Map()));
+  const page = (choice) => Object.fromEntries([...new URLSearchParams(catalogUrl(choice).split("?")[1])].reduce((all, [key, value]) => {
+    all.set(key, all.has(key) ? [].concat(all.get(key), value) : value);
+    return all;
+  }, new Map()));
+
+  for (const choice of [{ sort: "top_sale" }, { categoryIds: [3, 5] }, { categoryIds: [3], sort: "top_rating" }, { productIds: [9, 2] }, { q: "kopi", sort: "price_asc" }]) {
+    assert.deepEqual(sent(choice), page(choice), JSON.stringify(choice));
+  }
+});
