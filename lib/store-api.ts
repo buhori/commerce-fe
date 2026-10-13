@@ -8,7 +8,7 @@ export type { ProductPage, ProductQuery } from "./store-shared";
 
 export interface Store {
   // The backend sends the related theme row; older responses sent its key.
-  theme?: string | { name?: unknown } | null;
+  theme?: string | { key?: unknown; name?: unknown } | null;
   id: number;
   name: string;
   logo: string | null;
@@ -96,11 +96,11 @@ export class StoreApiError extends Error {
   }
 }
 
-// Registry keys are lower-case, the backend theme row carries a display name.
+// The backend theme row carries the registry key; rows from before that column only have a display name.
 export function storeThemeKey(store: Pick<Store, "theme"> | null | undefined): unknown {
   const theme = store?.theme;
-  const name = theme && typeof theme === "object" ? theme.name : theme;
-  return typeof name === "string" ? name.trim().toLowerCase() : undefined;
+  const key = theme && typeof theme === "object" ? (typeof theme.key === "string" ? theme.key : theme.name) : theme;
+  return typeof key === "string" ? key.trim().toLowerCase() : undefined;
 }
 
 async function storeFetch<T>(path: string): Promise<T> {
@@ -116,6 +116,23 @@ async function storeFetch<T>(path: string): Promise<T> {
   if (!response.ok) throw new StoreApiError(response.status);
   return response.json() as Promise<T>;
 }
+
+const PREVIEW_TOKEN = /^[A-Za-z0-9]{48}$/;
+
+/**
+ * The theme a store owner is previewing from the panel ("Pratinjau"), or null. The token is only
+ * valid for this store and expires on the backend, so visitors cannot pick a theme themselves.
+ */
+export const getThemePreview = cache(async (token: string | undefined): Promise<{ key: string; name: string } | null> => {
+  if (!token || !PREVIEW_TOKEN.test(token)) return null;
+  try {
+    const result = await storeFetch<{ data?: { key?: unknown; name?: unknown } }>(`/theme-preview/${token}`);
+    const theme = result?.data;
+    return typeof theme?.key === "string" && typeof theme.name === "string" ? { key: theme.key, name: theme.name } : null;
+  } catch {
+    return null;
+  }
+});
 
 /** Store uploads use Laravel's public disk; remote logo URLs remain supported. */
 export function storeLogoUrl(value: unknown): string | null {

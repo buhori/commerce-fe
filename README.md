@@ -20,6 +20,10 @@ Buka http://localhost:3000. Backend secara default berjalan di http://localhost:
 
 Restart server Next.js setelah mengubah environment. Pada deployment, isi `STORE_API_URL` dengan URL backend yang dapat dijangkau server Next.js.
 
+## Tema
+
+Tampilan toko bisa diganti tema yang dibuat dengan SDK `@sellosy/theme`. Panduan untuk developer tema ada di [sdk/README.md](sdk/README.md).
+
 ## Integrasi API
 
 Request dilakukan dari server, menggunakan `Accept: application/json` dan `X-Store-Id` (dari subdomain bila `STORE_ROOT_DOMAIN` diisi, selain itu `STORE_ID`). Tidak ada parameter query `store_id`.

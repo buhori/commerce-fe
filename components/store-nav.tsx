@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { getNavigation, type NavigationLink } from "@/lib/store-api";
+import { StoreNavMobile } from "./store-nav-mobile";
 
 /**
  * Menu navigasi toko di bawah kepala toko. Tanpa JavaScript: sub-menu terbuka saat disorot
- * atau difokuskan (keyboard, sentuhan). Di layar kecil menu bisa digeser ke samping dan
- * sub-menu tampil selebar layar di bawahnya.
+ * atau difokuskan (keyboard, sentuhan). Di layar kecil diganti bar "Menu" (StoreNavMobile).
  */
 export async function StoreNav() {
   // Backend lama belum punya /navigations; menu cukup tidak tampil.
@@ -35,6 +35,7 @@ export async function StoreNav() {
           </li>
         ))}
       </ul>
+      <StoreNavMobile items={items} />
     </nav>
   );
 }

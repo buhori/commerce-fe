@@ -13,17 +13,18 @@ const noSubscription = () => () => {};
 // Assumed on the server so the first client render matches; checked for real in the browser.
 const useObserverSupport = () => useSyncExternalStore(noSubscription, () => typeof IntersectionObserver !== "undefined", () => true);
 
-/**
- * The catalog grid: the first page comes from the server, the rest load as the
- * buyer nears the bottom, continuing after the last product already shown.
- */
-export function ProductFeed({ initial, initialLastId, initialHasMore, query, currency }: {
+export interface ProductFeedOptions {
   initial: ProductSummary[];
   initialLastId: number | null;
   initialHasMore: boolean;
   query: Omit<ProductQuery, "lastProductId">;
-  currency: string;
-}) {
+}
+
+/**
+ * Infinite scroll without markup: the first page comes from the server, the rest load as the
+ * sentinel nears the viewport, continuing after the last product already shown.
+ */
+export function useProductFeed({ initial, initialLastId, initialHasMore, query }: ProductFeedOptions) {
   const [products, setProducts] = useState(initial);
   const [lastId, setLastId] = useState(initialLastId);
   const [hasMore, setHasMore] = useState(initialHasMore);
@@ -74,6 +75,15 @@ export function ProductFeed({ initial, initialLastId, initialHasMore, query, cur
     observer.observe(target);
     return () => observer.disconnect();
   }, [hasMore, autoLoad, loadMore]);
+
+  // `sentinel` goes on an element after the grid; without IntersectionObserver or after a
+  // failure, show a button that calls loadMore instead.
+  return { products, hasMore, status, autoLoad, loadMore, sentinel };
+}
+
+/** The default catalog grid with its "load more" area. */
+export function ProductFeed({ currency, ...options }: ProductFeedOptions & { currency: string }) {
+  const { products, hasMore, status, autoLoad, loadMore, sentinel } = useProductFeed(options);
 
   return (
     <>

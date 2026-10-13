@@ -1,6 +1,6 @@
 import type { ReactNode, SVGProps } from "react";
 
-export type IconName = "bag" | "arrow" | "search" | "box" | "close" | "mail" | "pin" | "copy" | "check" | "phone" | "expand" | "truck" | "user" | "bell" | "heart" | "logout" | "clock" | "bank" | "refresh" | "info" | "upload";
+export type IconName = "bag" | "arrow" | "search" | "box" | "close" | "mail" | "pin" | "copy" | "check" | "phone" | "expand" | "truck" | "user" | "bell" | "heart" | "logout" | "clock" | "bank" | "refresh" | "info" | "upload" | "menu";
 const paths: Record<IconName, ReactNode> = {
   clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
   bank: <><path d="m3 8 9-5 9 5H3ZM5 11v6M10 11v6M14 11v6M19 11v6M3 21h18M4 18h16" /></>,
@@ -33,6 +33,7 @@ const paths: Record<IconName, ReactNode> = {
     </>
   ),
   close: <path d="m6 6 12 12M18 6 6 18" />,
+  menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   mail: (
     <>
       <rect x="3" y="5" width="18" height="14" rx="2" />

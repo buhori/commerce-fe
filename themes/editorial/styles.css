@@ -1,0 +1,27 @@
+/*
+ * Editorial — token global. Berlaku juga di halaman milik platform (keranjang, checkout, akun),
+ * supaya warna dan font menyatu dengan header dan footer tema.
+ */
+:root[data-theme="editorial"] {
+  --ink: #1d1b18;
+  --accent: #8a4b32;
+  --gutter: clamp(16px, 4vw, 56px);
+
+  --primary: var(--ink);
+  --primary-hover: var(--accent);
+  --page: #f6f2ec;
+  --canvas: #f1ebe2;
+  --surface: #ece5da;
+  --surface-hover: #e2d9cb;
+  --text: var(--ink);
+  --muted: #6f675d;
+  --line: #ddd4c6;
+  --line-strong: #c4b8a6;
+  --font-body: var(--ed-sans), system-ui, sans-serif;
+  --font-heading: var(--ed-serif), Georgia, serif;
+}
+[data-theme="editorial"] .storefront-shell {
+  --radius-lg: 0;
+  --radius: 0;
+  --radius-sm: 0;
+}

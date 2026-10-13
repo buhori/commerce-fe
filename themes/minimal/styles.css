@@ -1,4 +1,36 @@
-[data-theme="minimal"] {
+/*
+ * Minimal: putih bersih, aksen hitam, tipografi Helvetica, sudut siku, label kapital berspasi.
+ * :root[data-theme] supaya menang dari token :root di globals.css yang dimuat setelahnya.
+ */
+:root[data-theme="minimal"] {
   --primary: #1f2328;
   --primary-hover: #000000;
+  --page: #ffffff;
+  --canvas: #fafafa;
+  --surface: #f4f4f5;
+  --surface-hover: #e9e9eb;
+  --text: #18181b;
+  --muted: #63636b;
+  --line: #e7e7ea;
+  --line-strong: #cfcfd4;
+  --font-body: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+}
+[data-theme="minimal"] .storefront-shell {
+  --radius-lg: 0;
+  --radius: 0;
+  --radius-sm: 0;
+}
+[data-theme="minimal"] .store-header-name {
+  font-size: 1rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+[data-theme="minimal"] :is(h1, h2, h3) {
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+[data-theme="minimal"] .button:not(.button-text) {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }

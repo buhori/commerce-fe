@@ -12,25 +12,23 @@ import { formatPrice } from "@/lib/format";
 
 const MAX_QUANTITY = 99;
 
-export function ProductCartActions({
-  productId,
-  stock,
-  price,
-  currency,
-  variants = [],
-  preorder = false,
-}: {
+export interface AddToCartOptions {
   productId: number;
   stock: number;
   price: number;
   currency: string;
   variants?: Product["variants"];
   preorder?: boolean;
-}) {
+}
+
+/**
+ * Buying logic without markup: variant choice, quantity limits, price, and the add/buy actions.
+ * Pre-orders skip the cart and open their own checkout.
+ */
+export function useAddToCart({ productId, stock, price, currency, variants = [], preorder = false }: AddToCartOptions) {
   const { modify, pending } = useCart();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const variantGroupId = useId();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [activeAction, setActiveAction] = useState<"cart" | "buy" | null>(null);
@@ -52,6 +50,12 @@ export function ProductCartActions({
 
   function changeQuantity(value: number) {
     setQuantity(Math.max(1, Math.min(Math.max(1, max), Number.isFinite(value) ? Math.trunc(value) : 1)));
+    setFeedback(null);
+  }
+
+  function selectVariant(id: number) {
+    setSelectedId(id);
+    setQuantity(1);
     setFeedback(null);
   }
 
@@ -88,6 +92,20 @@ export function ProductCartActions({
     }
   }
 
+  return {
+    variants, selectedVariant, selectVariant, quantity, changeQuantity, max, complete, soldOut, disabled, pending,
+    preorder, unitPrice, priceLabel, subtotal: unitPrice * quantity, activeAction, feedback, add,
+  };
+}
+
+export function ProductCartActions(options: AddToCartOptions) {
+  const { productId, price, currency } = options;
+  const variantGroupId = useId();
+  const {
+    variants, selectedVariant, selectVariant, quantity, changeQuantity, max, complete, soldOut, disabled, pending,
+    preorder, unitPrice, priceLabel, activeAction, feedback, add,
+  } = useAddToCart(options);
+
   return (
     <section className="product-cart-actions" aria-label="Beli produk" aria-busy={pending}>
       <div className="purchase-price-block" aria-live="polite">
@@ -107,9 +125,9 @@ export function ProductCartActions({
                     type="radio"
                     name={`product-${productId}-variant-${variantGroupId}`}
                     value={variant.id}
-                    checked={selectedId === variant.id}
+                    checked={selectedVariant?.id === variant.id}
                     disabled={outOfStock}
-                    onChange={() => { setSelectedId(variant.id); setQuantity(1); setFeedback(null); }}
+                    onChange={() => selectVariant(variant.id)}
                   />
                   <span className="variant-choice">
                     {variant.color && <span className="variant-swatch" style={{ backgroundColor: variant.color }} aria-hidden="true" />}

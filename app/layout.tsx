@@ -1,14 +1,22 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/components/cart-provider";
 import { QueryProvider } from "@/components/query-provider";
-import { getStore, StoreApiError, storeThemeKey } from "@/lib/store-api";
-import { resolveTheme } from "@/themes/registry";
+import { ThemePreviewBar } from "@/components/theme-preview-bar";
+import { getStore, StoreApiError } from "@/lib/store-api";
+import { getActiveTheme } from "@/themes/active";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
   subsets: ["latin"],
+});
+
+// Judul serif tema Boutique; tidak di-preload karena tema lain tidak memakainya.
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  preload: false,
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -22,16 +30,16 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   // API membalas 404 bila subdomain/domain tidak terdaftar sebagai toko mana pun.
-  const { store, missing } = await getStore().then(
-    (store) => ({ store, missing: false }),
-    (error: unknown) => ({ store: null, missing: error instanceof StoreApiError && error.status === 404 }),
+  const missing = await getStore().then(
+    () => false,
+    (error: unknown) => error instanceof StoreApiError && error.status === 404,
   );
-  const theme = resolveTheme(storeThemeKey(store), process.env.STORE_THEME);
+  const theme = await getActiveTheme();
   return (
     <html
       lang="id"
-      data-theme={theme}
-      className={`${jakarta.variable} h-full antialiased`}
+      data-theme={theme.id}
+      className={`${jakarta.variable} ${fraunces.variable} ${theme.className} h-full antialiased`}
     >
       <body className="storefront-shell min-h-full flex flex-col">
         {missing ? (
@@ -42,6 +50,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         ) : (
           <QueryProvider><CartProvider>{children}</CartProvider></QueryProvider>
         )}
+        {theme.previewing && <ThemePreviewBar name={theme.previewing} />}
       </body>
     </html>
   );

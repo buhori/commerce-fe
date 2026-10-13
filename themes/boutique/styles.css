@@ -1,4 +1,40 @@
-[data-theme="boutique"] {
+/*
+ * Boutique: krem hangat, aksen terakota, judul serif (Fraunces), sudut membulat, tombol pil.
+ * :root[data-theme] supaya menang dari token :root di globals.css yang dimuat setelahnya.
+ */
+:root[data-theme="boutique"] {
   --primary: #9a3f2c;
   --primary-hover: #7d3122;
+  --page: #fbf6f0;
+  --canvas: #f6eee5;
+  --surface: #f2e7db;
+  --surface-hover: #eadac9;
+  --text: #3a2a22;
+  --muted: #7b665a;
+  --line: #ecdfd0;
+  --line-strong: #d9c4ae;
+  --font-heading: var(--font-fraunces), Georgia, "Times New Roman", serif;
+}
+[data-theme="boutique"] .storefront-shell {
+  --radius-lg: 22px;
+  --radius: 16px;
+  --radius-sm: 12px;
+}
+[data-theme="boutique"] .store-header-name {
+  font-size: 1.625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+[data-theme="boutique"] :is(h1, h2, h3) {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+/* Tombol, pencarian, dan keranjang berbentuk pil. */
+[data-theme="boutique"] .storefront-shell :is(.button:not(.button-text), .header-search input, .cart-indicator, .category-tab) {
+  border-radius: 999px;
+}
+/* Foto produk dan banner membulat (tema lain bersudut siku). */
+[data-theme="boutique"] .storefront-shell :is(.product-art, .banner-viewport, .gallery-main, .gallery-thumb, .cart-line-art, .checkout-product-art) {
+  border-radius: var(--radius);
+  overflow: hidden;
 }

@@ -1,4 +1,7 @@
-/* Themes only change the accent colour; layout is shared. */
+/*
+ * Natural (bawaan): halaman gading, aksen hijau, Plus Jakarta Sans, sudut tipis.
+ * Tema lain menimpa token di bawah dan beberapa detail lewat [data-theme="…"].
+ */
 :root {
   --primary: #2e4038;
   --primary-hover: #203029;

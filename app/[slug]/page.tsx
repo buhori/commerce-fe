@@ -6,6 +6,8 @@ import { SiteFooter } from "@/components/site-footer";
 import { StoreHeader } from "@/components/store-header";
 import { formatDate } from "@/lib/format";
 import { getPage, getStore } from "@/lib/store-api";
+import { PageContent } from "@/sdk/components";
+import { getActiveTheme } from "@/themes/active";
 
 type StorePageProps = { params: Promise<{ slug: string }> };
 
@@ -26,7 +28,7 @@ export async function generateMetadata({ params }: StorePageProps): Promise<Meta
  */
 export default async function StoreInfoPage({ params }: StorePageProps) {
   const { slug } = await params;
-  const [page, store] = await Promise.all([getPage(slug), getStore()]);
+  const [page, store, theme] = await Promise.all([getPage(slug), getStore(), getActiveTheme()]);
   if (!page) notFound();
 
   // Landing page layar penuh: tanpa header dan footer toko.
@@ -47,24 +49,26 @@ export default async function StoreInfoPage({ params }: StorePageProps) {
     );
   }
 
+  const { InfoPage } = theme.components;
   return (
     <>
       <StoreHeader name={store.name} logo={store.logo} />
-      <main className="page">
-        <article className="container info-page">
-          <nav className="product-breadcrumb" aria-label="Breadcrumb">
-            <Link href="/">Beranda</Link>
-            <span aria-hidden="true">›</span>
-            <span aria-current="page">{page.title}</span>
-          </nav>
-          <header className="info-page-header">
-            <h1>{page.title}</h1>
-            {page.updated_at && <p>Diperbarui {formatDate(new Date(page.updated_at))}</p>}
-          </header>
-          {/* The backend sanitises this HTML before it leaves the API. */}
-          <div className="info-page-content" dangerouslySetInnerHTML={{ __html: page.content }} />
-        </article>
-      </main>
+      {InfoPage ? <InfoPage store={store} page={page} /> : (
+        <main className="page">
+          <article className="container info-page">
+            <nav className="product-breadcrumb" aria-label="Breadcrumb">
+              <Link href="/">Beranda</Link>
+              <span aria-hidden="true">›</span>
+              <span aria-current="page">{page.title}</span>
+            </nav>
+            <header className="info-page-header">
+              <h1>{page.title}</h1>
+              {page.updated_at && <p>Diperbarui {formatDate(new Date(page.updated_at))}</p>}
+            </header>
+            <PageContent className="info-page-content" page={page} />
+          </article>
+        </main>
+      )}
       <SiteFooter store={store} />
     </>
   );

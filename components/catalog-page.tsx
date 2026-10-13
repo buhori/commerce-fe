@@ -10,6 +10,8 @@ import { SortSelect } from "./sort-select";
 import { StoreHeader } from "./store-header";
 import { catalogUrl, isCatalogSort } from "@/lib/catalog-url";
 import { getBanners, getCategories, getProducts, getStore } from "@/lib/store-api";
+import type { ProductListing } from "@/sdk";
+import { getActiveTheme } from "@/themes/active";
 
 export interface CatalogSearchParams {
   q?: string | string[];
@@ -26,10 +28,9 @@ export async function CatalogPage({ params, categorySlug }: { params: CatalogSea
   // Home sections appear only on the first page without category, search or sort filters.
   const isHome = !categorySlug && !q && !sort;
 
-  const [storeResult, categoriesResult, bannersResult] = await Promise.allSettled([
-    getStore(),
-    getCategories(),
-    isHome ? getBanners() : Promise.resolve([]),
+  const [[storeResult, categoriesResult, bannersResult], theme] = await Promise.all([
+    Promise.allSettled([getStore(), getCategories(), isHome ? getBanners() : Promise.resolve([])]),
+    getActiveTheme(),
   ]);
 
   if (storeResult.status === "rejected") {
@@ -55,6 +56,25 @@ export async function CatalogPage({ params, categorySlug }: { params: CatalogSea
   const title = q ? `Hasil pencarian “${q}”${category ? ` di ${category.name}` : ""}` : category?.name ?? "Semua produk";
   const currency = store.currency || "IDR";
   const here = { category: categorySlug, q, sort };
+  const productQuery = { categoryId: category?.id, q: q || undefined, sort };
+  const listing: ProductListing | null = productsResult && {
+    items: productsResult.data, hasMore: productsResult.hasMore, lastProductId: productsResult.lastProductId, query: productQuery,
+  };
+
+  const { HomePage, CatalogPage: ThemeCatalogPage } = theme.components;
+  const themed = isHome
+    ? HomePage && <HomePage store={store} banners={banners} categories={categories} products={listing} />
+    : ThemeCatalogPage && <ThemeCatalogPage store={store} categories={categories} category={category ?? null}
+        q={q} sort={sort} title={title} products={listing} />;
+  if (themed) {
+    return (
+      <>
+        <StoreHeader name={store.name} logo={store.logo} query={q} />
+        {themed}
+        <SiteFooter store={store} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -87,7 +107,7 @@ export async function CatalogPage({ params, categorySlug }: { params: CatalogSea
             // Keyed by the filters, so a new category, search or sort starts a fresh list.
             <ProductFeed key={`${category?.id ?? ""}|${q}|${sort ?? ""}`}
               initial={productsResult.data} initialLastId={productsResult.lastProductId} initialHasMore={productsResult.hasMore}
-              query={{ categoryId: category?.id, q: q || undefined, sort }} currency={currency} />
+              query={productQuery} currency={currency} />
           )}
         </section>
       </main>
