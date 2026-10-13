@@ -28,6 +28,7 @@ export function proxy(request: NextRequest) {
     for (const [name, value] of Object.entries(PREVIEW_RESPONSE_HEADERS)) response.headers.set(name, value);
     return response;
   }
+  
 
   if (process.env.THEME_PREVIEW !== "true" || !request.nextUrl.searchParams.has("theme")) return NextResponse.next();
 
