@@ -20,11 +20,31 @@ export interface ShippingAddress extends AddressDetails {
   label: string;
 }
 
-export interface ShippingMethod {
-  id: number;
-  name: string;
-  icon: string | null;
+/** Satu kurir + layanan dari /shipping/options, mis. JNE REG Rp26.000 · 1 hari. */
+export interface ShippingOption {
+  shipping_method_id: number;
+  courier: string;
+  courier_name: string;
+  // Null for the store's flat rate (no courier service).
+  service: string | null;
+  description: string | null;
+  cost: number;
+  etd: string | null;
 }
+
+export interface ShippingQuote {
+  // Grams of the cart being shipped.
+  weight: number;
+  // True when the store's flat rates are used because live rates are unavailable.
+  estimated: boolean;
+  options: ShippingOption[];
+}
+
+export const shippingOptionKey = (option: Pick<ShippingOption, "shipping_method_id" | "service">) =>
+  `${option.shipping_method_id}:${option.service ?? ""}`;
+
+export const shippingOptionLabel = (option: Pick<ShippingOption, "courier_name" | "service">) =>
+  option.service ? `${option.courier_name} ${option.service}` : option.courier_name;
 
 export interface PaymentMethod {
   code: string;
@@ -69,12 +89,6 @@ export interface OrderSummary {
   preorder_ready_at: string | null;
 }
 
-export interface ShippingCost {
-  cost: number;
-  // Grams: the cart weight, and the rounded-up weight the courier actually bills.
-  weight: number;
-  chargeable_weight: number;
-}
 
 export const regionLevels = [
   { label: "Provinsi", length: 2 },
@@ -125,12 +139,31 @@ function isNamedMethod(value: unknown): value is { name: string; icon?: unknown 
     typeof (value as { name?: unknown }).name === "string" && (value as { name: string }).name.trim().length > 0;
 }
 
-export function readShippingMethods(data: unknown): ShippingMethod[] {
-  const rows = readRows(data);
-  if (!rows || !rows.every((row): row is ShippingMethod =>
-    isNamedMethod(row) && Number.isSafeInteger((row as ShippingMethod).id) && (row as ShippingMethod).id > 0,
-  )) throw new Error("Metode pengiriman belum dapat dibaca.");
-  return rows.map((row) => ({ id: row.id, name: row.name, icon: typeof row.icon === "string" ? row.icon : null }));
+export function readShippingQuote(data: unknown): ShippingQuote {
+  const row = (data && typeof data === "object" && "data" in data ? data.data : data) as Partial<ShippingQuote> | null;
+  const money = (value: unknown) => typeof value === "number" && Number.isFinite(value) && value >= 0;
+  const text = (value: unknown) => typeof value === "string" && value.trim().length > 0;
+  const optional = (value: unknown) => value === null || value === undefined || typeof value === "string";
+  if (!row || typeof row !== "object" || !money(row.weight) || !Array.isArray(row.options) || !row.options.every((option) => {
+    const o = option as Partial<ShippingOption> | null;
+    return Boolean(o) && typeof o === "object" &&
+      Number.isSafeInteger(o!.shipping_method_id) && o!.shipping_method_id! > 0 &&
+      text(o!.courier) && text(o!.courier_name) && money(o!.cost) &&
+      optional(o!.service) && optional(o!.description) && optional(o!.etd);
+  })) throw new Error("Pilihan pengiriman belum dapat dibaca.");
+  return {
+    weight: row.weight!,
+    estimated: row.estimated === true,
+    options: row.options.map((option) => ({
+      shipping_method_id: option.shipping_method_id,
+      courier: option.courier,
+      courier_name: option.courier_name,
+      service: option.service || null,
+      description: option.description || null,
+      cost: option.cost,
+      etd: option.etd || null,
+    })),
+  };
 }
 
 export function readPaymentMethods(data: unknown): PaymentMethod[] {
@@ -139,15 +172,6 @@ export function readPaymentMethods(data: unknown): PaymentMethod[] {
     isNamedMethod(row) && typeof (row as PaymentMethod).code === "string" && (row as PaymentMethod).code.trim().length > 0,
   )) throw new Error("Metode pembayaran belum dapat dibaca.");
   return rows.map((row) => ({ code: row.code, name: row.name, icon: typeof row.icon === "string" ? row.icon : null }));
-}
-
-export function readShippingCost(data: unknown): ShippingCost {
-  const row = (data && typeof data === "object" && "data" in data ? data.data : data) as Partial<ShippingCost>;
-  const numbers = [row?.cost, row?.weight, row?.chargeable_weight];
-  if (!row || typeof row !== "object" || !numbers.every((value) => typeof value === "number" && Number.isFinite(value) && value >= 0)) {
-    throw new Error("Ongkos kirim belum dapat dibaca.");
-  }
-  return { cost: row.cost!, weight: row.weight!, chargeable_weight: row.chargeable_weight! };
 }
 
 export function readBankAccounts(data: unknown): BankAccount[] {
@@ -179,7 +203,7 @@ export function readOrder(data: unknown): OrderSummary {
     throw new Error("Pesanan belum dapat dibaca.");
   }
   const payment = row.payment as { method?: { code?: unknown; name?: unknown } | null; bank_account?: unknown; has_proof?: unknown; sender_name?: unknown } | null | undefined;
-  const shipping = row.shipping as { method?: { name?: unknown } | null } | null | undefined;
+  const shipping = row.shipping as { method?: { name?: unknown } | null; service?: unknown } | null | undefined;
   return {
     id: row.id as number,
     status: typeof row.status === "string" ? row.status : "pending",
@@ -190,7 +214,9 @@ export function readOrder(data: unknown): OrderSummary {
     payment_method: typeof payment?.method?.code === "string" ? payment.method.code : null,
     payment_method_name: typeof payment?.method?.name === "string" ? payment.method.name : null,
     bank_account: readBankAccount(payment?.bank_account),
-    shipping_method: typeof shipping?.method?.name === "string" ? shipping.method.name : null,
+    shipping_method: typeof shipping?.method?.name === "string"
+      ? shippingOptionLabel({ courier_name: shipping.method.name, service: typeof shipping.service === "string" && shipping.service ? shipping.service : null })
+      : null,
     proof_uploaded: payment?.has_proof === true,
     sender_name: typeof payment?.sender_name === "string" ? payment.sender_name : null,
     items: readOrderLines(row.items),

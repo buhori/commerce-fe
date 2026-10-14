@@ -4,6 +4,7 @@ import { preorderDays } from "@/lib/store-shared";
 import { formatPrice, formatProductStats } from "@/lib/format";
 import { ProductImage } from "./product-image";
 import { Icon } from "./icons";
+import { WishlistButton } from "./wishlist-button";
 
 export function Catalog({ products, currency }: { products: ProductSummary[]; currency: string }) {
   return (
@@ -13,7 +14,9 @@ export function Catalog({ products, currency }: { products: ProductSummary[]; cu
         const soldOut = !preorder && product.stock === 0;
         const stats = formatProductStats(product);
         return (
-          <li key={product.id}>
+          <li key={product.id} className="product-card-item">
+            {/* Outside the link: a button inside <a> is invalid and would open the product. */}
+            <WishlistButton productId={product.id} productName={product.name} />
             <Link className="product-card" href={`/products/${encodeURIComponent(product.slug)}`} data-sold-out={soldOut}>
               <div className="product-art">
                 <ProductImage key={product.images} src={product.images} name={product.name} />

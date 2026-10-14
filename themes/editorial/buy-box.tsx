@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useId } from "react";
-import { formatPrice, useAddToCart, type Product } from "@sellosy/theme";
+import { formatPrice, useAddToCart, WishlistButton, type Product } from "@sellosy/theme";
 import s from "./editorial.module.css";
 
 /**
@@ -60,6 +60,7 @@ export function BuyBox({ product, currency, preorder }: { product: Product; curr
         onClick={() => void cart.add("buy")}>
         {cart.activeAction === "buy" ? "Memproses…" : preorder ? "Pre-order sekarang" : "Beli sekarang"}
       </button>
+      <WishlistButton productId={product.id} productName={product.name} variant="button" className={s.wishlist} />
 
       {cart.feedback && (
         <p className={cart.feedback.error ? s.feedbackError : s.feedback} role={cart.feedback.error ? "alert" : "status"}>

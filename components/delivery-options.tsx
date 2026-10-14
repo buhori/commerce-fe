@@ -4,8 +4,8 @@ import { Spinner } from "./spinner";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  readBankAccounts, readPaymentMethods, readShippingCost, readShippingMethods,
-  type BankAccount, type PaymentMethod, type ShippingCost, type ShippingMethod,
+  readBankAccounts, readPaymentMethods, readShippingQuote, shippingOptionKey, shippingOptionLabel,
+  type BankAccount, type PaymentMethod, type ShippingOption, type ShippingQuote,
 } from "@/lib/checkout";
 import { formatPrice, formatWeight } from "@/lib/format";
 
@@ -76,52 +76,78 @@ function MethodGroup<T>({ legend, name, state, retry, emptyText, errorText, keyO
   );
 }
 
-type CostState = { status: "loading" } | { status: "error" } | { status: "ready"; cost: ShippingCost };
+type QuoteState = { status: "loading" } | { status: "error" } | { status: "ready"; quote: ShippingQuote };
 
-// Remounted by key whenever the courier or the address changes, so it always opens on "loading".
-function ShippingCostNote({ methodId, addressCode, currency, preorder, onCostChange }: {
-  methodId: number;
+/**
+ * Every courier service for this address (live rates, or the store's flat rates as an estimate),
+ * cheapest first. Remounted by key whenever the address changes, so it always opens on "loading".
+ */
+function ShippingChoices({ addressCode, currency, preorder, selected, onSelect }: {
   addressCode: string;
   currency: string;
   preorder: boolean;
-  onCostChange: (cost: ShippingCost | null) => void;
+  selected: ShippingOption | null;
+  onSelect: (option: ShippingOption | null) => void;
 }) {
-  const [state, setState] = useState<CostState>({ status: "loading" });
+  const [state, setState] = useState<QuoteState>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
-    const params = new URLSearchParams({ address_code: addressCode, shipping_method_id: String(methodId) });
+    const params = new URLSearchParams({ address_code: addressCode });
     if (preorder) params.set("cart", "preorder");
-    fetch(`/api/shipping/cost?${params}`, {
+    fetch(`/api/shipping/options?${params}`, {
       credentials: "same-origin", cache: "no-store",
       headers: { Accept: "application/json" }, signal: controller.signal,
     }).then(async (response) => {
-      if (!response.ok) throw new Error("Shipping cost failed");
-      const cost = readShippingCost(await response.json());
-      if (controller.signal.aborted) return;
-      setState({ status: "ready", cost });
-      onCostChange(cost);
+      if (!response.ok) throw new Error("Shipping options failed");
+      const quote = readShippingQuote(await response.json());
+      if (!controller.signal.aborted) setState({ status: "ready", quote });
     }).catch(() => {
-      if (controller.signal.aborted) return;
-      setState({ status: "error" });
-      onCostChange(null);
+      if (!controller.signal.aborted) setState({ status: "error" });
     });
     return () => controller.abort();
-  }, [methodId, addressCode, preorder, attempt, onCostChange]);
+  }, [addressCode, preorder, attempt]);
 
-  if (state.status === "loading") return <p className="shipping-cost" role="status">Menghitung ongkos kirim…</p>;
-  if (state.status === "error") return (
-    <p className="shipping-cost shipping-cost-error" role="alert">
-      Ongkos kirim belum dapat dihitung.{" "}
-      <Button type="button" variant="text"
-        onClick={() => { setState({ status: "loading" }); setAttempt((value) => value + 1); }}>Coba lagi</Button>
-    </p>
-  );
+  // A choice from an earlier list may no longer exist; a single option needs no choosing.
+  const options = state.status === "ready" ? state.quote.options : null;
+  useEffect(() => {
+    if (!options) return;
+    if (selected && !options.some((option) => shippingOptionKey(option) === shippingOptionKey(selected))) onSelect(null);
+    else if (!selected && options.length === 1) onSelect(options[0]);
+  }, [options, selected, onSelect]);
+
+  const retry = () => { setState({ status: "loading" }); setAttempt((value) => value + 1); };
+  const rows = state.status === "ready" ? { status: "ready" as const, rows: state.quote.options } : state;
+  const cheapest = options?.[0]?.cost;
+
   return (
-    <p className="shipping-cost" role="status">
-      <strong>Ongkos kirim {formatPrice(state.cost.cost, currency)}</strong>
-      {state.cost.weight > 0 && <span>Berat {formatWeight(state.cost.weight)}, ditagih {formatWeight(state.cost.chargeable_weight)}.</span>}
-    </p>
+    <MethodGroup
+      legend="Pengiriman" name="shipping-option"
+      state={rows} retry={retry}
+      emptyText="Belum ada kurir yang melayani alamat ini."
+      errorText="Pilihan pengiriman belum dapat dimuat."
+      keyOf={shippingOptionKey}
+      isSelected={(option) => selected !== null && shippingOptionKey(option) === shippingOptionKey(selected)}
+      onSelect={onSelect}
+      render={(option) => (
+        <>
+          <strong className="shipping-option-head">
+            {shippingOptionLabel(option)}
+            <span className="shipping-option-price">{formatPrice(option.cost, currency)}</span>
+          </strong>
+          <span>
+            {[option.description, option.etd && `Estimasi ${option.etd}`].filter(Boolean).join(" · ") || "Tarif pengiriman toko"}
+            {option.cost === cheapest && options!.length > 1 && <em className="shipping-option-badge">Termurah</em>}
+          </span>
+        </>
+      )}>
+      {state.status === "ready" && (
+        <p className="shipping-cost" role="status">
+          {state.quote.weight > 0 && <span>Berat paket {formatWeight(state.quote.weight)}.</span>}
+          {state.quote.estimated && <span>Ongkir otomatis sedang tidak tersedia, jadi dipakai tarif pengiriman toko.</span>}
+        </p>
+      )}
+    </MethodGroup>
   );
 }
 
@@ -145,40 +171,27 @@ function BankAccounts({ selected, onSelect }: {
   );
 }
 
-export function DeliveryOptions({ shipping, payment, bankAccount, addressCode, currency, preorder = false, onShippingChange, onPaymentChange, onBankAccountChange, onCostChange }: {
+export function DeliveryOptions({ shipping, payment, bankAccount, addressCode, currency, preorder = false, refreshKey = 0, onShippingChange, onPaymentChange, onBankAccountChange }: {
   preorder?: boolean;
-  shipping: ShippingMethod | null;
+  // Bumped to reload shipping options, e.g. after the server says a chosen rate changed.
+  refreshKey?: number;
+  shipping: ShippingOption | null;
   payment: PaymentMethod | null;
   bankAccount: BankAccount | null;
   addressCode: string;
   currency: string;
-  onShippingChange: (method: ShippingMethod) => void;
+  onShippingChange: (option: ShippingOption | null) => void;
   onPaymentChange: (method: PaymentMethod) => void;
   onBankAccountChange: (account: BankAccount) => void;
-  onCostChange: (cost: ShippingCost | null) => void;
 }) {
-  const [shippingState, retryShipping] = useMethods("/api/shipping/methods", readShippingMethods);
   const [paymentState, retryPayment] = useMethods("/api/payment/methods", readPaymentMethods);
-  useOnlyOption(shippingState, shipping, onShippingChange);
   useOnlyOption(paymentState, payment, onPaymentChange);
 
   return (
     <div className="delivery-options">
-      <p className="checkout-description">Pilih kurir pengiriman dan cara pembayaran untuk pesanan ini. Pilihan bertanda * wajib diisi.</p>
-      <MethodGroup
-        legend="Metode pengiriman" name="shipping-method"
-        state={shippingState} retry={retryShipping}
-        emptyText="Belum ada metode pengiriman tersedia."
-        errorText="Metode pengiriman belum dapat dimuat."
-        keyOf={(method) => String(method.id)}
-        isSelected={(method) => shipping?.id === method.id}
-        onSelect={onShippingChange}
-        render={(method) => <><strong>{method.name}</strong><span>Ongkos kirim dihitung dari berat keranjang.</span></>}>
-        {shipping && addressCode && (
-          <ShippingCostNote key={`${shipping.id}-${addressCode}`} methodId={shipping.id}
-            addressCode={addressCode} currency={currency} preorder={preorder} onCostChange={onCostChange} />
-        )}
-      </MethodGroup>
+      <p className="checkout-description">Pilih layanan pengiriman dan cara pembayaran untuk pesanan ini. Pilihan bertanda * wajib diisi.</p>
+      <ShippingChoices key={`${addressCode}-${preorder}-${refreshKey}`} addressCode={addressCode} currency={currency}
+        preorder={preorder} selected={shipping} onSelect={onShippingChange} />
       <MethodGroup
         legend="Metode pembayaran" name="payment-method"
         state={paymentState} retry={retryPayment}

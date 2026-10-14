@@ -10,6 +10,8 @@ export { ProductCartActions as AddToCart, useAddToCart } from "@/components/prod
 export { CartIndicator as CartButton } from "@/components/cart-indicator";
 export { AccountMenu as AccountButton } from "@/components/account-menu";
 export { SortSelect } from "@/components/sort-select";
+// Tombol hati wishlist (tersembunyi bila paket toko tanpa akun pembeli); useWishlist untuk tampilan sendiri.
+export { WishlistButton, useWishlist } from "@/components/wishlist-button";
 export { CategoryTabs } from "@/components/category-tabs";
 export { ProductGrid, useCartCount, useCustomer, useProductFeed } from "./client";
 

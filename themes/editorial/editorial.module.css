@@ -347,6 +347,9 @@
 @media (max-width: 1024px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 12px; } }
 
+.cardWrap { position: relative; }
+.cardHeart { top: 10px; right: 10px; }
+.wishlist { justify-content: center; width: 100%; margin-top: 10px; border-radius: 0; text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.75rem; }
 .card { display: block; }
 .cardImage { position: relative; aspect-ratio: 4 / 5; overflow: hidden; background: var(--surface); }
 .cardImage img { transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); }

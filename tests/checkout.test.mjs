@@ -8,7 +8,7 @@ const exports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL("../lib/checkout.ts", import.meta.url), "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS },
 }).outputText, { exports });
-const { readRegions, resetRegionChildren, readAddresses, readShippingMethods, readPaymentMethods, readShippingCost, readBankAccounts, readOrder } = exports;
+const { readRegions, resetRegionChildren, readAddresses, readShippingQuote, shippingOptionKey, shippingOptionLabel, readPaymentMethods, readBankAccounts, readOrder } = exports;
 
 test("region responses accept arrays/wrappers and only direct children of the selected parent", () => {
   assert.equal(readRegions([{ code: "11", name: "Aceh" }, { code: "11.02", name: "Kabupaten" }], 0).length, 1);
@@ -40,16 +40,22 @@ test("address lists validate saved identifiers instead of treating arbitrary res
   assert.throws(() => readAddresses([{ ...address, id: undefined }]));
 });
 
-test("shipping methods keep only rows with a usable id and name, and normalise a missing icon", () => {
-  const rows = readShippingMethods([{ id: 1, icon: null, name: "JNE" }, { id: 2, icon: "jet.svg", name: "JET" }]);
-  assert.equal(rows.length, 2);
-  assert.equal(rows[0].id, 1);
-  assert.equal(rows[0].name, "JNE");
-  assert.equal(rows[1].icon, "jet.svg");
-  assert.equal(readShippingMethods({ data: [{ id: 3, name: "Tiki" }] })[0].icon, null);
-  assert.throws(() => readShippingMethods({ message: "failed" }));
-  assert.throws(() => readShippingMethods([{ id: 0, name: "Tanpa id" }]));
-  assert.throws(() => readShippingMethods([{ id: 1, name: "  " }]));
+test("shipping options keep courier, service, price, and estimate, and reject malformed rows", () => {
+  const quote = readShippingQuote({ data: { weight: 1500, estimated: false, options: [
+    { shipping_method_id: 2, courier: "sicepat", courier_name: "SiCepat", service: "REG", description: "Reguler", cost: 22000, etd: "1-2 hari" },
+    { shipping_method_id: 1, courier: "jne", courier_name: "JNE", service: null, description: null, cost: 15000, etd: null },
+  ] } });
+  assert.equal(quote.weight, 1500);
+  assert.equal(quote.estimated, false);
+  assert.equal(shippingOptionLabel(quote.options[0]), "SiCepat REG");
+  assert.equal(shippingOptionLabel(quote.options[1]), "JNE");
+  assert.equal(shippingOptionKey(quote.options[0]), "2:REG");
+  assert.equal(shippingOptionKey(quote.options[1]), "1:");
+  assert.equal(readShippingQuote({ weight: 0, estimated: true, options: [] }).estimated, true);
+  assert.throws(() => readShippingQuote({ message: "The address code field is required." }));
+  assert.throws(() => readShippingQuote({ weight: 1500, options: [{ shipping_method_id: 0, courier: "jne", courier_name: "JNE", cost: 1 }] }));
+  assert.throws(() => readShippingQuote({ weight: 1500, options: [{ shipping_method_id: 1, courier: "jne", courier_name: "JNE", cost: "15000" }] }));
+  assert.throws(() => readShippingQuote({ weight: 1500, options: [{ shipping_method_id: 1, courier: "jne", courier_name: "JNE", cost: -1 }] }));
 });
 
 test("payment methods are keyed by code, so an unnamed or code-less row is rejected", () => {
@@ -62,18 +68,6 @@ test("payment methods are keyed by code, so an unnamed or code-less row is rejec
   assert.throws(() => readPaymentMethods({ message: "failed" }));
   assert.throws(() => readPaymentMethods([{ name: "Tanpa kode" }]));
   assert.throws(() => readPaymentMethods([{ code: "qris" }]));
-});
-
-test("shipping cost is only trusted when every weight and price field is a real non-negative number", () => {
-  const quote = readShippingCost({ cost: 15000, weight: 1400, chargeable_weight: 2000 });
-  assert.equal(quote.cost, 15000);
-  assert.equal(quote.chargeable_weight, 2000);
-  assert.equal(readShippingCost({ data: { cost: 0, weight: 0, chargeable_weight: 0 } }).cost, 0);
-  assert.throws(() => readShippingCost({ message: "The address code field is required." }));
-  assert.throws(() => readShippingCost({ cost: "15000", weight: 1400, chargeable_weight: 2000 }));
-  assert.throws(() => readShippingCost({ cost: -1, weight: 1400, chargeable_weight: 2000 }));
-  assert.throws(() => readShippingCost({ cost: 15000, weight: 1400 }));
-  assert.throws(() => readShippingCost(null));
 });
 
 test("bank accounts drop server-only columns and reject rows missing a bank, name or number", () => {
@@ -91,12 +85,12 @@ test("order responses expose the amount to transfer and tolerate a payment witho
     id: 2, status: "pending", total: 873000, shipping_cost: 9000, discount: 0,
     unique_payment_code: 976, grand_total: 882976,
     payment: { method: "bank_transfer", bank_account: { id: 2, bank: "BCA", name: "Demo Store", number: "12345" } },
-    shipping: { status: "assigned", method: { id: 1, name: "JNE" } },
+    shipping: { status: "assigned", service: "REG", method: { id: 1, name: "JNE" } },
   } });
   assert.equal(order.grand_total, 882976);
   assert.equal(order.unique_payment_code, 976);
   assert.equal(order.bank_account.number, "12345");
-  assert.equal(order.shipping_method, "JNE");
+  assert.equal(order.shipping_method, "JNE REG");
 
   const qris = readOrder({ id: 3, status: "pending", total: 1000, shipping_cost: 0, grand_total: 1000, unique_payment_code: null, payment: { method: "qris", bank_account: null }, shipping: null });
   assert.equal(qris.unique_payment_code, null);

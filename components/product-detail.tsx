@@ -3,6 +3,7 @@ import { Icon } from "@/components/icons";
 import { ProductCartActions } from "@/components/product-cart-actions";
 import { ProductDescription } from "@/components/product-description";
 import { ProductGallery } from "@/components/product-gallery";
+import { WishlistButton } from "@/components/wishlist-button";
 import { addDays, formatDate } from "@/lib/format";
 import type { ProductPageProps } from "@/sdk";
 
@@ -42,6 +43,7 @@ export function ProductDetail({ store, product, view }: ProductPageProps) {
               price={product.price}
               currency={currency}
             />
+            <WishlistButton productId={product.id} productName={product.name} variant="button" />
             <div className="detail-delivery">
               <span className="detail-delivery-icon"><Icon name="truck" /></span>
               <div>

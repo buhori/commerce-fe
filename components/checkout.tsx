@@ -8,8 +8,8 @@ import { useQuery } from "@tanstack/react-query";
 import { cartItemsOptions, preorderItemsOptions } from "@/lib/cart-queries";
 import { useRouter } from "next/navigation";
 import { getCartUnitPrice } from "@/lib/cart";
-import { jsonHeaders, readOrderId, type AddressDetails, type BankAccount, type PaymentMethod, type ShippingCost, type ShippingMethod } from "@/lib/checkout";
-import { addDays, formatDate, formatPrice, formatWeight } from "@/lib/format";
+import { jsonHeaders, readOrderId, shippingOptionLabel, type AddressDetails, type BankAccount, type PaymentMethod, type ShippingOption } from "@/lib/checkout";
+import { addDays, formatDate, formatPrice } from "@/lib/format";
 import { preorderDays } from "@/lib/store-shared";
 import { ProductImage } from "./product-image";
 import { AddressForm } from "./address-form";
@@ -30,19 +30,19 @@ export function Checkout({ currency, preorder = false }: { currency: string; pre
   const [step, setStep] = useState(0);
   const [mode, setMode] = useState<"new" | "saved">("new");
   const [selected, setSelected] = useState<AddressDetails | null>(null);
-  const [shipping, setShipping] = useState<ShippingMethod | null>(null);
+  const [shipping, setShipping] = useState<ShippingOption | null>(null);
   const [payment, setPayment] = useState<PaymentMethod | null>(null);
-  const [cost, setCost] = useState<ShippingCost | null>(null);
+  const [optionsVersion, setOptionsVersion] = useState(0);
   const [bankAccount, setBankAccount] = useState<BankAccount | null>(null);
   const [placing, setPlacing] = useState(false);
   const [placeError, setPlaceError] = useState<string | null>(null);
   const { refresh } = useCart();
   const router = useRouter();
   const placeLock = useRef(false);
-  // A saved quote belongs to one courier/address pair; changing either drops it.
-  const chooseAddress = (address: AddressDetails) => { setSelected(address); setCost(null); };
+  // A shipping rate belongs to one address; changing it drops the chosen rate.
+  const chooseAddress = (address: AddressDetails) => { setSelected(address); setShipping(null); };
   const needsBankAccount = payment?.code === "bank_transfer";
-  const ready = Boolean(selected?.id && shipping && payment && cost && (!needsBankAccount || bankAccount));
+  const ready = Boolean(selected?.id && shipping && payment && (!needsBankAccount || bankAccount));
 
   async function placeOrder() {
     if (placeLock.current || !ready) return;
@@ -54,7 +54,8 @@ export function Checkout({ currency, preorder = false }: { currency: string; pre
         method: "POST", credentials: "same-origin", headers: jsonHeaders(),
         body: JSON.stringify({
           address_id: selected!.id,
-          shipping_method_id: shipping!.id,
+          shipping_method_id: shipping!.shipping_method_id,
+          shipping_service: shipping!.service,
           payment_method: payment!.code,
           ...(needsBankAccount ? { bank_account_id: bankAccount!.id } : {}),
           ...(preorder ? { cart: "preorder" } : {}),
@@ -65,6 +66,11 @@ export function Checkout({ currency, preorder = false }: { currency: string; pre
       if (response.status === 401 && data?.login_required) {
         router.push(`/login?next=${encodeURIComponent(preorder ? "/checkout?type=preorder" : "/checkout")}`);
         return;
+      }
+      // Rates moved since they were shown: reload them so the buyer picks again.
+      if (response.status === 422 && data?.errors?.shipping_service) {
+        setShipping(null);
+        setOptionsVersion((value) => value + 1);
       }
       if (!response.ok) {
         throw new Error(response.status < 500 && typeof data?.message === "string"
@@ -122,14 +128,14 @@ export function Checkout({ currency, preorder = false }: { currency: string; pre
             <AddressForm submitLabel="Lanjut ke pengiriman" onSaved={(address) => { chooseAddress(address); setStep(1); }} />
           </div>
           {mode === "saved" && <SavedAddresses selectedId={selected?.id} onSelect={chooseAddress} onAdd={() => setMode("new")}
-            onDeleted={(id) => { if (selected?.id === id) { setSelected(null); setCost(null); } }} />}
+            onDeleted={(id) => { if (selected?.id === id) { setSelected(null); setShipping(null); } }} />}
         </div>
         {step === 1 && selected && (
           <DeliveryOptions shipping={shipping} payment={payment} bankAccount={bankAccount}
-            addressCode={selected.address_code} currency={currency} preorder={preorder}
-            onShippingChange={(method) => { setShipping(method); setCost(null); }}
+            addressCode={selected.address_code} currency={currency} preorder={preorder} refreshKey={optionsVersion}
+            onShippingChange={setShipping}
             onPaymentChange={(method) => { setPayment(method); if (method.code !== "bank_transfer") setBankAccount(null); }}
-            onBankAccountChange={setBankAccount} onCostChange={setCost} />
+            onBankAccountChange={setBankAccount} />
         )}
 
         {step === 0 && mode === "saved" && (
@@ -147,8 +153,7 @@ export function Checkout({ currency, preorder = false }: { currency: string; pre
             {!ready && !placing && (
               <p className="field-hint" role="status">
                 {!selected?.id ? "Alamat ini belum tersimpan di server, simpan ulang alamatnya dulu."
-                  : !shipping ? "Pilih metode pengiriman dulu."
-                  : !cost ? "Tunggu ongkos kirim selesai dihitung."
+                  : !shipping ? "Pilih layanan pengiriman dulu."
                   : !payment ? "Pilih metode pembayaran dulu."
                   : "Pilih rekening tujuan transfer dulu."}
               </p>
@@ -182,9 +187,9 @@ export function Checkout({ currency, preorder = false }: { currency: string; pre
           </p>
         )}
         <div className="cart-subtotal"><span>Subtotal</span><strong>{totalKnown ? formatPrice(total, currency) : "Belum tersedia"}</strong></div>
-        <div><span>Ongkos kirim{shipping ? ` (${shipping.name})` : ""}</span><strong>{cost ? formatPrice(cost.cost, currency) : "Belum dihitung"}</strong></div>
-        {cost && totalKnown
-          ? <div className="cart-total"><span>Total belanja</span><strong>{formatPrice(total + cost.cost, currency)}</strong></div>
+        <div><span>Ongkos kirim{shipping ? ` (${shippingOptionLabel(shipping)})` : ""}</span><strong>{shipping ? formatPrice(shipping.cost, currency) : "Belum dipilih"}</strong></div>
+        {shipping && totalKnown
+          ? <div className="cart-total"><span>Total belanja</span><strong>{formatPrice(total + shipping.cost, currency)}</strong></div>
           : <p>Belum termasuk ongkos kirim.</p>}
         {selected && (
           <section className="checkout-selected" aria-label="Alamat dipilih">
@@ -196,8 +201,8 @@ export function Checkout({ currency, preorder = false }: { currency: string; pre
           <section className="checkout-selected" aria-label="Pengiriman dan pembayaran">
             <h3>Pengiriman & pembayaran</h3>
             <dl className="checkout-choices">
-              <div><dt>Kurir</dt><dd>{shipping?.name || "Belum dipilih"}</dd></div>
-              {cost && cost.weight > 0 && <div><dt>Berat ditagih</dt><dd>{formatWeight(cost.chargeable_weight)}</dd></div>}
+              <div><dt>Kurir</dt><dd>{shipping ? shippingOptionLabel(shipping) : "Belum dipilih"}</dd></div>
+              {shipping?.etd && <div><dt>Estimasi</dt><dd>{shipping.etd}</dd></div>}
               <div><dt>Pembayaran</dt><dd>{payment?.name || "Belum dipilih"}</dd></div>
             </dl>
           </section>
