@@ -19,7 +19,7 @@ export default async function PaymentPage({ params }: PageProps<"/payment/[id]">
             <Link href="/">Beranda</Link><span aria-hidden="true">/</span>
             <span aria-current="page">Pembayaran</span>
           </nav>
-          <OrderPayment key={id} orderId={id} currency={store.currency || "IDR"} />
+          <OrderPayment key={id} orderId={id} currency={store.currency || "IDR"} storeName={store.name} />
         </div>
       </main>
       <SiteFooter store={store} />

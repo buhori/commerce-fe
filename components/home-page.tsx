@@ -1,5 +1,6 @@
 import { ButtonLink } from "@/components/ui/button";
 import { HomeBuilderPage } from "./home-builder-page";
+import { MaintenanceNotice } from "./maintenance-notice";
 import { SiteFooter } from "./site-footer";
 import { StoreHeader } from "./store-header";
 import { getPreviewState } from "@/lib/preview";
@@ -33,6 +34,8 @@ export async function HomePage() {
   return (
     <>
       <StoreHeader name={store.name} logo={store.logo} />
+      {/* Di luar susunan builder supaya tampil di semua tema, termasuk saat beranda gagal dimuat. */}
+      {store.maintenance.active && <div className="container home-maintenance"><MaintenanceNotice /></div>}
       {sections === undefined ? (
         <main className="page home-page">
           <div className="container empty-state" role="alert">

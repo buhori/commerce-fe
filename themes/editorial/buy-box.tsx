@@ -9,10 +9,10 @@ import s from "./editorial.module.css";
  * Kotak beli Editorial. Semua aturan (stok, varian, pre-order, batas jumlah, permintaan ke
  * keranjang) dari useAddToCart; tema hanya mengatur tampilan.
  */
-export function BuyBox({ product, currency, preorder }: { product: Product; currency: string; preorder: boolean }) {
+export function BuyBox({ product, currency, preorder, maintenance }: { product: Product; currency: string; preorder: boolean; maintenance: boolean }) {
   const name = useId();
   const cart = useAddToCart({
-    productId: product.id, stock: product.stock, price: product.price, currency, variants: product.variants, preorder,
+    productId: product.id, stock: product.stock, price: product.price, currency, variants: product.variants, preorder, maintenance,
   });
 
   return (
@@ -56,10 +56,11 @@ export function BuyBox({ product, currency, preorder }: { product: Product; curr
           {cart.soldOut ? "Stok habis" : cart.activeAction === "cart" ? "Menambahkan…" : "Tambah ke tas"}
         </button>
       )}
-      <button type="button" className={preorder ? s.primaryButton : s.secondaryButton} disabled={cart.disabled}
+      <button type="button" className={preorder ? s.primaryButton : s.secondaryButton} disabled={cart.disabled || Boolean(cart.checkoutNote)}
         onClick={() => void cart.add("buy")}>
         {cart.activeAction === "buy" ? "Memproses…" : preorder ? "Pre-order sekarang" : "Beli sekarang"}
       </button>
+      {cart.checkoutNote && <p className={s.hint} role="status">{cart.checkoutNote}</p>}
       <WishlistButton productId={product.id} productName={product.name} variant="button" className={s.wishlist} />
 
       {cart.feedback && (

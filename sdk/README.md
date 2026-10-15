@@ -130,6 +130,10 @@ Semuanya diimpor dari `@sellosy/theme`.
 **Helper:** `formatPrice`, `formatDate`, `productUrl`, `categoryUrl`, `pageUrl`, `catalogUrl`,
 `catalogSorts`, `preorderDays`, `paragraphs`, `formatProductStats`.
 
+Teruskan `maintenance={store.maintenance.active}` ke `<AddToCart>` atau `useAddToCart()`. Selama toko
+dalam perawatan, `checkoutNote` dari hook terisi: matikan tombol beli sekarang/pre-order dan tampilkan
+catatannya. Tambah ke keranjang tetap bisa.
+
 Komponen yang memakai hook harus diberi `"use client"` di baris pertama filenya. Contohnya
 `themes/editorial/buy-box.tsx` (hook `useAddToCart`) dan `product-grid.tsx` (hook `useProductFeed`).
 

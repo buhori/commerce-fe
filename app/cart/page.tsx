@@ -16,7 +16,7 @@ export default async function CartPage() {
       <main className="page commerce-page commerce-cart-page">
         <div className="container commerce-container cart-page">
           <CommerceHeading stage="cart" />
-          <CartItems currency={store.currency || "IDR"} />
+          <CartItems currency={store.currency || "IDR"} maintenance={store.maintenance.active} />
         </div>
       </main>
       <SiteFooter store={store} />

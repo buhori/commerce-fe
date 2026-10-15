@@ -126,6 +126,8 @@ export interface OrderSummary {
   // Display name managed by the store backend, so new methods need no frontend change.
   payment_method_name: string | null;
   bank_account: BankAccount | null;
+  // Gambar QRIS statis milik toko; hanya terisi untuk pesanan QRIS.
+  qris_image: string | null;
   shipping_method: string | null;
   // The file itself stays with the store; the buyer only learns that it arrived.
   proof_uploaded: boolean;
@@ -232,6 +234,17 @@ export function readBankAccounts(data: unknown): BankAccount[] {
   return rows.map(({ id, bank, name, number }) => ({ id, bank, name, number }));
 }
 
+// Pembayaran manual: pembeli membayar nominal berkode unik lalu mengunggah bukti.
+export const isManualPayment = (code: string | null | undefined) => code === "bank_transfer" || code === "qris";
+
+// Hanya URL http(s) absolut, karena dipakai sebagai src gambar dan tautan unduh.
+// Cukup regex: modul ini juga dijalankan di vm tes yang tidak menyediakan URL.
+function readHttpUrl(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const url = value.trim();
+  return /^https?:\/\/[^\s/?#]+[^\s]*$/i.test(url) ? url : null;
+}
+
 function readBankAccount(value: unknown): BankAccount | null {
   try {
     return readBankAccounts([value])[0];
@@ -248,7 +261,7 @@ export function readOrder(data: unknown): OrderSummary {
     !money.every((key) => typeof row[key] === "number" && Number.isFinite(row[key]) && (row[key] as number) >= 0)) {
     throw new Error("Pesanan belum dapat dibaca.");
   }
-  const payment = row.payment as { method?: { code?: unknown; name?: unknown } | null; bank_account?: unknown; has_proof?: unknown; sender_name?: unknown } | null | undefined;
+  const payment = row.payment as { method?: { code?: unknown; name?: unknown } | null; bank_account?: unknown; qris_image?: unknown; has_proof?: unknown; sender_name?: unknown } | null | undefined;
   const shipping = row.shipping as { method?: { name?: unknown } | null; service?: unknown } | null | undefined;
   return {
     id: row.id as number,
@@ -260,6 +273,7 @@ export function readOrder(data: unknown): OrderSummary {
     payment_method: typeof payment?.method?.code === "string" ? payment.method.code : null,
     payment_method_name: typeof payment?.method?.name === "string" ? payment.method.name : null,
     bank_account: readBankAccount(payment?.bank_account),
+    qris_image: readHttpUrl(payment?.qris_image),
     shipping_method: typeof shipping?.method?.name === "string"
       ? shippingOptionLabel({ courier_name: shipping.method.name, service: typeof shipping.service === "string" && shipping.service ? shipping.service : null })
       : null,
@@ -300,6 +314,21 @@ export function jsonHeaders(): Headers {
   const csrf = document.cookie.split("; ").find((cookie) => cookie.startsWith("XSRF-TOKEN="));
   if (csrf) headers.set("X-XSRF-TOKEN", decodeURIComponent(csrf.slice("XSRF-TOKEN=".length)));
   return headers;
+}
+
+/**
+ * Pesan untuk pembeli dari respons POST /checkout yang gagal. errors.store (mis. toko baru saja
+ * masuk mode perawatan) didahulukan, karena `message` Laravel bisa berupa ringkasan beberapa error.
+ */
+export function checkoutErrorMessage(status: number, data: unknown): string {
+  const fallback = "Pesanan belum dapat dibuat. Silakan coba lagi.";
+  // Pesan 5xx bisa berisi detail teknis, jadi tidak ditampilkan.
+  if (status >= 500 || !data || typeof data !== "object") return fallback;
+  const body = data as { message?: unknown; errors?: { store?: unknown } | null };
+  const storeErrors = body.errors?.store;
+  const store = Array.isArray(storeErrors) ? storeErrors[0] : undefined;
+  if (typeof store === "string" && store.trim()) return store;
+  return typeof body.message === "string" && body.message.trim() ? body.message : fallback;
 }
 
 // Read only the new order's id: the order already exists by then, so a strict

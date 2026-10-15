@@ -7,24 +7,25 @@ import { useQuery } from "@tanstack/react-query";
 import { cartItemsOptions } from "@/lib/cart-queries";
 import { getCartStockLimit, getCartUnitPrice, getCartVariantId, type CartItem } from "@/lib/cart";
 import { addDays, formatDate, formatPrice } from "@/lib/format";
-import { preorderDays } from "@/lib/store-shared";
+import { MAINTENANCE_NOTE, preorderDays } from "@/lib/store-shared";
 import { ProductImage } from "./product-image";
 import { useCart, type CartAction } from "./cart-provider";
 import { Icon } from "./icons";
 import { Spinner } from "./spinner";
 
-export function CartItems({ currency }: { currency: string }) {
+// maintenance: toko dalam perawatan, keranjang tetap bisa diubah tetapi checkout ditutup.
+export function CartItems({ currency, maintenance = false }: { currency: string; maintenance?: boolean }) {
   const { countError, refreshing, pending, refresh } = useCart();
   return <>
     {countError && <div className="address-notice" role="alert">
       <p>Jumlah keranjang pada header belum dapat dimuat.</p>
       <Button variant="secondary" disabled={refreshing || pending} onClick={() => void refresh()}>Coba lagi jumlah keranjang</Button>
     </div>}
-    <CartContents currency={currency} />
+    <CartContents currency={currency} maintenance={maintenance} />
   </>;
 }
 
-function CartContents({ currency }: { currency: string }) {
+function CartContents({ currency, maintenance }: { currency: string; maintenance: boolean }) {
   const itemsQuery = useQuery(cartItemsOptions);
   const items = itemsQuery.data ?? [];
   const [updating, setUpdating] = useState(false);
@@ -254,6 +255,11 @@ function CartContents({ currency }: { currency: string }) {
             <p className="cart-feedback cart-feedback-error" role="alert">
               Sesuaikan jumlah barang yang melebihi stok sebelum checkout.
             </p>
+          ) : maintenance ? (
+            <>
+              <Button disabled>Lanjut ke checkout <Icon name="arrow" /></Button>
+              <p className="maintenance-note" role="status">{MAINTENANCE_NOTE}</p>
+            </>
           ) : (
             <ButtonLink href="/checkout">
               Lanjut ke checkout <Icon name="arrow" />

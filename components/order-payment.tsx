@@ -71,7 +71,7 @@ function CopyValue({ value, label, children }: {
   );
 }
 
-export function OrderPayment({ orderId, currency }: { orderId: string; currency: string }) {
+export function OrderPayment({ orderId, currency, storeName }: { orderId: string; currency: string; storeName: string }) {
   const [state, setState] = useState<State>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -133,6 +133,7 @@ export function OrderPayment({ orderId, currency }: { orderId: string; currency:
   const confirmed = ["paid", "processed", "delivering", "delivered", "done"].includes(order.status);
   const bankTransfer = order.payment_method === "bank_transfer";
   const transferAvailable = bankTransfer && Boolean(order.bank_account);
+  const qris = order.payment_method === "qris";
   const itemCount = order.items.reduce((count, item) => count + item.amount, 0);
 
   function refreshStatus() {
@@ -174,7 +175,7 @@ export function OrderPayment({ orderId, currency }: { orderId: string; currency:
             {awaitingPayment && (
               <>
                 <section className="payment-amount" aria-label="Total pembayaran">
-                  <span className="payment-label">{transferAvailable ? "Total yang harus ditransfer" : "Total pembayaran"}</span>
+                  <span className="payment-label">{qris ? "Total yang harus dibayar" : transferAvailable ? "Total yang harus ditransfer" : "Total pembayaran"}</span>
                   <CopyValue value={String(order.grand_total)} label={`Salin nominal ${order.grand_total}`}>
                     <strong className="payment-amount-value">{formatPrice(order.grand_total, currency)}</strong>
                   </CopyValue>
@@ -198,6 +199,27 @@ export function OrderPayment({ orderId, currency }: { orderId: string; currency:
                     </div>
                     <PaymentProofForm order={order} onUploaded={(updated) => setState({ status: "ready", order: updated })} />
                   </section>
+                ) : qris && order.qris_image ? (
+                  <section className="payment-bank" aria-labelledby="payment-qris-title">
+                    <div className="payment-section-heading"><span className="payment-small-icon"><Icon name="qr" /></span><div><h3 id="payment-qris-title">Scan QRIS</h3><p>{order.payment_method_name ?? "QRIS"} · {storeName}</p></div></div>
+                    <div className="payment-qris-code">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- gambar milik toko dari domain backend, tanpa optimasi agar QR tidak buram. */}
+                      <img src={order.qris_image} alt={`Kode QRIS ${storeName}`} />
+                    </div>
+                    <ol className="payment-qris-steps">
+                      <li>Buka aplikasi e-wallet atau m-banking yang mendukung QRIS.</li>
+                      <li>Scan kode di atas. Jika membayar dari ponsel yang sama, unduh QR lalu pilih dari galeri di aplikasi.</li>
+                      <li>Masukkan nominal persis <strong>{formatPrice(order.grand_total, currency)}</strong> sampai digit terakhir.</li>
+                      <li>Simpan bukti pembayaran, lalu unggah lewat formulir di bawah.</li>
+                    </ol>
+                    <div className="payment-qris-actions">
+                      {/* Atribut download diabaikan browser untuk gambar beda domain; target _blank membuka gambarnya agar tetap bisa disimpan. */}
+                      <ButtonLink reloadDocument variant="secondary" size="sm" href={order.qris_image} download target="_blank" rel="noopener"><Icon name="download" />Unduh QR</ButtonLink>
+                    </div>
+                    <PaymentProofForm order={order} onUploaded={(updated) => setState({ status: "ready", order: updated })} />
+                  </section>
+                ) : qris ? (
+                  <div className="payment-method-notice"><Icon name="info" /><p>Toko belum menyiapkan kode QRIS untuk pembayaran ini. Hubungi toko untuk mendapatkan petunjuk pembayaran.</p></div>
                 ) : (
                   <div className="payment-method-notice"><Icon name="info" /><p>Instruksi {order.payment_method_name ?? "pembayaran"} belum tersedia di halaman ini. Hubungi toko untuk mendapatkan petunjuk pembayaran.</p></div>
                 )}

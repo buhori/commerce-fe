@@ -3,11 +3,11 @@ import { currentStoreHeaders } from "./store-host";
 import { readHomeSections, type HomeSection } from "./home-sections";
 import { httpUrl, readSeo, readStoreSeo, type PageSeo, type StoreSeo } from "./seo";
 import { readSitemap, type SitemapData } from "./sitemap";
-import { isPageSlug, productQueryString, readProductPage, type ProductQuery } from "./store-shared";
+import { isPageSlug, productQueryString, readProductPage, readStoreMaintenance, type ProductQuery, type StoreMaintenance } from "./store-shared";
 
 // Client components import these from ./store-shared; server code may keep using this module.
 export { accountsEnabled, isPageSlug, PRODUCTS_PER_PAGE, preorderDays, productQueryString, readProductPage } from "./store-shared";
-export type { ProductPage, ProductQuery } from "./store-shared";
+export type { ProductPage, ProductQuery, StoreMaintenance } from "./store-shared";
 
 export interface Store {
   // The backend sends the related theme row; older responses sent its key.
@@ -35,6 +35,8 @@ export interface Store {
   /** Alamat publik kanonik toko (domain sendiri atau subdomain), tanpa garis miring akhir. */
   url?: string | null;
   seo?: StoreSeo;
+  /** Selalu terisi setelah getStore(); selama aktif pesanan belum bisa dibuat. */
+  maintenance: StoreMaintenance;
 }
 
 export interface ProductVariant {
@@ -199,6 +201,7 @@ export const getStore = cache(async () => {
     // Backend lama tidak mengirim keduanya; tanpa url, SEO memakai origin request.
     url: httpUrl(store.url)?.replace(/\/+$/, "") ?? null,
     seo: readStoreSeo(store.seo),
+    maintenance: readStoreMaintenance(store.maintenance),
   };
 });
 

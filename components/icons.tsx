@@ -1,6 +1,6 @@
 import type { ReactNode, SVGProps } from "react";
 
-export type IconName = "bag" | "arrow" | "search" | "box" | "close" | "mail" | "pin" | "copy" | "check" | "phone" | "expand" | "truck" | "user" | "bell" | "heart" | "logout" | "clock" | "bank" | "refresh" | "info" | "upload" | "menu" | "tag" | "bolt" | "alert";
+export type IconName = "bag" | "arrow" | "search" | "box" | "close" | "mail" | "pin" | "copy" | "check" | "phone" | "expand" | "truck" | "user" | "bell" | "heart" | "logout" | "clock" | "bank" | "refresh" | "info" | "upload" | "menu" | "tag" | "bolt" | "alert" | "qr" | "download" | "tool";
 const paths: Record<IconName, ReactNode> = {
   clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
   tag: <><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9-9-9Z" /><circle cx="7.5" cy="7.5" r="1.5" /></>,
@@ -9,7 +9,10 @@ const paths: Record<IconName, ReactNode> = {
   bank: <><path d="m3 8 9-5 9 5H3ZM5 11v6M10 11v6M14 11v6M19 11v6M3 21h18M4 18h16" /></>,
   refresh: <><path d="M20 7v5h-5M4 17v-5h5" /><path d="M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1" /></>,
   info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7h.01" /></>,
+  tool: <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76Z" />,
   upload: <path d="M12 15V4M7 9l5-5 5 5M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4" />,
+  download: <path d="M12 4v11M7 10l5 5 5-5M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4" />,
+  qr: <><rect x="4" y="4" width="6" height="6" rx="1" /><rect x="14" y="4" width="6" height="6" rx="1" /><rect x="4" y="14" width="6" height="6" rx="1" /><path d="M14 14h2v2h-2zM18 14h2M14 20h2M18 18v2h2M16 16v2h2" /></>,
   bell: <path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4l2-2ZM10 21h4" />,
   heart: <path d="M12 20s-8-4.9-8-10.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8 2.5C20 15.1 12 20 12 20Z" />,
   logout: <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10" />,

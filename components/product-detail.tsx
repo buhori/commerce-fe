@@ -42,6 +42,7 @@ export function ProductDetail({ store, product, view }: ProductPageProps) {
               stock={product.stock}
               price={product.price}
               currency={currency}
+              maintenance={store.maintenance.active}
             />
             <WishlistButton productId={product.id} productName={product.name} variant="button" />
             <div className="detail-delivery">

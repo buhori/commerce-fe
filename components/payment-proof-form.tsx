@@ -18,9 +18,11 @@ function uploadHeaders(): Headers {
   return headers;
 }
 
-function checkFile(file: File): string | null {
-  if (!ACCEPTED_TYPES.includes(file.type)) return "Bukti transfer harus berupa gambar JPG, PNG, WebP, atau PDF.";
-  if (file.size > MAX_BYTES) return "Ukuran bukti transfer maksimal 5 MB.";
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+function checkFile(file: File, proof: string): string | null {
+  if (!ACCEPTED_TYPES.includes(file.type)) return `${capitalize(proof)} harus berupa gambar JPG, PNG, WebP, atau PDF.`;
+  if (file.size > MAX_BYTES) return `Ukuran ${proof} maksimal 5 MB.`;
   return null;
 }
 
@@ -33,6 +35,10 @@ export function PaymentProofForm({ order, onUploaded }: {
   const [preview, setPreview] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null);
+  // QRIS dibayar lewat e-wallet atau m-banking, jadi istilah "transfer" dan "rekening" tidak cocok.
+  const qris = order.payment_method === "qris";
+  const proof = qris ? "bukti pembayaran" : "bukti transfer";
+  const proofLabel = capitalize(proof);
 
   // Release each preview URL once it is replaced or the form goes away.
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
@@ -45,7 +51,7 @@ export function PaymentProofForm({ order, onUploaded }: {
   function choose(event: ChangeEvent<HTMLInputElement>) {
     const chosen = event.target.files?.[0] ?? null;
     setMessage(null);
-    const problem = chosen && checkFile(chosen);
+    const problem = chosen && checkFile(chosen, proof);
     if (problem) {
       event.target.value = "";
       setMessage({ text: problem, error: true });
@@ -56,7 +62,7 @@ export function PaymentProofForm({ order, onUploaded }: {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pending) return;
-    if (!file) { setMessage({ text: "Pilih file bukti transfer.", error: true }); return; }
+    if (!file) { setMessage({ text: `Pilih file ${proof}.`, error: true }); return; }
     const fields = new FormData(event.currentTarget);
     const body = new FormData();
     body.set("proof", file);
@@ -70,14 +76,14 @@ export function PaymentProofForm({ order, onUploaded }: {
       });
       const data = await response.json().catch(() => null);
       if (!response.ok) {
-        throw new Error(response.status < 500 && typeof data?.message === "string" ? data.message : "Bukti transfer belum dapat dikirim. Silakan coba lagi.");
+        throw new Error(response.status < 500 && typeof data?.message === "string" ? data.message : `${proofLabel} belum dapat dikirim. Silakan coba lagi.`);
       }
       onUploaded(readOrder(data));
       setReplacing(false);
       pick(null);
-      setMessage({ text: "Bukti transfer terkirim. Toko akan memverifikasi pembayaran Anda.", error: false });
+      setMessage({ text: `${proofLabel} terkirim. Toko akan memverifikasi pembayaran Anda.`, error: false });
     } catch (error) {
-      setMessage({ text: error instanceof Error ? error.message : "Bukti transfer belum dapat dikirim.", error: true });
+      setMessage({ text: error instanceof Error ? error.message : `${proofLabel} belum dapat dikirim.`, error: true });
     } finally { setPending(false); }
   }
 
@@ -91,12 +97,12 @@ export function PaymentProofForm({ order, onUploaded }: {
         <div className="payment-section-heading">
           <span className="payment-small-icon" data-done="true"><Icon name="check" /></span>
           <div>
-            <h3 id="payment-proof-title">Bukti transfer terkirim</h3>
+            <h3 id="payment-proof-title">{proofLabel} terkirim</h3>
             <p>{order.sender_name ? `Dari ${order.sender_name}. ` : ""}Toko sedang memverifikasi pembayaran Anda.</p>
           </div>
         </div>
         {feedback}
-        <Button type="button" variant="text" size="sm" onClick={() => { setReplacing(true); setMessage(null); }}>Ganti bukti transfer</Button>
+        <Button type="button" variant="text" size="sm" onClick={() => { setReplacing(true); setMessage(null); }}>Ganti {proof}</Button>
       </section>
     );
   }
@@ -106,39 +112,39 @@ export function PaymentProofForm({ order, onUploaded }: {
       <div className="payment-section-heading">
         <span className="payment-small-icon"><Icon name="upload" /></span>
         <div>
-          <h3 id="payment-proof-title">Unggah bukti transfer</h3>
-          <p>Sudah transfer? Kirim buktinya agar toko bisa memverifikasi lebih cepat.</p>
+          <h3 id="payment-proof-title">Unggah {proof}</h3>
+          <p>{qris ? "Sudah membayar?" : "Sudah transfer?"} Kirim buktinya agar toko bisa memverifikasi lebih cepat.</p>
         </div>
       </div>
       <form className="payment-proof-form" onSubmit={submit} aria-busy={pending}>
         <fieldset disabled={pending}>
-          <legend className="sr-only">Bukti transfer</legend>
+          <legend className="sr-only">{proofLabel}</legend>
           <label className="payment-proof-drop" data-filled={Boolean(file)}>
             <input type="file" name="proof" className="sr-only" onChange={choose}
               accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf" />
             {preview
               // eslint-disable-next-line @next/next/no-img-element -- local object URL preview.
-              ? <img src={preview} alt="Pratinjau bukti transfer" />
+              ? <img src={preview} alt={`Pratinjau ${proof}`} />
               : <Icon name={file ? "check" : "upload"} width={24} height={24} />}
             <span>
-              <strong>{file ? file.name : "Pilih foto atau PDF bukti transfer"}</strong>
+              <strong>{file ? file.name : `Pilih foto atau PDF ${proof}`}</strong>
               <small>{file ? "Ketuk untuk mengganti file" : "JPG, PNG, WebP, atau PDF · maks. 5 MB"}</small>
             </span>
           </label>
           <div className="checkout-fields">
             <div className="checkout-field">
-              <label htmlFor="proof-sender-name">Nama pemilik rekening <span className="field-optional">(opsional)</span></label>
+              <label htmlFor="proof-sender-name">{qris ? "Nama pengirim" : "Nama pemilik rekening"} <span className="field-optional">(opsional)</span></label>
               <input id="proof-sender-name" name="sender_name" maxLength={255} autoComplete="name" defaultValue={order.sender_name ?? ""} />
             </div>
             <div className="checkout-field">
-              <label htmlFor="proof-sender-account">Bank &amp; nomor rekening pengirim <span className="field-optional">(opsional)</span></label>
-              <input id="proof-sender-account" name="sender_account" maxLength={64} placeholder="Contoh: BRI 1234567890" />
+              <label htmlFor="proof-sender-account">{qris ? "Nama akun e-wallet / bank pengirim" : "Bank & nomor rekening pengirim"} <span className="field-optional">(opsional)</span></label>
+              <input id="proof-sender-account" name="sender_account" maxLength={64} placeholder={qris ? "Contoh: GoPay 081234567890" : "Contoh: BRI 1234567890"} />
             </div>
           </div>
           <div className="payment-proof-actions">
             <Button type="submit" disabled={pending || !file}>
               {pending ? <Spinner size={18} label="Mengirim bukti…" /> : <Icon name="upload" />}
-              {pending ? "Mengirim…" : "Kirim bukti transfer"}
+              {pending ? "Mengirim…" : `Kirim ${proof}`}
             </Button>
             {order.proof_uploaded && (
               <Button type="button" variant="text" onClick={() => { setReplacing(false); pick(null); setMessage(null); }}>Batal</Button>

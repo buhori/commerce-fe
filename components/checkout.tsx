@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { cartItemsOptions, preorderItemsOptions } from "@/lib/cart-queries";
 import { useRouter } from "next/navigation";
 import { getCartUnitPrice } from "@/lib/cart";
-import { jsonHeaders, readOrderId, shippingOptionLabel, type AddressDetails, type BankAccount, type PaymentMethod, type ShippingOption } from "@/lib/checkout";
+import { checkoutErrorMessage, isManualPayment, jsonHeaders, readOrderId, shippingOptionLabel, type AddressDetails, type BankAccount, type PaymentMethod, type ShippingOption } from "@/lib/checkout";
 import { addDays, formatDate, formatPrice } from "@/lib/format";
 import { preorderDays } from "@/lib/store-shared";
 import { ProductImage } from "./product-image";
@@ -73,9 +73,7 @@ export function Checkout({ currency, preorder = false }: { currency: string; pre
         setOptionsVersion((value) => value + 1);
       }
       if (!response.ok) {
-        throw new Error(response.status < 500 && typeof data?.message === "string"
-          ? data.message
-          : "Pesanan belum dapat dibuat. Silakan coba lagi.");
+        throw new Error(checkoutErrorMessage(response.status, data));
       }
       const id = readOrderId(data);
       // The backend closes the cart; invalidate count and shared cart items.
@@ -208,7 +206,7 @@ export function Checkout({ currency, preorder = false }: { currency: string; pre
           </section>
         )}
       </section>
-      <p className="commerce-note"><Icon name="info" />{payment?.code === "bank_transfer" ? "Nominal akhir beserta kode unik akan ditampilkan setelah pesanan dibuat." : "Periksa kembali rincian pesanan sebelum melanjutkan ke pembayaran."}</p>
+      <p className="commerce-note"><Icon name="info" />{isManualPayment(payment?.code) ? "Nominal akhir beserta kode unik akan ditampilkan setelah pesanan dibuat." : "Periksa kembali rincian pesanan sebelum melanjutkan ke pembayaran."}</p>
       <ButtonLink variant="secondary" href={preorder ? "/" : "/cart"} className="commerce-continue">{preorder ? "Lanjut belanja" : "Edit keranjang"}<Icon name="arrow" /></ButtonLink>
       </aside>
     </div>

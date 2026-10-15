@@ -9,6 +9,7 @@ import { useCart } from "./cart-provider";
 import { Icon } from "./icons";
 import type { Product } from "@/lib/store-api";
 import { formatPrice } from "@/lib/format";
+import { MAINTENANCE_NOTE } from "@/lib/store-shared";
 
 const MAX_QUANTITY = 99;
 
@@ -19,13 +20,15 @@ export interface AddToCartOptions {
   currency: string;
   variants?: Product["variants"];
   preorder?: boolean;
+  /** store.maintenance.active: beli sekarang dan pre-order ditutup, tambah ke keranjang tetap bisa. */
+  maintenance?: boolean;
 }
 
 /**
  * Buying logic without markup: variant choice, quantity limits, price, and the add/buy actions.
  * Pre-orders skip the cart and open their own checkout.
  */
-export function useAddToCart({ productId, stock, price, currency, variants = [], preorder = false }: AddToCartOptions) {
+export function useAddToCart({ productId, stock, price, currency, variants = [], preorder = false, maintenance = false }: AddToCartOptions) {
   const { modify, pending } = useCart();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -41,6 +44,8 @@ export function useAddToCart({ productId, stock, price, currency, variants = [],
   const max = preorder ? MAX_QUANTITY : Math.min(MAX_QUANTITY, Math.max(0, available));
   const soldOut = !preorder && complete && max === 0;
   const disabled = pending || !complete || soldOut;
+  // Alasan tombol yang menuju checkout dimatikan; pre-order selalu langsung ke checkout.
+  const checkoutNote = maintenance ? MAINTENANCE_NOTE : null;
   const unitPrice = selectedVariant?.price ?? price;
   const variantPrices = variants.map((variant) => variant.price ?? price);
   const low = variantPrices.length ? Math.min(...variantPrices) : price;
@@ -61,6 +66,11 @@ export function useAddToCart({ productId, stock, price, currency, variants = [],
 
   async function add(mode: "cart" | "buy") {
     if (disabled) return;
+    // Penjaga untuk tema yang tidak mematikan tombolnya: checkout pasti ditolak backend.
+    if (checkoutNote && (preorder || mode === "buy")) {
+      setFeedback({ message: checkoutNote, error: true });
+      return;
+    }
     setActiveAction(mode);
     setFeedback(null);
     try {
@@ -94,7 +104,7 @@ export function useAddToCart({ productId, stock, price, currency, variants = [],
 
   return {
     variants, selectedVariant, selectVariant, quantity, changeQuantity, max, complete, soldOut, disabled, pending,
-    preorder, unitPrice, priceLabel, subtotal: unitPrice * quantity, activeAction, feedback, add,
+    preorder, unitPrice, priceLabel, subtotal: unitPrice * quantity, activeAction, feedback, add, checkoutNote,
   };
 }
 
@@ -103,7 +113,7 @@ export function ProductCartActions(options: AddToCartOptions) {
   const variantGroupId = useId();
   const {
     variants, selectedVariant, selectVariant, quantity, changeQuantity, max, complete, soldOut, disabled, pending,
-    preorder, unitPrice, priceLabel, activeAction, feedback, add,
+    preorder, unitPrice, priceLabel, activeAction, feedback, add, checkoutNote,
   } = useAddToCart(options);
 
   return (
@@ -171,7 +181,7 @@ export function ProductCartActions(options: AddToCartOptions) {
         <div className="purchase-mobile-summary"><span>{!complete ? "Pilih varian terlebih dahulu" : `${quantity} barang`}</span><strong>{complete ? formatPrice(unitPrice * quantity, currency) : priceLabel}</strong></div>
         {/* Pre-orders are bought on their own, so they go straight to checkout. */}
         <div className="purchase-buttons" data-single={preorder}>
-          <Button type="button" disabled={disabled} onClick={() => void add("buy")}>
+          <Button type="button" disabled={disabled || Boolean(checkoutNote)} onClick={() => void add("buy")}>
             {soldOut ? "Stok habis" : activeAction === "buy" ? "Memproses…" : preorder ? "Pre-order sekarang" : "Beli sekarang"}
             {!soldOut && activeAction !== "buy" && <Icon name="arrow" />}
           </Button>
@@ -184,6 +194,7 @@ export function ProductCartActions(options: AddToCartOptions) {
         </div>
       </div>
 
+      {checkoutNote && <p className="maintenance-note" role="status">{checkoutNote}</p>}
       {feedback && (
         <p className={`cart-feedback ${feedback.error ? "cart-feedback-error" : ""}`} role={feedback.error ? "alert" : "status"}>
           {feedback.message}
