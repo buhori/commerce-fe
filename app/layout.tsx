@@ -6,6 +6,8 @@ import { QueryProvider } from "@/components/query-provider";
 import { PreviewBridge } from "@/components/preview-bridge";
 import { ThemePreviewBar } from "@/components/theme-preview-bar";
 import { getPreviewState } from "@/lib/preview";
+import { htmlLang, rootMetadata } from "@/lib/seo";
+import { getSiteSeo } from "@/lib/site-seo";
 import { getStore, StoreApiError } from "@/lib/store-api";
 import { getActiveTheme } from "@/themes/active";
 
@@ -21,25 +23,26 @@ const fraunces = Fraunces({
   preload: false,
 });
 
+// Dasar SEO semua halaman: metadataBase dari alamat publik toko, template judul "%s | {toko}",
+// dan noindex untuk toko yang menutup diri atau pratinjau pemilik.
 export async function generateMetadata(): Promise<Metadata> {
-  const store = await getStore().catch(() => null);
+  const site = await getSiteSeo();
   return {
-    title: "Toko Online",
-    description: "Temukan produk pilihan untuk kebutuhan sehari-hari.",
-    icons: { icon: store?.favicon || store?.logo || "/icon.svg" },
+    ...rootMetadata(site),
+    icons: { icon: site.store?.favicon || site.store?.logo || "/icon.svg" },
   };
 }
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   // API membalas 404 bila subdomain/domain tidak terdaftar sebagai toko mana pun.
-  const missing = await getStore().then(
-    () => false,
-    (error: unknown) => error instanceof StoreApiError && error.status === 404,
+  const [missing, lang] = await getStore().then(
+    (store) => [false, htmlLang(store.language)] as const,
+    (error: unknown) => [error instanceof StoreApiError && error.status === 404, htmlLang(null)] as const,
   );
   const [theme, preview] = await Promise.all([getActiveTheme(), getPreviewState()]);
   return (
     <html
-      lang="id"
+      lang={lang}
       data-theme={theme.id}
       className={`${jakarta.variable} ${fraunces.variable} ${theme.className} h-full antialiased`}
     >

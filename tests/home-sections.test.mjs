@@ -11,7 +11,7 @@ vm.runInNewContext(
   }).outputText,
   { exports },
 );
-const { readHomeSections, safeLink, paragraphs } = exports;
+const { readHomeSections, safeLink, paragraphs, scopedSectionCss } = exports;
 
 test("a store without a published layout keeps the built-in home", () => {
   assert.equal(readHomeSections({ data: null }), null);
@@ -61,4 +61,22 @@ test("links stay on the store or on the web", () => {
 test("text widgets become paragraphs on blank lines", () => {
   assert.deepEqual([...paragraphs("Satu\nbaris\n\nDua\n\n\n")], ["Satu\nbaris", "Dua"]);
   assert.equal(paragraphs(null).length, 0);
+});
+
+test("custom CSS stays scoped to its section and cannot close the style tag or the wrapper", () => {
+  const css = (value) => readHomeSections({ data: [{ id: "section-2", type: "video", settings: { video_id: "dQw4w9WgXcQ" }, css: value }] })[0].css;
+
+  assert.equal(css("padding: 4rem 0;\n& h2 { color: #4525C9; }"), "padding: 4rem 0;\n& h2 { color: #4525C9; }");
+  assert.equal(css('& h2 { content: "}"; } /* { */'), '& h2 { content: "}"; } /* { */');
+  assert.equal(css("color: red;</style><script>alert(1)</script>"), "color: red;/style>script>alert(1)/script>");
+  assert.equal(css("} body { display: none; } & {"), null);
+  assert.equal(css("\\{ } body { display: none; }"), null);
+  assert.equal(css("background: url({); } body { display: none; } & {"), null);
+  assert.equal(css("& h2 { color: red;"), null);
+  assert.equal(css(42), null);
+  assert.equal(css(undefined), null);
+  assert.equal(scopedSectionCss("section-2", "padding: 0;"), '.home-block[data-section="section-2"] {\npadding: 0;\n}');
+
+  const [section] = readHomeSections({ data: [{ id: '"]{}*{color:red} x[a="', type: "video", settings: { video_id: "dQw4w9WgXcQ" } }] });
+  assert.equal(section.id, "section-0");
 });

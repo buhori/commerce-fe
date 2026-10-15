@@ -150,12 +150,35 @@ test("product detail uses the slug and retains the backend ID for cart operation
     assert.equal(init.headers["X-Store-Id"], "404");
     return Response.json({ data: product });
   });
-  assert.deepEqual(await getProduct(product.slug), product);
+  const detail = await getProduct(product.slug);
+  assert.equal(detail.id, 1);
+  assert.equal(detail.slug, product.slug);
+  // Backend lama tanpa field SEO: tetap terbaca dengan nilai kosong.
+  assert.deepEqual(JSON.parse(JSON.stringify(detail.seo)), { title: null, description: null, image: null });
+  assert.deepEqual(JSON.parse(JSON.stringify(detail.categories)), []);
+  assert.equal(detail.rating_count, 0);
 });
 
-test("slug detail rejects mismatched products and hides drafts and deleted products", async () => {
+test("product SEO fields are validated: text or null, http(s) images, well-formed categories", async () => {
+  const product = {
+    id: 1, slug: "kopi", status: "published", deleted_at: null, rating: 4.6, rating_count: 12, updated_at: "2026-10-01T00:00:00Z",
+    seo: { title: " Kopi Arabika ", description: 42, image: "javascript:alert(1)" },
+    categories: [{ id: 3, name: "Kopi", slug: "kopi" }, { id: "x", name: "Rusak", slug: "rusak" }, null],
+  };
+  const { getProduct } = loadModule("../lib/store-api.ts", async () => Response.json({ data: product }));
+  const detail = await getProduct("kopi");
+  assert.deepEqual(JSON.parse(JSON.stringify(detail.seo)), { title: "Kopi Arabika", description: null, image: null });
+  assert.deepEqual(JSON.parse(JSON.stringify(detail.categories)), [{ id: 3, name: "Kopi", slug: "kopi" }]);
+  assert.equal(detail.rating, 4.6);
+  assert.equal(detail.rating_count, 12);
+});
+
+test("slug detail returns the canonical slug for a redirect and hides drafts and deleted products", async () => {
   let product = { id: 1, slug: "different-product", status: "published", deleted_at: null };
   const { getProduct } = loadModule("../lib/store-api.ts", async () => Response.json({ data: product }));
+  // Ditemukan lewat ID ter-encode atau slug beda huruf: halaman mengalihkan ke slug kanonik ini.
+  assert.equal((await getProduct("requested-product")).slug, "different-product");
+  product = { ...product, slug: "" };
   await assert.rejects(getProduct("requested-product"), /Invalid product detail response/);
   product = { ...product, slug: "requested-product", status: "draft" };
   assert.equal(await getProduct("requested-product"), null);

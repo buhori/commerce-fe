@@ -46,6 +46,52 @@ export const shippingOptionKey = (option: Pick<ShippingOption, "shipping_method_
 export const shippingOptionLabel = (option: Pick<ShippingOption, "courier_name" | "service">) =>
   option.service ? `${option.courier_name} ${option.service}` : option.courier_name;
 
+/** A service whose delivery estimate reaches this many days is flagged as slow. */
+export const SLOW_SHIPPING_DAYS = 7;
+
+/**
+ * Days in an estimate as written by the server: "Hari ini" => [0, 0], "2 hari" => [2, 2],
+ * "1-2 hari" => [1, 2]; null when there is no estimate or it cannot be read.
+ */
+export function etdRange(etd: string | null): [number, number] | null {
+  if (!etd) return null;
+  if (/hari ini/i.test(etd)) return [0, 0];
+  const days = etd.match(/\d+/g)?.map(Number);
+  if (!days?.length) return null;
+  return [Math.min(...days), Math.max(...days)];
+}
+
+export interface ShippingHighlights {
+  cheapest: boolean;
+  fastest: boolean;
+  slow: boolean;
+}
+
+/**
+ * Labels that help the buyer choose: the cheapest and fastest services (only when the options
+ * actually differ) and services that take a long time. Keyed by shippingOptionKey.
+ */
+export function shippingHighlights(options: ShippingOption[]): Map<string, ShippingHighlights> {
+  const costs = options.map((option) => option.cost);
+  const minCost = Math.min(...costs);
+  const costsDiffer = new Set(costs).size > 1;
+  const ranges = options.map((option) => etdRange(option.etd));
+  const known = ranges.filter((range): range is [number, number] => range !== null);
+  // Fastest by the worst case, then by the best case: "1 hari" beats "1-2 hari".
+  const best = known.reduce<[number, number] | null>((current, range) =>
+    !current || range[1] < current[1] || (range[1] === current[1] && range[0] < current[0]) ? range : current, null);
+  const speedsDiffer = known.length > 1 && new Set(known.map((range) => range.join("-"))).size > 1;
+
+  return new Map(options.map((option, index) => {
+    const range = ranges[index];
+    return [shippingOptionKey(option), {
+      cheapest: costsDiffer && option.cost === minCost,
+      fastest: speedsDiffer && range !== null && best !== null && range[0] === best[0] && range[1] === best[1],
+      slow: range !== null && range[1] >= SLOW_SHIPPING_DAYS,
+    }];
+  }));
+}
+
 export interface PaymentMethod {
   code: string;
   name: string;

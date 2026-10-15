@@ -1,5 +1,5 @@
 import { catalogUrl } from "@/lib/catalog-url";
-import type { HomeSection, ProductListSettings } from "@/lib/home-sections";
+import { scopedSectionCss, type HomeSection, type ProductListSettings } from "@/lib/home-sections";
 import { getProducts, type ProductSummary, type Store } from "@/lib/store-api";
 import type { SectionComponents } from "@/sdk/types";
 import { defaultSections } from "./home-sections";
@@ -27,8 +27,10 @@ export async function HomeBuilderPage({ store, sections, components = {} }: {
         const rendered = renderSection({ store, section, components, products: products[index] });
         // Nomor bagian di draf (section-3 = bagian ke-4), untuk klik-untuk-edit di pratinjau builder.
         const position = Number(section.id.replace("section-", ""));
+        // Custom CSS bagian dibungkus selektor `data-section`-nya; `<` sudah dibuang di readHomeSections.
         return rendered && (
-          <div key={section.id} className="home-block" data-section-index={Number.isInteger(position) ? position : index}>
+          <div key={section.id} className="home-block" data-section={section.id} data-section-index={Number.isInteger(position) ? position : index}>
+            {section.css && <style dangerouslySetInnerHTML={{ __html: scopedSectionCss(section.id, section.css) }} />}
             {rendered}
           </div>
         );

@@ -8,7 +8,28 @@ const exports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL("../lib/checkout.ts", import.meta.url), "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS },
 }).outputText, { exports });
-const { readRegions, resetRegionChildren, readAddresses, readShippingQuote, shippingOptionKey, shippingOptionLabel, readPaymentMethods, readBankAccounts, readOrder } = exports;
+const { readRegions, resetRegionChildren, readAddresses, readShippingQuote, shippingOptionKey, shippingOptionLabel, etdRange, shippingHighlights, readPaymentMethods, readBankAccounts, readOrder } = exports;
+
+test("delivery estimates are read as day ranges", () => {
+  assert.deepEqual([...etdRange("1-2 hari")], [1, 2]);
+  assert.deepEqual([...etdRange("3 hari")], [3, 3]);
+  assert.deepEqual([...etdRange("Hari ini")], [0, 0]);
+  assert.equal(etdRange(null), null);
+  assert.equal(etdRange("segera"), null);
+});
+
+test("shipping highlights mark the cheapest, the fastest, and slow services", () => {
+  const option = (id, cost, etd) => ({ shipping_method_id: id, courier: "jne", courier_name: "JNE", service: `S${id}`, description: null, cost, etd });
+  const tags = shippingHighlights([option(1, 15000, "5-7 hari"), option(2, 22000, "1-2 hari"), option(3, 34000, "1 hari"), option(4, 15000, "14-17 hari")]);
+  assert.deepEqual({ ...tags.get("1:S1") }, { cheapest: true, fastest: false, slow: true });
+  assert.deepEqual({ ...tags.get("2:S2") }, { cheapest: false, fastest: false, slow: false });
+  assert.deepEqual({ ...tags.get("3:S3") }, { cheapest: false, fastest: true, slow: false });
+  assert.equal(tags.get("4:S4").cheapest, true);
+
+  // Nothing to compare: no "cheapest" when every price is the same, no "fastest" without estimates.
+  const flat = shippingHighlights([option(1, 10000, null), option(2, 10000, null)]);
+  assert.deepEqual({ ...flat.get("1:S1") }, { cheapest: false, fastest: false, slow: false });
+});
 
 test("region responses accept arrays/wrappers and only direct children of the selected parent", () => {
   assert.equal(readRegions([{ code: "11", name: "Aceh" }, { code: "11.02", name: "Kabupaten" }], 0).length, 1);

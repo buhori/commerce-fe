@@ -8,7 +8,7 @@ import { Checkout } from "@/components/checkout";
 import { getCustomer } from "@/lib/customer-api";
 import { getStore } from "@/lib/store-api";
 
-export const metadata: Metadata = { title: "Checkout — Toko Online" };
+export const metadata: Metadata = { title: "Checkout", robots: { index: false, follow: true } };
 
 export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ type?: string | string[] }> }) {
   const [store, { type }] = await Promise.all([getStore(), searchParams]);

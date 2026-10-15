@@ -1,10 +1,12 @@
 import { cache } from "react";
 import { currentStoreHeaders } from "./store-host";
 import { readHomeSections, type HomeSection } from "./home-sections";
-import { productQueryString, readProductPage, type ProductQuery } from "./store-shared";
+import { httpUrl, readSeo, readStoreSeo, type PageSeo, type StoreSeo } from "./seo";
+import { readSitemap, type SitemapData } from "./sitemap";
+import { isPageSlug, productQueryString, readProductPage, type ProductQuery } from "./store-shared";
 
 // Client components import these from ./store-shared; server code may keep using this module.
-export { accountsEnabled, PRODUCTS_PER_PAGE, preorderDays, productQueryString, readProductPage } from "./store-shared";
+export { accountsEnabled, isPageSlug, PRODUCTS_PER_PAGE, preorderDays, productQueryString, readProductPage } from "./store-shared";
 export type { ProductPage, ProductQuery } from "./store-shared";
 
 export interface Store {
@@ -30,6 +32,9 @@ export interface Store {
   features?: string[];
   // Batas paket yang berlaku, mis. { cart: 3 }; kosong berarti tanpa batas.
   limits?: Record<string, number>;
+  /** Alamat publik kanonik toko (domain sendiri atau subdomain), tanpa garis miring akhir. */
+  url?: string | null;
+  seo?: StoreSeo;
 }
 
 export interface ProductVariant {
@@ -77,6 +82,9 @@ export interface Product extends ProductSummary {
   width?: number | null;
   height?: number | null;
   length?: number | null;
+  seo?: PageSeo;
+  categories?: { id: number; name: string; slug: string }[];
+  updated_at?: string | null;
   sku: string;
   description: string;
   variants: ProductVariant[];
@@ -92,6 +100,7 @@ export interface Category {
   slug: string;
   type?: string;
   logo?: string | null;
+  seo?: PageSeo;
 }
 
 export class StoreApiError extends Error {
@@ -183,19 +192,47 @@ export function storeLogoUrl(value: unknown): string | null {
 
 export const getStore = cache(async () => {
   const store = await storeFetch<Store>("/store");
-  return { ...store, logo: storeLogoUrl(store.logo), favicon: storeLogoUrl(store.favicon) };
+  return {
+    ...store,
+    logo: storeLogoUrl(store.logo),
+    favicon: storeLogoUrl(store.favicon),
+    // Backend lama tidak mengirim keduanya; tanpa url, SEO memakai origin request.
+    url: httpUrl(store.url)?.replace(/\/+$/, "") ?? null,
+    seo: readStoreSeo(store.seo),
+  };
 });
 
+/** Kategori produk yang ditempelkan di detail produk (untuk breadcrumb); baris rusak dibuang. */
+function readProductCategories(value: unknown): NonNullable<Product["categories"]> {
+  return (Array.isArray(value) ? value : []).flatMap((entry) => {
+    const row = entry as Partial<Record<"id" | "name" | "slug", unknown>> | null;
+    return row && Number.isSafeInteger(row.id) && typeof row.name === "string" && row.name.trim() && typeof row.slug === "string" && row.slug
+      ? [{ id: row.id as number, name: row.name.trim(), slug: row.slug }]
+      : [];
+  });
+}
+
+/**
+ * Detail produk yang tayang. Backend boleh menemukan produk lewat ID ter-encode atau slug beda
+ * huruf; `slug` hasilnya adalah slug kanonik dan halaman mengalihkan ke sana bila berbeda.
+ */
 export const getProduct = cache(async (slug: string): Promise<Product | null> => {
   try {
     const result = await storeFetch<{ data: Product | null | [] }>(`/products/${encodeURIComponent(slug)}`);
     if (!result.data || (Array.isArray(result.data) && !result.data.length)) return null;
-    if (Array.isArray(result.data) || result.data.slug !== slug || !Number.isSafeInteger(result.data.id) || result.data.id < 1) {
+    const product = result.data;
+    if (Array.isArray(product) || typeof product.slug !== "string" || !product.slug || !Number.isSafeInteger(product.id) || product.id < 1) {
       throw new Error("Invalid product detail response");
     }
-    return result.data.status === "published" && !result.data.deleted_at
-      ? result.data
-      : null;
+    if (product.status !== "published" || product.deleted_at) return null;
+    return {
+      ...product,
+      seo: readSeo(product.seo),
+      categories: readProductCategories(product.categories),
+      rating: typeof product.rating === "number" && Number.isFinite(product.rating) ? product.rating : null,
+      rating_count: Number.isSafeInteger(product.rating_count) && (product.rating_count as number) > 0 ? product.rating_count : 0,
+      updated_at: typeof product.updated_at === "string" ? product.updated_at : null,
+    };
   } catch (error) {
     if (error instanceof StoreApiError && error.status === 404) return null;
     throw error;
@@ -218,12 +255,7 @@ export interface StorePage extends PageLink {
   document: string | null;
   meta_description: string | null;
   updated_at: string | null;
-}
-
-const PAGE_SLUG = /^[A-Za-z0-9_-]{1,80}$/;
-
-export function isPageSlug(value: string) {
-  return PAGE_SLUG.test(value);
+  seo: PageSeo;
 }
 
 // Footer links; a failure leaves the footer without them rather than breaking the page.
@@ -260,6 +292,7 @@ export const getPage = cache(async (slug: string): Promise<StorePage | null> => 
       document: html ? (page.document as string) : null,
       meta_description: typeof page.meta_description === "string" && page.meta_description.trim() ? page.meta_description.trim() : null,
       updated_at: typeof page.updated_at === "string" ? page.updated_at : null,
+      seo: readSeo(page.seo),
     };
   } catch (error) {
     if (error instanceof StoreApiError && error.status === 404) return null;
@@ -267,7 +300,8 @@ export const getPage = cache(async (slug: string): Promise<StorePage | null> => 
   }
 });
 
-export async function getCategories() {
+// Di-cache per request: metadata, JSON-LD, dan katalog di halaman yang sama memakai daftar ini.
+export const getCategories = cache(async (): Promise<Category[]> => {
   const result = await storeFetch<Category[] | { data: Category[] }>(
     "/categories?page=1&per_page=10",
   );
@@ -284,9 +318,14 @@ export async function getCategories() {
   )
     throw new Error("Invalid category response");
   // A category without a slug has no page to link to.
-  return categories.filter(
-    (category) => (!category.type || category.type === "product") && typeof category.slug === "string" && category.slug.length > 0,
-  );
+  return categories
+    .filter((category) => (!category.type || category.type === "product") && typeof category.slug === "string" && category.slug.length > 0)
+    .map((category) => ({ ...category, seo: readSeo(category.seo) }));
+});
+
+/** Isi sitemap toko: slug produk, kategori, dan halaman yang tayang. */
+export async function getSitemap(): Promise<SitemapData> {
+  return readSitemap(await storeFetch<unknown>("/sitemap"));
 }
 
 export async function getProducts(query: ProductQuery = {}) {

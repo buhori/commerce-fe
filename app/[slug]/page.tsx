@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { JsonLd } from "@/components/json-ld";
 import { LandingFrame } from "@/components/landing-frame";
 import { SiteFooter } from "@/components/site-footer";
 import { StoreHeader } from "@/components/store-header";
 import { formatDate } from "@/lib/format";
+import { absoluteUrl, breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import { getSiteSeo } from "@/lib/site-seo";
 import { getPage, getStore } from "@/lib/store-api";
 import { PageContent } from "@/sdk/components";
 import { getActiveTheme } from "@/themes/active";
@@ -13,13 +16,14 @@ type StorePageProps = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: StorePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const [page, store] = await Promise.all([getPage(slug).catch(() => null), getStore().catch(() => null)]);
+  const [page, site] = await Promise.all([getPage(slug).catch(() => null), getSiteSeo()]);
   if (!page) return { title: "Halaman tidak ditemukan" };
-  return {
-    title: store ? `${page.title} — ${store.name}` : page.title,
-    description: page.meta_description ?? undefined,
-    openGraph: page.meta_description ? { title: page.title, description: page.meta_description } : undefined,
-  };
+  return pageMetadata(site, {
+    title: page.seo.title || page.title,
+    description: page.seo.description || page.meta_description || undefined,
+    path: `/${page.slug}`,
+    images: page.seo.image ? [{ url: page.seo.image, alt: page.title }] : undefined,
+  });
 }
 
 /**
@@ -28,17 +32,24 @@ export async function generateMetadata({ params }: StorePageProps): Promise<Meta
  */
 export default async function StoreInfoPage({ params }: StorePageProps) {
   const { slug } = await params;
-  const [page, store, theme] = await Promise.all([getPage(slug), getStore(), getActiveTheme()]);
+  const [page, store, theme, site] = await Promise.all([getPage(slug), getStore(), getActiveTheme(), getSiteSeo()]);
   if (!page) notFound();
+  const breadcrumb = (
+    <JsonLd data={breadcrumbJsonLd([
+      { name: "Beranda", url: absoluteUrl(site.base, "/") },
+      { name: page.title, url: absoluteUrl(site.base, `/${page.slug}`) },
+    ])} />
+  );
 
   // Landing page layar penuh: tanpa header dan footer toko.
   if (page.document && page.layout === "blank") {
-    return <LandingFrame title={page.title} document={page.document} fill />;
+    return <>{breadcrumb}<LandingFrame title={page.title} document={page.document} fill /></>;
   }
 
   if (page.document) {
     return (
       <>
+        {breadcrumb}
         <StoreHeader name={store.name} logo={store.logo} />
         <main className="landing-page">
           <h1 className="sr-only">{page.title}</h1>
@@ -52,6 +63,7 @@ export default async function StoreInfoPage({ params }: StorePageProps) {
   const { InfoPage } = theme.components;
   return (
     <>
+      {breadcrumb}
       <StoreHeader name={store.name} logo={store.logo} />
       {InfoPage ? <InfoPage store={store} page={page} /> : (
         <main className="page">

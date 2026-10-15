@@ -6,7 +6,7 @@ import { getStore } from "@/lib/store-api";
 import Link from "next/link";
 import "../payment.css";
 
-export const metadata: Metadata = { title: "Pembayaran — Toko Online" };
+export const metadata: Metadata = { title: "Pembayaran", robots: { index: false, follow: true } };
 
 export default async function PaymentPage({ params }: PageProps<"/payment/[id]">) {
   const [store, { id }] = await Promise.all([getStore(), params]);

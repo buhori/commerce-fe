@@ -1,10 +1,11 @@
 "use client";
 
+import { Icon } from "./icons";
 import { Spinner } from "./spinner";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  readBankAccounts, readPaymentMethods, readShippingQuote, shippingOptionKey, shippingOptionLabel,
+  readBankAccounts, readPaymentMethods, readShippingQuote, shippingHighlights, shippingOptionKey, shippingOptionLabel,
   type BankAccount, type PaymentMethod, type ShippingOption, type ShippingQuote,
 } from "@/lib/checkout";
 import { formatPrice, formatWeight } from "@/lib/format";
@@ -40,7 +41,7 @@ function useOnlyOption<T>(state: State<T>, selected: unknown, select: (row: T) =
   }, [only, selected, select]);
 }
 
-function MethodGroup<T>({ legend, name, state, retry, emptyText, errorText, keyOf, render, isSelected, onSelect, children }: {
+function MethodGroup<T>({ legend, name, state, retry, emptyText, errorText, keyOf, render, isSelected, onSelect, notice, children }: {
   legend: string;
   name: string;
   state: State<T>;
@@ -51,6 +52,8 @@ function MethodGroup<T>({ legend, name, state, retry, emptyText, errorText, keyO
   render: (row: T) => ReactNode;
   isSelected: (row: T) => boolean;
   onSelect: (row: T) => void;
+  // Shown above the choices, e.g. a warning that applies to all of them.
+  notice?: ReactNode;
   children?: ReactNode;
 }) {
   if (state.status === "loading") return <section className="method-group"><h3>{legend} <span className="required-indicator" aria-hidden="true">*</span></h3><Spinner label={`Memuat ${legend.toLowerCase()}…`} /></section>;
@@ -63,6 +66,7 @@ function MethodGroup<T>({ legend, name, state, retry, emptyText, errorText, keyO
   return (
     <fieldset className="method-group">
       <legend>{legend} <span className="required-indicator" aria-hidden="true">*</span></legend>
+      {notice}
       <div className="method-list">
         {state.rows.map((row) => (
           <label className="method-card" key={keyOf(row)} data-selected={isSelected(row)}>
@@ -118,7 +122,7 @@ function ShippingChoices({ addressCode, currency, preorder, selected, onSelect }
 
   const retry = () => { setState({ status: "loading" }); setAttempt((value) => value + 1); };
   const rows = state.status === "ready" ? { status: "ready" as const, rows: state.quote.options } : state;
-  const cheapest = options?.[0]?.cost;
+  const highlights = options ? shippingHighlights(options) : new Map();
 
   return (
     <MethodGroup
@@ -129,22 +133,42 @@ function ShippingChoices({ addressCode, currency, preorder, selected, onSelect }
       keyOf={shippingOptionKey}
       isSelected={(option) => selected !== null && shippingOptionKey(option) === shippingOptionKey(selected)}
       onSelect={onSelect}
-      render={(option) => (
-        <>
-          <strong className="shipping-option-head">
-            {shippingOptionLabel(option)}
-            <span className="shipping-option-price">{formatPrice(option.cost, currency)}</span>
-          </strong>
+      notice={state.status === "ready" && state.quote.estimated && (
+        <p className="shipping-notice" role="status">
+          <Icon name="alert" />
           <span>
-            {[option.description, option.etd && `Estimasi ${option.etd}`].filter(Boolean).join(" · ") || "Tarif pengiriman toko"}
-            {option.cost === cheapest && options!.length > 1 && <em className="shipping-option-badge">Termurah</em>}
+            <strong>Tarif perkiraan.</strong> Ongkir otomatis sedang tidak tersedia, jadi dipakai tarif pengiriman toko.
+            Ongkir sebenarnya bisa berbeda dan estimasi waktu kirim belum ada.
           </span>
-        </>
-      )}>
-      {state.status === "ready" && (
-        <p className="shipping-cost" role="status">
-          {state.quote.weight > 0 && <span>Berat paket {formatWeight(state.quote.weight)}.</span>}
-          {state.quote.estimated && <span>Ongkir otomatis sedang tidak tersedia, jadi dipakai tarif pengiriman toko.</span>}
+        </p>
+      )}
+      render={(option) => {
+        const tags = highlights.get(shippingOptionKey(option));
+        return (
+          <>
+            <strong className="shipping-option-head">
+              {shippingOptionLabel(option)}
+              <span className="shipping-option-price">{formatPrice(option.cost, currency)}</span>
+            </strong>
+            <span className="shipping-option-meta">
+              {option.description && <span>{option.description}</span>}
+              {option.etd
+                ? <span className="shipping-option-etd"><Icon name="clock" />Estimasi {option.etd}</span>
+                : !option.description && <span>Tarif pengiriman toko</span>}
+            </span>
+            {tags && (tags.cheapest || tags.fastest || tags.slow) && (
+              <span className="shipping-tags">
+                {tags.cheapest && <em className="shipping-tag shipping-tag-cheapest"><Icon name="tag" />Termurah</em>}
+                {tags.fastest && <em className="shipping-tag shipping-tag-fastest"><Icon name="bolt" />Tercepat</em>}
+                {tags.slow && <em className="shipping-tag shipping-tag-slow"><Icon name="alert" />Pengiriman lama</em>}
+              </span>
+            )}
+          </>
+        );
+      }}>
+      {state.status === "ready" && state.quote.weight > 0 && (
+        <p className="shipping-cost">
+          <span><Icon name="box" />Berat paket {formatWeight(state.quote.weight)}. Ongkir dihitung per kilogram.</span>
         </p>
       )}
     </MethodGroup>

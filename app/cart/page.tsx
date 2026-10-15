@@ -6,7 +6,7 @@ import { StoreHeader } from "@/components/store-header";
 import { SiteFooter } from "@/components/site-footer";
 import { getStore } from "@/lib/store-api";
 
-export const metadata: Metadata = { title: "Keranjang Belanja — Toko Online" };
+export const metadata: Metadata = { title: "Keranjang Belanja", robots: { index: false, follow: true } };
 
 export default async function CartPage() {
   const store = await getStore();

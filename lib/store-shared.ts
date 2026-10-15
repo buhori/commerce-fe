@@ -28,6 +28,13 @@ export interface ProductPage {
 
 export const PRODUCTS_PER_PAGE = 20;
 
+const PAGE_SLUG = /^[A-Za-z0-9_-]{1,80}$/;
+
+/** Slug halaman toko (/about, /privacy-policy); sama dengan aturan backend. */
+export function isPageSlug(value: unknown): value is string {
+  return typeof value === "string" && PAGE_SLUG.test(value);
+}
+
 /**
  * Query /api/products backend, sama dengan URL halaman /products: filter=id|category dengan
  * filter_value[], atau filter=sort&filter_value=… bila hanya urutan; `sort` ikut bila digabung.

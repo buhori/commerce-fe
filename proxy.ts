@@ -12,11 +12,11 @@ const PREVIEW_TOKEN = /^[A-Za-z0-9_-]{20,400}\.[A-Za-z0-9_-]{43}$/;
  *   diarahkan ke URL yang sama tanpa parameter; `?theme=store` kembali ke tema dari panel.
  */
 export function proxy(request: NextRequest) {
-  // Pencarian dan urutan dulu tinggal di "/"; katalog sekarang di /products. 307 sungguhan
-  // (bukan pengalihan lewat halaman), supaya bookmark dan mesin pencari ikut pindah.
+  // Pencarian dan urutan dulu tinggal di "/"; katalog sekarang di /products. 308 (permanen,
+  // bukan pengalihan lewat halaman), supaya bookmark dan mesin pencari ikut pindah.
   const search = request.nextUrl.searchParams;
   if (request.nextUrl.pathname === "/" && !search.has("preview") && (search.has("q") || search.has("sort") || search.has("filter"))) {
-    return NextResponse.redirect(new URL(catalogUrl(readCatalogFilter(search)), request.url));
+    return NextResponse.redirect(new URL(catalogUrl(readCatalogFilter(search)), request.url), 308);
   }
 
   const preview = request.nextUrl.searchParams.get("preview");

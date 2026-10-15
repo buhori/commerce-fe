@@ -8,7 +8,7 @@ import { getCustomer } from "@/lib/customer-api";
 import { getStore } from "@/lib/store-api";
 import { accountsEnabled } from "@/lib/store-shared";
 
-export const metadata: Metadata = { title: "Masuk", robots: { index: false } };
+export const metadata: Metadata = { title: "Masuk", robots: { index: false, follow: true } };
 
 const errors: Record<string, string> = {
   cancelled: "Login dibatalkan.",

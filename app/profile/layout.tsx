@@ -7,7 +7,7 @@ import { StoreHeader } from "@/components/store-header";
 import { getCustomer } from "@/lib/customer-api";
 import { getStore } from "@/lib/store-api";
 
-export const metadata: Metadata = { title: "Profil", robots: { index: false } };
+export const metadata: Metadata = { title: "Profil", robots: { index: false, follow: true } };
 
 export default async function ProfileLayout({ children }: { children: ReactNode }) {
   const [store, customer] = await Promise.all([getStore(), getCustomer()]);

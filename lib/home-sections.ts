@@ -43,14 +43,16 @@ export interface Testimonial { quote: string; name: string; detail: string | nul
 export interface TestimonialsSettings { title: string | null; items: Testimonial[] }
 export interface VideoSettings { title: string | null; caption: string | null; video_id: string }
 
-export type HomeSection =
+/** `css`: custom CSS bagian dari builder (paket yang mencakupnya), lihat scopedSectionCss. */
+export type HomeSection = (
   | { id: string; type: "banner"; settings: BannerSettings }
   | { id: string; type: "product-list"; settings: ProductListSettings }
   | { id: string; type: "category-grid"; settings: CategoryGridSettings }
   | { id: string; type: "text"; settings: TextSettings }
   | { id: string; type: "image"; settings: ImageSettings }
   | { id: string; type: "testimonials"; settings: TestimonialsSettings }
-  | { id: string; type: "video"; settings: VideoSettings };
+  | { id: string; type: "video"; settings: VideoSettings }
+) & { css: string | null };
 
 type Raw = Record<string, unknown>;
 
@@ -69,7 +71,7 @@ const imageUrl = (value: unknown) => {
   return url && /^https?:\/\/\S+$/i.test(url) ? url : null;
 };
 
-function settingsFor(type: unknown, raw: Raw): HomeSection | Omit<HomeSection, "id"> | null {
+function settingsFor(type: unknown, raw: Raw): Omit<HomeSection, "id" | "css"> | null {
   switch (type) {
     case "banner": {
       const slides = (Array.isArray(raw.slides) ? raw.slides : []).flatMap((entry): BannerSlide[] => {
@@ -151,8 +153,59 @@ export function readHomeSections(body: unknown): HomeSection[] | null {
     const section = object(entry);
     const settings = object(section?.settings);
     const parsed = section && settings ? settingsFor(section.type, settings) : null;
-    return parsed ? [{ ...parsed, id: typeof section?.id === "string" ? section.id : `section-${index}` } as HomeSection] : [];
+    const id = typeof section?.id === "string" && /^[\w-]{1,40}$/.test(section.id) ? section.id : `section-${index}`;
+    return parsed ? [{ ...parsed, id, css: sectionCss(section?.css) } as HomeSection] : [];
   });
+}
+
+/**
+ * Custom CSS bagian, dibungkus selektor bagian itu (CSS nesting): properti berlaku ke bagiannya,
+ * `& h2 { … }` ke elemen di dalamnya, dan tidak ada yang bocor ke bagian lain.
+ */
+export function scopedSectionCss(id: string, css: string): string {
+  return `.home-block[data-section="${id}"] {\n${css}\n}`;
+}
+
+/**
+ * Backend (SectionCss) sudah membersihkannya; di sini diperiksa lagi sebelum masuk <style>: tanpa
+ * `<` (tidak bisa menutup tag), dan kurung kurawal seimbang supaya pembungkus tidak bisa ditutup.
+ */
+function sectionCss(value: unknown): string | null {
+  const css = typeof value === "string" ? value.slice(0, 5000).replace(/</g, "").trim() : "";
+  return css && balanced(css) ? css : null;
+}
+
+/** Sama dengan SectionCss::isBalanced: string, komentar, escape, dan isi tanda kurung dilewati. */
+function balanced(css: string): boolean {
+  let braces = 0;
+  let parens = 0;
+  for (let i = 0; i < css.length; i++) {
+    const char = css[i];
+    if (char === "\\") {
+      i++;
+    } else if (char === "/" && css[i + 1] === "*") {
+      const end = css.indexOf("*/", i + 2);
+      if (end === -1) return false;
+      i = end + 1;
+    } else if (char === '"' || char === "'") {
+      for (i++; i < css.length && css[i] !== char; i++) {
+        if (css[i] === "\n") return false;
+        if (css[i] === "\\") i++;
+      }
+      if (i >= css.length) return false;
+    } else if (char === "(") {
+      parens++;
+    } else if (char === ")") {
+      if (--parens < 0) return false;
+    } else if ((char === "{" || char === "}") && parens > 0) {
+      return false;
+    } else if (char === "{") {
+      braces++;
+    } else if (char === "}" && --braces < 0) {
+      return false;
+    }
+  }
+  return braces === 0 && parens === 0;
 }
 
 /** Paragraf dari teks biasa: dipisah baris kosong. */
