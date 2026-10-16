@@ -361,6 +361,25 @@
   line-height: 1.25;
 }
 .cardPrice { color: var(--muted); font-size: 14px; }
+/* Harga diskon: harga akhir tetap di depan, harga normal dicoret, lencana kecil tanpa warna mencolok. */
+.priceOriginal { margin-left: 8px; color: var(--muted); font-size: 0.8em; opacity: 0.8; }
+.priceBadge {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  vertical-align: 0.15em;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
 .cardStats { margin-top: 2px !important; color: var(--muted); font-size: 12px; letter-spacing: 0.02em; }
 .badge {
   position: absolute;
@@ -470,6 +489,10 @@
 .primaryButton:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); }
 .secondaryButton { background: none; }
 .secondaryButton:hover:not(:disabled) { background: var(--ink); color: var(--page); }
+/* Tautan, bukan tombol: tata letak ikon + teks; hijau WhatsApp hanya di ikon supaya tetap gaya Editorial. */
+.whatsappButton { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--text); text-decoration: none; }
+.whatsappButton svg { flex-shrink: 0; font-size: 18px; color: #128c7e; }
+.whatsappButton:hover svg { color: currentColor; }
 
 .feedback, .feedbackError { font-size: 14px; }
 .feedback a { border-bottom: 1px solid currentColor; }

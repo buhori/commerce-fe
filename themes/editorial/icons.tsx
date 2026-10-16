@@ -23,3 +23,9 @@ export const ArrowIcon = (props: SVGProps<SVGSVGElement>) => (
 export const ChevronIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg {...base} {...props}><path d="m6 9 6 6 6-6" /></svg>
 );
+export const WhatsappIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...props}>
+    <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+    <path d="M9 8.6c.2 3.4 3 6.2 6.4 6.4l1.1-1.7-2-1-1 .9a4.5 4.5 0 0 1-2.7-2.7l.9-1-1-2L9 8.6Z" />
+  </svg>
+);

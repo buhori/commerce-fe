@@ -8,7 +8,9 @@ import type { Category, NavigationLink, PageLink, Product, ProductSummary, Store
 import type { ProductQuery } from "@/lib/store-shared";
 
 export type { Availability, ProductView, Spec } from "@/lib/product-view";
-export type { Category, NavigationLink, PageLink, Product, ProductSummary, ProductVariant, Store, StorePage } from "@/lib/store-api";
+export type { Category, Discount, NavigationLink, PageLink, Product, ProductSummary, ProductVariant, Store, StorePage } from "@/lib/store-api";
+export type { PriceView, Priced } from "@/lib/price";
+export type { WhatsappChat, WhatsappChatInput, WhatsappProductChat } from "@/lib/whatsapp";
 export type { CatalogFilter, CatalogSort } from "@/lib/catalog-url";
 export type {
   BannerSettings, BannerSlide, CategoryGridSettings, CategoryTile, HomeSection, ImageSettings, ProductListSettings, Testimonial,
@@ -64,6 +66,8 @@ export interface ProductPageProps {
   store: Store;
   product: Product;
   view: ProductView;
+  /** URL lengkap (kanonik) halaman produk ini, mis. untuk pesan chat WhatsApp. */
+  url: string;
 }
 
 /** "/{slug}" for pages written in the panel's text editor. Full-HTML landing pages stay with the platform. */

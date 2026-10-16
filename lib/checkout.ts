@@ -114,11 +114,28 @@ export interface OrderLine {
   image: string | null;
 }
 
+/** Kupon yang sudah diperiksa backend (POST /checkout/coupon) terhadap isi keranjang saat itu. */
+export interface AppliedCoupon {
+  code: string;
+  type: "percent" | "fixed";
+  value: number;
+  /** Potongan rupiah untuk isi keranjang saat diperiksa. */
+  discount: number;
+  /** Kupon khusus satu produk; null bila berlaku untuk seluruh keranjang. */
+  product_id: number | null;
+  /** Sudah diformat backend, mis. "-10%"; kosong bila tidak dikirim. */
+  label: string;
+}
+
 export interface OrderSummary {
   id: number;
   status: string;
   total: number;
   shipping_cost: number;
+  /** Kode kupon yang dipakai; null bila tanpa kupon atau backend lama. */
+  coupon_code: string | null;
+  /** Potongan kupon dalam rupiah; sudah termasuk di grand_total. */
+  discount_amount: number;
   // Added to the transfer amount so a manual payment can be matched to one order.
   unique_payment_code: number | null;
   grand_total: number;
@@ -268,6 +285,7 @@ export function readOrder(data: unknown): OrderSummary {
     status: typeof row.status === "string" ? row.status : "pending",
     total: row.total as number,
     shipping_cost: row.shipping_cost as number,
+    ...readOrderDiscount(row),
     unique_payment_code: typeof row.unique_payment_code === "number" ? row.unique_payment_code : null,
     grand_total: row.grand_total as number,
     payment_method: typeof payment?.method?.code === "string" ? payment.method.code : null,
@@ -282,6 +300,54 @@ export function readOrder(data: unknown): OrderSummary {
     items: readOrderLines(row.items),
     preorder_ready_at: typeof row.preorder_ready_at === "string" ? row.preorder_ready_at : null,
   };
+}
+
+/**
+ * Kupon pada pesanan (detail, invoice, respons checkout). Backend lama tidak mengirimnya, dan
+ * nilai yang rusak dibaca sebagai tanpa potongan supaya halaman pesanan tetap tampil.
+ */
+export function readOrderDiscount(value: unknown): { coupon_code: string | null; discount_amount: number } {
+  const row = value && typeof value === "object" ? (value as { coupon_code?: unknown; discount_amount?: unknown }) : {};
+  const amount = row.discount_amount;
+  return {
+    coupon_code: typeof row.coupon_code === "string" && row.coupon_code.trim() ? row.coupon_code.trim() : null,
+    discount_amount: typeof amount === "number" && Number.isFinite(amount) && amount > 0 ? amount : 0,
+  };
+}
+
+/** Respons sukses POST /checkout/coupon; melempar error bila bentuknya tidak bisa dipakai. */
+export function readCoupon(data: unknown): AppliedCoupon {
+  const row = (data && typeof data === "object" && "data" in data ? data.data : data) as Record<string, unknown> | null;
+  const discount = row?.discount;
+  if (!row || typeof row !== "object" || typeof row.code !== "string" || !row.code.trim() ||
+    typeof discount !== "number" || !Number.isFinite(discount) || discount < 0) {
+    throw new Error("Kupon belum dapat diperiksa. Silakan coba lagi.");
+  }
+  const value = row.value;
+  return {
+    code: row.code.trim(),
+    type: row.type === "percent" ? "percent" : "fixed",
+    value: typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : 0,
+    discount,
+    product_id: Number.isSafeInteger(row.product_id) && (row.product_id as number) > 0 ? row.product_id as number : null,
+    label: typeof row.label === "string" ? row.label.trim() : "",
+  };
+}
+
+/** Pesan pertama Laravel untuk satu field 422, mis. errors.code atau errors.coupon_code. */
+export function fieldError(data: unknown, field: string): string | null {
+  const errors = data && typeof data === "object" ? (data as { errors?: unknown }).errors : null;
+  const messages = errors && typeof errors === "object" ? (errors as Record<string, unknown>)[field] : null;
+  const first = Array.isArray(messages) ? messages[0] : messages;
+  return typeof first === "string" && first.trim() ? first.trim() : null;
+}
+
+/** Pesan untuk pembeli saat kupon ditolak: errors.code dari validasi, lalu `message` selain 5xx. */
+export function couponErrorMessage(status: number, data: unknown): string {
+  const fallback = "Kupon belum dapat diperiksa. Silakan coba lagi.";
+  if (status >= 500) return fallback;
+  const message = data && typeof data === "object" ? (data as { message?: unknown }).message : null;
+  return fieldError(data, "code") ?? (typeof message === "string" && message.trim() ? message : fallback);
 }
 
 // Lines are only for display, so a malformed row is skipped rather than failing the page.

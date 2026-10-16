@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { CUSTOMER_COOKIE } from "./auth";
+import { readOrderDiscount } from "./checkout";
 import { currentStoreHeaders } from "./store-host";
 
 /** Invoice pesanan dari GET /orders/{id}/invoice; isinya sama dengan invoice cetak di panel penjual. */
@@ -19,6 +20,10 @@ export interface Invoice {
   subtotal: number;
   discount_percent: number;
   discount: number;
+  /** Kode kupon yang dipakai; null bila tanpa kupon atau backend lama. */
+  coupon_code: string | null;
+  /** Potongan kupon dalam rupiah; sudah termasuk di grand_total. */
+  discount_amount: number;
   shipping_cost: number;
   shipping_method: string | null;
   tracking_number: string | null;
@@ -52,5 +57,6 @@ export const getInvoice = cache(async (id: string): Promise<Invoice | null> => {
   });
   if (response.status === 404 || response.status === 401) return null;
   if (!response.ok) throw new Error(`Store API returned ${response.status}`);
-  return ((await response.json()) as { data: Invoice }).data;
+  const invoice = ((await response.json()) as { data: Invoice }).data;
+  return { ...invoice, ...readOrderDiscount(invoice) };
 });

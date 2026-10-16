@@ -21,11 +21,17 @@ export { ProductGallery } from "@/components/product-gallery";
 export { ProductImage } from "@/components/product-image";
 export { StoreBrand as StoreLogo } from "@/components/store-brand";
 export { BuiltWith, PageContent, Price, SearchForm, SmartLink } from "./components";
+// Harga akhir + harga normal dicoret + lencana diskon, dengan teks untuk pembaca layar.
+export { ProductPrice } from "@/components/product-price";
 export { VideoEmbed } from "@/components/video-embed";
 export { paragraphs } from "@/lib/home-sections";
 
 // Helper.
 export { formatDate, formatPrice, formatProductStats } from "@/lib/format";
+// Aturan harga diskon yang sama dengan tampilan bawaan; jangan membandingkan price dan final_price sendiri.
+export { discountEndDate, priceView } from "@/lib/price";
+// Tautan wa.me dengan pesan tentang produk; useAddToCart({ whatsapp }) sudah membuatnya dengan varian terpilih.
+export { whatsappChatUrl } from "@/lib/whatsapp";
 export { catalogSorts, catalogUrl } from "@/lib/catalog-url";
 export { preorderDays } from "@/lib/store-shared";
 

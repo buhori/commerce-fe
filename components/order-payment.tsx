@@ -273,6 +273,7 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
             )}
             <dl className="payment-totals">
               <div><dt>Subtotal barang</dt><dd>{formatPrice(order.total, currency)}</dd></div>
+              {order.discount_amount > 0 && <div><dt>Kupon{order.coupon_code && ` ${order.coupon_code}`}</dt><dd>−{formatPrice(order.discount_amount, currency)}</dd></div>}
               <div><dt>Ongkos kirim</dt><dd>{formatPrice(order.shipping_cost, currency)}</dd></div>
               {order.unique_payment_code !== null && <div><dt>Kode unik</dt><dd>{formatPrice(order.unique_payment_code, currency)}</dd></div>}
               <div className="payment-grand-total"><dt>Total pembayaran</dt><dd>{formatPrice(order.grand_total, currency)}</dd></div>

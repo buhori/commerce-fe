@@ -8,7 +8,7 @@ import { addDays, formatDate } from "@/lib/format";
 import type { ProductPageProps } from "@/sdk";
 
 /** The built-in product page, used when the active theme has no ProductPage. */
-export function ProductDetail({ store, product, view }: ProductPageProps) {
+export function ProductDetail({ store, product, view, url }: ProductPageProps) {
   const { gallery, preorder, availability: status, specs } = view;
   const variants = product.variants || [];
   const currency = store.currency || "IDR";
@@ -41,8 +41,11 @@ export function ProductDetail({ store, product, view }: ProductPageProps) {
               preorder={preorder > 0}
               stock={product.stock}
               price={product.price}
+              finalPrice={product.final_price}
+              discount={product.discount}
               currency={currency}
               maintenance={store.maintenance.active}
+              whatsapp={product.whatsapp ? { number: product.whatsapp.number, storeName: store.name, productName: product.name, productUrl: url } : null}
             />
             <WishlistButton productId={product.id} productName={product.name} variant="button" />
             <div className="detail-delivery">

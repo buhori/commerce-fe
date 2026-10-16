@@ -34,6 +34,9 @@ export interface OrderListItem {
   grand_total: number;
   created_at: string;
   preorder_ready_at: string | null;
+  /** Belum tentu dikirim daftar pesanan; baca lewat readOrderDiscount(). */
+  coupon_code?: unknown;
+  discount_amount?: unknown;
   items_count: number;
   items: { name: string | null; image: string | null; amount: number }[];
 }

@@ -1,6 +1,6 @@
 import type { ReactNode, SVGProps } from "react";
 
-export type IconName = "bag" | "arrow" | "search" | "box" | "close" | "mail" | "pin" | "copy" | "check" | "phone" | "expand" | "truck" | "user" | "bell" | "heart" | "logout" | "clock" | "bank" | "refresh" | "info" | "upload" | "menu" | "tag" | "bolt" | "alert" | "qr" | "download" | "tool";
+export type IconName = "bag" | "arrow" | "search" | "box" | "close" | "mail" | "pin" | "copy" | "check" | "phone" | "expand" | "truck" | "user" | "bell" | "heart" | "logout" | "clock" | "bank" | "refresh" | "info" | "upload" | "menu" | "tag" | "bolt" | "alert" | "qr" | "download" | "tool" | "whatsapp";
 const paths: Record<IconName, ReactNode> = {
   clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
   tag: <><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9-9-9Z" /><circle cx="7.5" cy="7.5" r="1.5" /></>,
@@ -59,6 +59,8 @@ const paths: Record<IconName, ReactNode> = {
     </>
   ),
   check: <path d="m5 13 4 4L19 7" />,
+  // Garis luar gelembung chat + gagang telepon, mengikuti gaya ikon lain (bukan logo terisi).
+  whatsapp: <><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /><path d="M9 8.6c.2 3.4 3 6.2 6.4 6.4l1.1-1.7-2-1-1 .9a4.5 4.5 0 0 1-2.7-2.7l.9-1-1-2L9 8.6Z" /></>,
   phone: <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z" />,
 };
 export function Icon({

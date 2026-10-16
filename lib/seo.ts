@@ -265,12 +265,17 @@ const AVAILABILITY: Record<AvailabilityTone, string> = {
 
 const validPrice = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0;
 
-/** Harga terendah dan tertinggi produk; varian tanpa harga sendiri memakai harga produk. */
-export function priceRange(product: { price?: unknown; variants?: { price?: unknown }[] | null }) {
-  const base = validPrice(product.price) ? product.price : null;
+type PricedRow = { price?: unknown; final_price?: unknown };
+
+/**
+ * Harga terendah dan tertinggi produk; varian tanpa harga sendiri memakai harga produk. Memakai
+ * harga setelah diskon (final_price) bila ada, agar sama dengan harga yang tampil di halaman.
+ */
+export function priceRange(product: PricedRow & { variants?: PricedRow[] | null }) {
+  const base = validPrice(product.final_price) ? product.final_price : validPrice(product.price) ? product.price : null;
   const variants = Array.isArray(product.variants) ? product.variants : [];
   const prices = variants.length
-    ? variants.map((variant) => (validPrice(variant?.price) ? variant.price : base)).filter(validPrice)
+    ? variants.map((variant) => (validPrice(variant?.final_price) ? variant.final_price : validPrice(variant?.price) ? variant.price : base)).filter(validPrice)
     : base === null ? [] : [base];
   if (!prices.length) return null;
   return { low: Math.min(...prices), high: Math.max(...prices), count: variants.length || 1 };
@@ -281,7 +286,8 @@ export interface ProductJsonLdInput {
     name: string;
     sku?: unknown;
     price?: unknown;
-    variants?: { price?: unknown }[] | null;
+    final_price?: unknown;
+    variants?: PricedRow[] | null;
     rating?: unknown;
     rating_count?: unknown;
   };

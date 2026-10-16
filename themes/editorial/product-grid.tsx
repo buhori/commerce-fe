@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { formatPrice, formatProductStats, preorderDays, ProductImage, productUrl, useProductFeed, WishlistButton, type ProductListing, type ProductSummary } from "@sellosy/theme";
+import { formatPrice, formatProductStats, preorderDays, priceView, ProductImage, productUrl, useProductFeed, WishlistButton, type ProductListing, type ProductSummary } from "@sellosy/theme";
 import s from "./editorial.module.css";
 
 export function ProductCard({ product, currency }: { product: ProductSummary; currency: string }) {
   const preorder = preorderDays(product);
   const soldOut = !preorder && product.stock === 0;
+  const price = priceView(product);
   return (
     <div className={s.cardWrap}>
       {/* Di luar tautan: tombol di dalam <a> tidak valid dan akan membuka produknya. */}
@@ -18,7 +19,11 @@ export function ProductCard({ product, currency }: { product: ProductSummary; cu
           {preorder > 0 && <span className={s.badge}>Pre-order</span>}
         </div>
         <p className={s.cardName}>{product.name}</p>
-        <p className={s.cardPrice}>{formatPrice(product.price, currency)}</p>
+        <p className={s.cardPrice}>
+          {price.original !== null && <span className={s.srOnly}>Harga diskon </span>}{formatPrice(price.final, currency)}
+          {price.original !== null && <s className={s.priceOriginal}><span className={s.srOnly}>Harga normal </span>{formatPrice(price.original, currency)}</s>}
+          {price.label && <span className={s.priceBadge}>{price.label}</span>}
+        </p>
         {formatProductStats(product) && <p className={s.cardStats}>{formatProductStats(product)}</p>}
       </Link>
     </div>

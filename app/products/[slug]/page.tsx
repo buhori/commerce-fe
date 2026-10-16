@@ -79,7 +79,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         ]),
       ]} />
       <StoreHeader name={store.name} logo={store.logo} />
-      <Page store={store} product={product} view={view} />
+      <Page store={store} product={product} view={view} url={url} />
       <SiteFooter store={store} />
     </>
   );

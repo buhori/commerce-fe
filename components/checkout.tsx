@@ -3,12 +3,12 @@
 import { Spinner } from "./spinner";
 import { Icon } from "./icons";
 import { Button, ButtonLink } from "@/components/ui/button";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { cartItemsOptions, preorderItemsOptions } from "@/lib/cart-queries";
 import { useRouter } from "next/navigation";
 import { getCartUnitPrice } from "@/lib/cart";
-import { checkoutErrorMessage, isManualPayment, jsonHeaders, readOrderId, shippingOptionLabel, type AddressDetails, type BankAccount, type PaymentMethod, type ShippingOption } from "@/lib/checkout";
+import { checkoutErrorMessage, couponErrorMessage, fieldError, isManualPayment, jsonHeaders, readCoupon, readOrderId, shippingOptionLabel, type AddressDetails, type AppliedCoupon, type BankAccount, type PaymentMethod, type ShippingOption } from "@/lib/checkout";
 import { addDays, formatDate, formatPrice } from "@/lib/format";
 import { preorderDays } from "@/lib/store-shared";
 import { ProductImage } from "./product-image";
@@ -23,10 +23,13 @@ const steps = [
   { title: "Pengiriman & pembayaran", hint: "Kurir dan cara bayar" },
 ] as const;
 
-export function Checkout({ currency, preorder = false }: { currency: string; preorder?: boolean }) {
+// coupons: paket toko menyertakan kode kupon (store.features berisi "coupon").
+export function Checkout({ currency, preorder = false, coupons = false }: { currency: string; preorder?: boolean; coupons?: boolean }) {
   // A pre-order checkout reads its own one-product cart, never the shopping cart.
   const cart = useQuery(preorder ? preorderItemsOptions : cartItemsOptions);
   const items = cart.data ?? [];
+  // Potongan kupon dihitung backend untuk isi keranjang tertentu; bila isinya berubah, kupon diperiksa ulang.
+  const cartKey = items.map((item) => `${item.id}:${item.product_variant_id ?? ""}:${item.amount}:${getCartUnitPrice(item) ?? ""}`).join("|");
   const [step, setStep] = useState(0);
   const [mode, setMode] = useState<"new" | "saved">("new");
   const [selected, setSelected] = useState<AddressDetails | null>(null);
@@ -36,13 +39,56 @@ export function Checkout({ currency, preorder = false }: { currency: string; pre
   const [bankAccount, setBankAccount] = useState<BankAccount | null>(null);
   const [placing, setPlacing] = useState(false);
   const [placeError, setPlaceError] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [coupon, setCoupon] = useState<{ applied: AppliedCoupon; cartKey: string } | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const couponLock = useRef(false);
+  const couponId = useId();
   const { refresh } = useCart();
   const router = useRouter();
   const placeLock = useRef(false);
   // A shipping rate belongs to one address; changing it drops the chosen rate.
   const chooseAddress = (address: AddressDetails) => { setSelected(address); setShipping(null); };
   const needsBankAccount = payment?.code === "bank_transfer";
-  const ready = Boolean(selected?.id && shipping && payment && (!needsBankAccount || bankAccount));
+  const couponStale = Boolean(coupon && coupon.cartKey !== cartKey);
+  // Kupon yang belum diperiksa ulang tidak dihitung, supaya total di layar sama dengan tagihan backend.
+  const activeCoupon = coupon && !couponStale ? coupon.applied : null;
+  const ready = Boolean(selected?.id && shipping && payment && (!needsBankAccount || bankAccount)) && !couponStale && !applyingCoupon;
+
+  async function applyCoupon(code: string) {
+    const trimmed = code.trim();
+    if (couponLock.current || !trimmed) return;
+    couponLock.current = true;
+    setApplyingCoupon(true);
+    setCouponError(null);
+    // Isi keranjang saat diperiksa; hasilnya hanya berlaku untuk isi yang sama.
+    const checkedFor = cartKey;
+    try {
+      const response = await fetch("/api/checkout/coupon", {
+        method: "POST", credentials: "same-origin", headers: jsonHeaders(),
+        body: JSON.stringify({ code: trimmed, ...(preorder ? { cart: "preorder" } : {}) }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        setCoupon(null);
+        setCouponError(couponErrorMessage(response.status, data));
+        return;
+      }
+      setCoupon({ applied: readCoupon(data), cartKey: checkedFor });
+      setCouponCode("");
+    } catch {
+      setCouponError(couponErrorMessage(500, null));
+    } finally {
+      couponLock.current = false;
+      setApplyingCoupon(false);
+    }
+  }
+
+  function removeCoupon() {
+    setCoupon(null);
+    setCouponError(null);
+  }
 
   async function placeOrder() {
     if (placeLock.current || !ready) return;
@@ -58,6 +104,7 @@ export function Checkout({ currency, preorder = false }: { currency: string; pre
           shipping_service: shipping!.service,
           payment_method: payment!.code,
           ...(needsBankAccount ? { bank_account_id: bankAccount!.id } : {}),
+          ...(activeCoupon ? { coupon_code: activeCoupon.code } : {}),
           ...(preorder ? { cart: "preorder" } : {}),
         }),
       });
@@ -71,6 +118,13 @@ export function Checkout({ currency, preorder = false }: { currency: string; pre
       if (response.status === 422 && data?.errors?.shipping_service) {
         setShipping(null);
         setOptionsVersion((value) => value + 1);
+      }
+      // Kupon ditolak saat pesanan dibuat (mis. kuota habis): lepas kuponnya, pembeli memutuskan lagi.
+      const rejectedCoupon = response.status === 422 ? fieldError(data, "coupon_code") : null;
+      if (rejectedCoupon) {
+        setCoupon(null);
+        setCouponError(rejectedCoupon);
+        throw new Error(rejectedCoupon);
       }
       if (!response.ok) {
         throw new Error(checkoutErrorMessage(response.status, data));
@@ -94,6 +148,8 @@ export function Checkout({ currency, preorder = false }: { currency: string; pre
   const prices = items.map((item) => getCartUnitPrice(item));
   const totalKnown = prices.every((price) => price !== null);
   const total = items.reduce((sum, item, index) => sum + (prices[index] ?? 0) * item.amount, 0);
+  // Backend tidak memotong melebihi subtotal barang; ongkos kirim tidak ikut dipotong.
+  const couponDiscount = activeCoupon ? Math.min(activeCoupon.discount, total) : 0;
   const longestPreorder = Math.max(0, ...items.map((item) => preorderDays(item.product)));
 
   return (
@@ -153,7 +209,9 @@ export function Checkout({ currency, preorder = false }: { currency: string; pre
                 {!selected?.id ? "Alamat ini belum tersimpan di server, simpan ulang alamatnya dulu."
                   : !shipping ? "Pilih layanan pengiriman dulu."
                   : !payment ? "Pilih metode pembayaran dulu."
-                  : "Pilih rekening tujuan transfer dulu."}
+                  : needsBankAccount && !bankAccount ? "Pilih rekening tujuan transfer dulu."
+                  : applyingCoupon ? "Kupon sedang diperiksa…"
+                  : "Isi keranjang berubah. Periksa ulang kupon atau hapus kuponnya dulu."}
               </p>
             )}
             {placeError && <p className="cart-feedback cart-feedback-error" role="alert">{placeError}</p>}
@@ -184,10 +242,44 @@ export function Checkout({ currency, preorder = false }: { currency: string; pre
             <strong>{formatDate(addDays(longestPreorder))}</strong>.
           </p>
         )}
+        {coupons && (
+          <section className="checkout-coupon" aria-label="Kupon">
+            {coupon ? (
+              <>
+                <div className="checkout-coupon-applied">
+                  <span><Icon name="check" /><strong>{coupon.applied.code}</strong>{coupon.applied.label && <span className="price-badge">{coupon.applied.label}</span>}</span>
+                  <Button variant="text" size="sm" disabled={placing || applyingCoupon} onClick={removeCoupon} aria-label={`Hapus kupon ${coupon.applied.code}`}>Hapus</Button>
+                </div>
+                {couponStale && (
+                  <p className="field-hint" role="status">
+                    Isi keranjang berubah, jadi potongan kupon perlu dihitung ulang.{" "}
+                    <Button variant="text" size="sm" disabled={placing || applyingCoupon} onClick={() => void applyCoupon(coupon.applied.code)}>
+                      {applyingCoupon ? "Memeriksa…" : "Periksa ulang"}
+                    </Button>
+                  </p>
+                )}
+              </>
+            ) : (
+              <form className="checkout-field" onSubmit={(event) => { event.preventDefault(); void applyCoupon(couponCode); }}>
+                <label htmlFor={`${couponId}-code`}>Kode kupon</label>
+                <div className="checkout-coupon-row">
+                  <input id={`${couponId}-code`} value={couponCode} maxLength={50} autoComplete="off" autoCapitalize="characters" spellCheck={false}
+                    disabled={applyingCoupon || placing} aria-invalid={Boolean(couponError)} aria-describedby={couponError ? `${couponId}-error` : undefined}
+                    onChange={(event) => { setCouponCode(event.target.value); setCouponError(null); }} />
+                  <Button type="submit" variant="secondary" disabled={!couponCode.trim() || applyingCoupon || placing}>{applyingCoupon ? "Memeriksa…" : "Pakai"}</Button>
+                </div>
+              </form>
+            )}
+            {couponError && <p id={`${couponId}-error`} className="field-error" role="alert">{couponError}</p>}
+          </section>
+        )}
         <div className="cart-subtotal"><span>Subtotal</span><strong>{totalKnown ? formatPrice(total, currency) : "Belum tersedia"}</strong></div>
+        {activeCoupon && totalKnown && (
+          <div className="checkout-coupon-discount"><span>Kupon {activeCoupon.code}</span><strong>−{formatPrice(couponDiscount, currency)}</strong></div>
+        )}
         <div><span>Ongkos kirim{shipping ? ` (${shippingOptionLabel(shipping)})` : ""}</span><strong>{shipping ? formatPrice(shipping.cost, currency) : "Belum dipilih"}</strong></div>
         {shipping && totalKnown
-          ? <div className="cart-total"><span>Total belanja</span><strong>{formatPrice(total + shipping.cost, currency)}</strong></div>
+          ? <div className="cart-total"><span>Total belanja</span><strong>{formatPrice(total - couponDiscount + shipping.cost, currency)}</strong></div>
           : <p>Belum termasuk ongkos kirim.</p>}
         {selected && (
           <section className="checkout-selected" aria-label="Alamat dipilih">

@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { cartItemsOptions } from "@/lib/cart-queries";
-import { getCartStockLimit, getCartUnitPrice, getCartVariantId, type CartItem } from "@/lib/cart";
+import { getCartOriginalUnitPrice, getCartStockLimit, getCartUnitPrice, getCartVariantId, type CartItem } from "@/lib/cart";
 import { addDays, formatDate, formatPrice } from "@/lib/format";
-import { MAINTENANCE_NOTE, preorderDays } from "@/lib/store-shared";
+import { MAINTENANCE_NOTE, preorderDays, readDiscount } from "@/lib/store-shared";
 import { ProductImage } from "./product-image";
 import { useCart, type CartAction } from "./cart-provider";
 import { Icon } from "./icons";
@@ -95,7 +95,7 @@ function CartContents({ currency, maintenance }: { currency: string; maintenance
   const totalItems = items.reduce((sum, item) => sum + item.amount, 0);
   const lines = items.map((item) => {
     const unitPrice = getCartUnitPrice(item);
-    return { item, unitPrice, total: unitPrice === null ? null : unitPrice * item.amount };
+    return { item, unitPrice, originalPrice: getCartOriginalUnitPrice(item), total: unitPrice === null ? null : unitPrice * item.amount };
   });
   const totalKnown = lines.every((line) => line.total !== null);
   const subtotal = lines.reduce(
@@ -129,8 +129,9 @@ function CartContents({ currency, maintenance }: { currency: string; maintenance
             </p>
           )}
           <ul>
-            {lines.map(({ item, unitPrice, total }) => {
+            {lines.map(({ item, unitPrice, originalPrice, total }) => {
               const product = item.product;
+              const discountLabel = originalPrice !== null ? readDiscount(product?.discount)?.label : undefined;
               const preorder = preorderDays(product);
               const limit = getCartStockLimit(item);
               const overStock = limit !== null && item.amount > limit;
@@ -154,9 +155,13 @@ function CartContents({ currency, maintenance }: { currency: string; maintenance
                       </p>
                     )}
                     <p className="cart-line-price">
-                      {unitPrice !== null
-                        ? formatPrice(unitPrice, currency)
-                        : "Harga belum tersedia"}
+                      {unitPrice === null ? "Harga belum tersedia" : originalPrice !== null ? (
+                        <span className="price-tag">
+                          <span className="price-final"><span className="sr-only">Harga diskon </span>{formatPrice(unitPrice, currency)}</span>
+                          <s className="price-original"><span className="sr-only">Harga normal </span>{formatPrice(originalPrice, currency)}</s>
+                          {discountLabel && <span className="price-badge"><span className="sr-only">Diskon </span>{discountLabel}</span>}
+                        </span>
+                      ) : formatPrice(unitPrice, currency)}
                     </p>
                     {preorder > 0 ? (
                       <p className="cart-line-note">

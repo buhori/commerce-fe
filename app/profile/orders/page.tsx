@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Icon } from "@/components/icons";
 import { ProductImage } from "@/components/product-image";
 import { ButtonLink } from "@/components/ui/button";
+import { readOrderDiscount } from "@/lib/checkout";
 import { getOrders } from "@/lib/customer-api";
 import { formatDate, formatPrice } from "@/lib/format";
 import { getStore } from "@/lib/store-api";
@@ -79,6 +80,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
             const state = statuses[order.status] ?? { label: order.status, tone: "info" };
             const first = order.items[0];
             const more = order.items_count - 1;
+            const coupon = readOrderDiscount(order);
             return (
               <li key={order.id}>
                 <Link className="order-row" href={`/payment/${order.id}`}>
@@ -94,6 +96,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                       <strong>{first?.name ?? "Produk tidak tersedia"}</strong>
                       <small>{first ? `${first.amount} barang` : ""}{more > 0 ? ` · +${more} produk lain` : ""}</small>
                       {order.preorder_ready_at && <small>Pre-order, siap dikirim ±{formatDate(new Date(order.preorder_ready_at))}</small>}
+                      {coupon.discount_amount > 0 && <small>Kupon{coupon.coupon_code && ` ${coupon.coupon_code}`} −{formatPrice(coupon.discount_amount, currency)}</small>}
                     </div>
                     <div className="order-row-total">
                       <small>Total</small>

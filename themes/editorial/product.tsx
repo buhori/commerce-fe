@@ -3,7 +3,7 @@ import { ProductGallery, type ProductPageProps } from "@sellosy/theme";
 import { BuyBox } from "./buy-box";
 import s from "./editorial.module.css";
 
-export function ProductPage({ store, product, view }: ProductPageProps) {
+export function ProductPage({ store, product, view, url }: ProductPageProps) {
   const paragraphs = (product.description ?? "").split(/\n{2,}/).map((text) => text.trim()).filter(Boolean);
 
   return (
@@ -21,7 +21,7 @@ export function ProductPage({ store, product, view }: ProductPageProps) {
             {view.availability.text}{view.preorder > 0 && ` · dikirim ${view.preorder} hari setelah pesan`}
           </p>
           <BuyBox key={product.id} product={product} currency={store.currency || "IDR"} preorder={view.preorder > 0}
-            maintenance={store.maintenance.active} />
+            maintenance={store.maintenance.active} storeName={store.name} url={url} />
           {paragraphs.map((text, index) => <p key={index} className={s.productDescription}>{text}</p>)}
           {view.specs.length > 0 && (
             <dl className={s.specs}>

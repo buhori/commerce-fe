@@ -20,6 +20,53 @@ export interface ProductQuery {
   sort?: string;
 }
 
+/** Diskon otomatis produk dari backend; `label` sudah diformat, mis. "-20%" atau "-Rp5.000". */
+export interface Discount {
+  type: "percent" | "fixed";
+  value: number;
+  /** Batas potongan rupiah untuk diskon persen; null bila tanpa batas. */
+  max_discount: number | null;
+  /** Akhir masa diskon (zona waktu toko); null bila tanpa batas waktu. */
+  ends_at: string | null;
+  label: string;
+}
+
+const isMoney = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0;
+
+/** Diskon yang bentuknya rusak dianggap tidak ada, jadi tampilan kembali ke harga biasa. */
+export function readDiscount(value: unknown): Discount | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if ((row.type !== "percent" && row.type !== "fixed") || !isMoney(row.value) || typeof row.label !== "string" || !row.label.trim()) return null;
+  return {
+    type: row.type,
+    value: row.value,
+    max_discount: isMoney(row.max_discount) ? row.max_discount : null,
+    ends_at: typeof row.ends_at === "string" && row.ends_at.trim() ? row.ends_at.trim() : null,
+    label: row.label.trim(),
+  };
+}
+
+/**
+ * Merapikan `final_price` dan `discount` produk (beserta `final_price` variannya). Backend lama tidak
+ * mengirimnya: field dibiarkan kosong dan priceView() menganggap harganya tanpa diskon.
+ */
+export function readPricing<T extends object>(row: T): T {
+  const product = row as { final_price?: unknown; discount?: unknown; variants?: unknown };
+  const variants = Array.isArray(product.variants)
+    ? product.variants.map((variant) => variant && typeof variant === "object"
+      ? { ...variant, final_price: isMoney(variant.final_price) ? variant.final_price : undefined }
+      : variant)
+    : product.variants;
+  return {
+    ...row,
+    final_price: isMoney(product.final_price) ? product.final_price : undefined,
+    // Kunci yang tidak dikirim tetap tidak ada; isi yang rusak menjadi null.
+    discount: product.discount === undefined ? undefined : readDiscount(product.discount),
+    variants,
+  };
+}
+
 export interface ProductPage {
   data: ProductSummary[];
   hasMore: boolean;
@@ -69,7 +116,7 @@ export function readProductPage(result: unknown): ProductPage {
   return {
     data: (body.data as ProductSummary[]).filter(
       (product) => product && (!product.status || product.status === "published") && !product.deleted_at,
-    ),
+    ).map(readPricing),
     // Without a position to continue from there is nothing more to load.
     hasMore: body.meta?.has_more === true && lastProductId !== null,
     lastProductId,

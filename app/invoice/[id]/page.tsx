@@ -118,7 +118,9 @@ export default async function InvoicePage({ params }: PageProps<"/invoice/[id]">
 
         <dl className="invoice-totals">
           <div><dt>Subtotal</dt><dd>{money(invoice.subtotal)}</dd></div>
-          {invoice.discount > 0 && <div><dt>Diskon ({invoice.discount_percent}%)</dt><dd>−{money(invoice.discount)}</dd></div>}
+          {invoice.discount_amount > 0 && <div><dt>Kupon{invoice.coupon_code && ` ${invoice.coupon_code}`}</dt><dd>−{money(invoice.discount_amount)}</dd></div>}
+          {/* Diskon persen lama; tidak ditampilkan bersama kupon agar potongan yang sama tidak tercatat dua kali. */}
+          {invoice.discount > 0 && invoice.discount_amount === 0 && <div><dt>Diskon ({invoice.discount_percent}%)</dt><dd>−{money(invoice.discount)}</dd></div>}
           <div><dt>Ongkos kirim</dt><dd>{money(invoice.shipping_cost)}</dd></div>
           {invoice.unique_code > 0 && <div><dt>Kode unik transfer</dt><dd>{money(invoice.unique_code)}</dd></div>}
           <div className="invoice-grand-total"><dt>Total</dt><dd>{money(invoice.grand_total)}</dd></div>

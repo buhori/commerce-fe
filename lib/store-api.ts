@@ -3,11 +3,12 @@ import { currentStoreHeaders } from "./store-host";
 import { readHomeSections, type HomeSection } from "./home-sections";
 import { httpUrl, readSeo, readStoreSeo, type PageSeo, type StoreSeo } from "./seo";
 import { readSitemap, type SitemapData } from "./sitemap";
-import { isPageSlug, productQueryString, readProductPage, readStoreMaintenance, type ProductQuery, type StoreMaintenance } from "./store-shared";
+import { isPageSlug, productQueryString, readPricing, readProductPage, readStoreMaintenance, type Discount, type ProductQuery, type StoreMaintenance } from "./store-shared";
+import { readWhatsapp, type WhatsappChat } from "./whatsapp";
 
 // Client components import these from ./store-shared; server code may keep using this module.
 export { accountsEnabled, isPageSlug, PRODUCTS_PER_PAGE, preorderDays, productQueryString, readProductPage } from "./store-shared";
-export type { ProductPage, ProductQuery, StoreMaintenance } from "./store-shared";
+export type { Discount, ProductPage, ProductQuery, StoreMaintenance } from "./store-shared";
 
 export interface Store {
   // The backend sends the related theme row; older responses sent its key.
@@ -28,7 +29,7 @@ export interface Store {
   auth_required?: boolean;
   // Login methods whose keys the backend has; older backends omit it.
   login_providers?: string[];
-  // Fitur yang terbuka penuh di paket toko, mis. "account" untuk akun pembeli.
+  // Fitur yang terbuka penuh di paket toko, mis. "account" untuk akun pembeli, "coupon" untuk kode kupon.
   features?: string[];
   // Batas paket yang berlaku, mis. { cart: 3 }; kosong berarti tanpa batas.
   limits?: Record<string, number>;
@@ -46,6 +47,8 @@ export interface ProductVariant {
   label: string;
   stock?: number | null;
   price?: number | null;
+  /** Harga varian (atau produk bila varian tanpa harga) setelah diskon; tampilkan lewat priceView(). */
+  final_price?: number | null;
   images?: unknown;
   // Extra fields remain available for display, but cart requests send only id.
   [key: string]: unknown;
@@ -56,6 +59,10 @@ export interface ProductSummary {
   slug: string;
   name: string;
   price: number;
+  /** Harga setelah diskon otomatis; kosong di backend lama (berarti sama dengan price). Tampilkan lewat priceView(). */
+  final_price?: number;
+  /** Diskon otomatis yang berlaku, null bila tidak ada. */
+  discount?: Discount | null;
   images?: string | null;
   // Cart items carry the product's primary photo here.
   image?: string | null;
@@ -87,6 +94,8 @@ export interface Product extends ProductSummary {
   seo?: PageSeo;
   categories?: { id: number; name: string; slug: string }[];
   updated_at?: string | null;
+  /** Nomor chat WhatsApp untuk tombol "Tanya via WhatsApp"; null berarti tanpa tombol. */
+  whatsapp?: WhatsappChat | null;
   sku: string;
   description: string;
   variants: ProductVariant[];
@@ -229,12 +238,13 @@ export const getProduct = cache(async (slug: string): Promise<Product | null> =>
     }
     if (product.status !== "published" || product.deleted_at) return null;
     return {
-      ...product,
+      ...readPricing(product),
       seo: readSeo(product.seo),
       categories: readProductCategories(product.categories),
       rating: typeof product.rating === "number" && Number.isFinite(product.rating) ? product.rating : null,
       rating_count: Number.isSafeInteger(product.rating_count) && (product.rating_count as number) > 0 ? product.rating_count : 0,
       updated_at: typeof product.updated_at === "string" ? product.updated_at : null,
+      whatsapp: readWhatsapp(product.whatsapp),
     };
   } catch (error) {
     if (error instanceof StoreApiError && error.status === 404) return null;

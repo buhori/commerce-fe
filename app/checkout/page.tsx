@@ -42,7 +42,8 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
                   Pre-order dipesan terpisah dari keranjang belanja, karena dikirim setelah masa pre-order selesai.
                 </p>
               )}
-              <Checkout currency={store.currency || "IDR"} preorder={preorder} />
+              {/* Kolom kupon hanya untuk paket yang menyertakannya; backend lama tanpa `features` berarti tidak ada. */}
+              <Checkout currency={store.currency || "IDR"} preorder={preorder} coupons={store.features?.includes("coupon") === true} />
             </>
           )}
         </div>

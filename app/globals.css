@@ -574,6 +574,31 @@ p {
   font-weight: 700;
   letter-spacing: -0.01em;
 }
+/* Harga diskon: harga akhir tetap utama, harga normal dicoret kecil di sebelahnya. */
+.price-tag {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+.price-original {
+  color: var(--muted);
+  font-size: 0.8em;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.price-badge {
+  align-self: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.5;
+  white-space: nowrap;
+}
 .product-meta {
   color: var(--muted);
   font-size: 0.75rem;
@@ -713,6 +738,9 @@ p {
 .detail-status[data-tone="low"], .detail-status[data-tone="preorder"] { background: var(--warning-soft); color: var(--warning); }
 .detail-status[data-tone="out"] { background: var(--danger-soft); color: var(--danger); }
 .detail-price { font-size: clamp(1.65rem, 2.5vw, 2.125rem); font-weight: 600; line-height: 1.35; letter-spacing: -0.04em; overflow-wrap: anywhere; }
+.detail-price-discount { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 0.9375rem; }
+.detail-price-discount .price-original { font-size: inherit; }
+.detail-price-ends { color: var(--muted); font-size: 0.75rem; }
 .detail-delivery { display: flex; align-items: start; gap: 14px; padding: 20px; background: var(--surface); border-radius: 14px; }
 .detail-delivery-icon { display: grid; place-items: center; flex: 0 0 38px; height: 38px; background: white; border-radius: 50%; color: var(--primary); }
 .detail-delivery strong { display: block; margin-bottom: 5px; font-size: 0.8125rem; font-weight: 600; }
@@ -823,6 +851,10 @@ p {
 
 .purchase-buttons { display: grid; gap: 10px; }
 .purchase-buttons .button { width: 100%; }
+/* Tombol sekunder di bawah tombol beli; hijau WhatsApp hanya sebagai aksen ikon dan garis saat hover. */
+.purchase-whatsapp { width: 100%; margin-top: -14px; }
+.purchase-whatsapp svg { color: #128c7e; }
+.purchase-whatsapp.button-secondary:hover:not(:disabled) { border-color: #128c7e; }
 
 .purchase-mobile-summary { display: none; }
 .product-cart-actions .cart-feedback { margin-top: -8px; font-size: 0.8125rem; }
@@ -1768,6 +1800,8 @@ p {
   .purchase-buttons .button-primary { order: 2; }
   .purchase-buttons .button-secondary { order: 1; padding-inline: 0; }
   .purchase-buttons[data-single="true"] { grid-template-columns: minmax(0, 1fr); }
+  /* Dock di HP melayang di bawah layar, jadi tombol WhatsApp tidak lagi menempel ke tombol beli. */
+  .purchase-whatsapp { margin-top: 0; }
   .purchase-cart-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
   .product-detail-page + .site-footer { margin-bottom: calc(116px + env(safe-area-inset-bottom)); }
   .detail-delivery { padding: 18px; }

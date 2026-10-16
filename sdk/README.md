@@ -59,7 +59,7 @@ merender `<main>` sendiri; header dan footer dipasang platform di sekitarnya.
 | `Header` | `store`, `navigation`, `query`, `accounts` | Tampilkan tombol akun hanya bila `accounts` true. |
 | `Footer` | `store`, `pages` | **Wajib** memuat `<BuiltWith />`. |
 | `CatalogPage` | `store`, `categories`, `category`, `filter`, `q`, `sort`, `title`, `products` | `category` null kecuali tepat satu kategori. Teruskan `filter` ke `<SortSelect filter>` supaya produk pilihan dan kategori tidak hilang saat urutan diganti. |
-| `ProductPage` | `store`, `product`, `view` | `view` berisi `gallery`, `availability`, `specs`, `preorder`, `stock` yang sudah dihitung. |
+| `ProductPage` | `store`, `product`, `view`, `url` | `view` berisi `gallery`, `availability`, `specs`, `preorder`, `stock` yang sudah dihitung. `url` adalah URL lengkap (kanonik) produk. |
 | `InfoPage` | `store`, `page` | Isi halaman lewat `<PageContent page={page} />`. |
 
 Tipe lengkap ada di [`sdk/types.ts`](./types.ts).
@@ -108,6 +108,36 @@ Buat URL ini dengan `catalogUrl({ sort, categoryIds, productIds, q })`, jangan d
 Kartu produk punya `sold_count`, `rating`, dan `rating_count`; `formatProductStats()` membuat
 teks "★ 4,8 (12) · 30 terjual".
 
+## Harga dan diskon
+
+Produk dan varian bisa punya diskon otomatis: `final_price` (harga yang dibayar) dan `discount`
+(`label` siap tampil seperti "-20%", `ends_at`). Backend lama tidak mengirim keduanya. Jangan
+membandingkan `price` dan `final_price` sendiri; pakai aturan yang sama dengan tampilan bawaan:
+
+- `<ProductPrice item={product} currency={…} />` merender harga akhir, harga normal dicoret, dan
+  lencana diskon, lengkap dengan teks untuk pembaca layar. Untuk varian: `item={variant} parent={product}`.
+- `priceView(product)` atau `priceView(variant, product)` untuk tampilan sendiri: `{ final, original, label, endsAt }`.
+  `original` dan `label` null bila tidak ada potongan. Tampilkan `final` sebagai harga utama dan `original`
+  di dalam `<s>`. `discountEndDate(endsAt)` memberi tanggal untuk teks "Berakhir …".
+- `useAddToCart()` sudah memakai harga setelah diskon. Teruskan `finalPrice={product.final_price}` dan
+  `discount={product.discount}`; hook mengembalikan `priceLabel`, `originalPriceLabel`, `discountLabel`,
+  `discountEnds`, serta `variantPrice(variant)` untuk daftar pilihan varian.
+
+Contohnya `ProductCard` di `themes/editorial/product-grid.tsx` dan `themes/editorial/buy-box.tsx`.
+
+## Chat WhatsApp
+
+`product.whatsapp` berisi `{ number }` (angka saja, dengan kode negara) bila toko menyalakan chat
+WhatsApp untuk produk itu dan paketnya mencakup fitur ini; selain itu `null`. Tampilkan tombol
+"Tanya via WhatsApp" hanya bila terisi, di bawah tombol beli.
+
+- Teruskan `whatsapp={{ number: product.whatsapp.number, storeName: store.name, productName: product.name, productUrl: url }}`
+  ke `<AddToCart>` (tombolnya ikut dirender) atau `useAddToCart()`, yang mengembalikan `whatsappUrl`: tautan wa.me
+  dengan varian terpilih di pesannya, `null` bila tanpa chat. `url` datang dari props `ProductPage`.
+- Di luar hook: `whatsappChatUrl({ number, storeName, productName, variantLabel, productUrl })`.
+- Buka dengan `target="_blank" rel="noopener noreferrer"`. Jangan dimatikan saat perawatan toko atau untuk
+  pre-order: tombol ini hanya membuka chat, bukan membuat pesanan.
+
 ## Yang disediakan SDK
 
 Semuanya diimpor dari `@sellosy/theme`.
@@ -125,10 +155,11 @@ Semuanya diimpor dari `@sellosy/theme`.
 
 **Tampilan yang sudah menangani kasus sulit:** `<BannerSlider>`, `<ProductGallery>` (geser + zoom),
 `<ProductImage>` (gambar gagal dimuat), `<StoreLogo>`, `<SmartLink>` (tautan menu internal atau eksternal),
-`<PageContent>`, `<Price>`, `<BuiltWith>`, `<VideoEmbed>`.
+`<PageContent>`, `<Price>`, `<ProductPrice>` (harga diskon), `<BuiltWith>`, `<VideoEmbed>`.
 
 **Helper:** `formatPrice`, `formatDate`, `productUrl`, `categoryUrl`, `pageUrl`, `catalogUrl`,
-`catalogSorts`, `preorderDays`, `paragraphs`, `formatProductStats`.
+`catalogSorts`, `preorderDays`, `paragraphs`, `formatProductStats`, `priceView`, `discountEndDate`,
+`whatsappChatUrl`.
 
 Teruskan `maintenance={store.maintenance.active}` ke `<AddToCart>` atau `useAddToCart()`. Selama toko
 dalam perawatan, `checkoutNote` dari hook terisi: matikan tombol beli sekarang/pre-order dan tampilkan

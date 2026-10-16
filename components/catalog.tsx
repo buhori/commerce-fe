@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { ProductSummary } from "@/lib/store-api";
 import { preorderDays } from "@/lib/store-shared";
-import { formatPrice, formatProductStats } from "@/lib/format";
+import { formatProductStats } from "@/lib/format";
 import { ProductImage } from "./product-image";
+import { ProductPrice } from "./product-price";
 import { Icon } from "./icons";
 import { WishlistButton } from "./wishlist-button";
 
@@ -27,7 +28,7 @@ export function Catalog({ products, currency }: { products: ProductSummary[]; cu
                   <h3>{product.name}</h3>
                   <Icon name="arrow" aria-hidden="true" />
                 </div>
-                <strong className="product-price">{formatPrice(product.price, currency)}</strong>
+                <ProductPrice className="product-price" item={product} currency={currency} />
                 {stats && <span className="product-stats">{stats}</span>}
                 {preorder > 0 && <span className="product-preorder">Pre-order · {preorder} hari</span>}
                 {(product.variants_count ?? 0) > 0 && <span className="product-meta">{product.variants_count} varian</span>}
