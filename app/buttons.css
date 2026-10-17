@@ -21,7 +21,7 @@
 .button:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 .button svg { width: 18px; height: 18px; flex-shrink: 0; }
 .button-primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
-.button-primary:hover:not(:disabled) { background: var(--primary-hover); border-color: var(--primary-hover); }
+.button-primary:hover:not(:disabled) { background: var(--primary-hover); border-color: var(--primary-hover); color: var(--on-primary-hover, var(--on-primary)); }
 .button-secondary { background: var(--page); border-color: var(--line-strong); color: var(--text); }
 .button-secondary:hover:not(:disabled) { background: var(--surface); border-color: var(--muted); }
 .button-text { min-height: auto; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--text); text-decoration: underline; text-underline-offset: 3px; }

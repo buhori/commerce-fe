@@ -13,6 +13,14 @@ export function publicOrigin(request: NextRequest): string {
   return `${proto}://${host}`;
 }
 
+/**
+ * A same-site path to redirect to, e.g. "/summer-sale" from /preview?path=. Only plain relative paths
+ * (no "//", scheme, query, backslash, or other characters) so it cannot become an open redirect; else "/".
+ */
+export function localPath(value: unknown): string {
+  return typeof value === "string" && value.length <= 200 && /^\/[A-Za-z0-9\-._~/]*$/.test(value) && !value.includes("//") ? value : "/";
+}
+
 /** Absolute URL on the public origin, for redirects. */
 export function publicUrl(request: NextRequest, path: string): URL {
   return new URL(path, publicOrigin(request));

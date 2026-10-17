@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/components/cart-provider";
 import { QueryProvider } from "@/components/query-provider";
@@ -9,19 +8,9 @@ import { getPreviewState } from "@/lib/preview";
 import { htmlLang, rootMetadata } from "@/lib/seo";
 import { getSiteSeo } from "@/lib/site-seo";
 import { getStore, StoreApiError } from "@/lib/store-api";
+import { htmlFontClassName } from "@/lib/store-fonts";
+import { storeStyleCss, type StoreStyle } from "@/lib/store-style";
 import { getActiveTheme } from "@/themes/active";
-
-const jakarta = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
-  subsets: ["latin"],
-});
-
-// Judul serif tema Boutique; tidak di-preload karena tema lain tidak memakainya.
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
-  preload: false,
-});
 
 // Dasar SEO semua halaman: metadataBase dari alamat publik toko, template judul "%s | {toko}",
 // dan noindex untuk toko yang menutup diri atau pratinjau pemilik.
@@ -35,18 +24,21 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   // API membalas 404 bila subdomain/domain tidak terdaftar sebagai toko mana pun.
-  const [missing, lang] = await getStore().then(
-    (store) => [false, htmlLang(store.language)] as const,
-    (error: unknown) => [error instanceof StoreApiError && error.status === 404, htmlLang(null)] as const,
+  const [missing, lang, style] = await getStore().then(
+    (store) => [false, htmlLang(store.language), store.style ?? null] as const,
+    (error: unknown) => [error instanceof StoreApiError && error.status === 404, htmlLang(null), null as StoreStyle | null] as const,
   );
   const [theme, preview] = await Promise.all([getActiveTheme(), getPreviewState()]);
+  // Warna/font pilihan toko ikut dirender server (tanpa kedipan tema bawaan); kosong = tema apa adanya.
+  const styleCss = storeStyleCss(style, theme.id);
   return (
     <html
       lang={lang}
       data-theme={theme.id}
-      className={`${jakarta.variable} ${fraunces.variable} ${theme.className} h-full antialiased`}
+      className={`${htmlFontClassName(style)} ${theme.className} h-full antialiased`}
     >
       <body className="storefront-shell min-h-full flex flex-col">
+        {styleCss && <style dangerouslySetInnerHTML={{ __html: styleCss }} />}
         {missing ? (
           <main className="unavailable">
             <h1>Toko tidak ditemukan</h1>

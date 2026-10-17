@@ -1,16 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { secureCookie } from "@/lib/auth";
-import { publicUrl } from "@/lib/request-origin";
+import { localPath, publicUrl } from "@/lib/request-origin";
 import { getPreview } from "@/lib/store-api";
 import { PREVIEW_COOKIE, PREVIEW_RESPONSE_HEADERS } from "@/themes/registry";
 
 /**
- * Tombol pratinjau di panel toko membuka /preview?token=…: token yang sah disimpan di cookie
- * browser ini saja, lalu diarahkan ke beranda. `?exit=1` mengakhiri pratinjau.
+ * Tombol pratinjau di panel toko membuka /preview?token=…[&path=/slug]: token yang sah disimpan di
+ * cookie browser ini saja, lalu diarahkan ke beranda (atau `path`, mis. halaman builder).
+ * `?exit=1` mengakhiri pratinjau.
  */
 export async function GET(request: NextRequest) {
   // Token ada di URL permintaan ini; pengalihan membuangnya dari bilah alamat.
-  const response = NextResponse.redirect(publicUrl(request, "/"));
+  const response = NextResponse.redirect(publicUrl(request, localPath(request.nextUrl.searchParams.get("path"))));
   for (const [name, value] of Object.entries(PREVIEW_RESPONSE_HEADERS)) response.headers.set(name, value);
   const token = request.nextUrl.searchParams.get("token");
   const preview = request.nextUrl.searchParams.has("exit") ? null : await getPreview(token);

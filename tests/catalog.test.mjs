@@ -30,7 +30,7 @@ function loadModule(file, fetch = () => {}) {
     },
     require: (name) => {
       if (name === "react") return { cache: (callback) => callback };
-      if (name === "next/headers") return { headers: async () => new Headers({ host: REQUEST_HOST }) };
+      if (name === "next/headers") return { headers: async () => new Headers({ host: REQUEST_HOST }), cookies: async () => ({ get: () => undefined }) };
       // Modul relatif di lib/ dimuat sungguhan, dengan fetch palsu yang sama.
       if (name.startsWith("./")) return loadModule(new URL(`${name}.ts`, new URL(file, import.meta.url)).href, fetch);
       return {};

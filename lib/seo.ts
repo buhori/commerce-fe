@@ -249,6 +249,16 @@ export function canonicalCatalog(filter: CatalogFilter, categories: { id: number
 // ---------------------------------------------------------------------------------------------
 // JSON-LD (schema.org). Objek biasa; dirender oleh components/json-ld.tsx.
 
+/**
+ * JSON-LD tambahan dari plugin SEO (backend sudah memvalidasinya): hanya objek schema.org yang
+ * dipakai; selain itu diabaikan.
+ */
+export function readStructuredData(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const context = (value as { "@context"?: unknown })["@context"];
+  return typeof context === "string" && /^https?:\/\/schema\.org\/?$/.test(context) ? (value as Record<string, unknown>) : null;
+}
+
 /** JSON untuk <script type="application/ld+json">; "<" di-escape supaya teks tidak bisa menutup tag. */
 export function jsonLdString(data: unknown): string {
   return JSON.stringify(data).replace(/</g, "\\u003c");
@@ -337,6 +347,16 @@ export function breadcrumbJsonLd(items: { name: string; url: string }[]): Json {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: items.map((item, index) => ({ "@type": "ListItem", position: index + 1, name: item.name, item: item.url })),
+  };
+}
+
+/** FAQPage dari widget FAQ halaman builder; null bila tidak ada pertanyaan. */
+export function faqJsonLd(items: { question: string; answer: string }[]): Json | null {
+  if (!items.length) return null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({ "@type": "Question", name: item.question, acceptedAnswer: { "@type": "Answer", text: item.answer } })),
   };
 }
 

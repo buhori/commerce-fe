@@ -134,11 +134,12 @@ export function accountsEnabled(store: Pick<Store, "features"> | null | undefine
 
 /**
  * Mode perawatan toko: produk tetap tampil, tetapi pesanan ditolak backend.
- * manual: dinyalakan pemilik; setup: toko belum siap (kurir, tujuan pembayaran, atau lokasi belum ada).
+ * manual: dinyalakan pemilik; setup: toko belum siap (kurir, tujuan pembayaran, atau lokasi belum ada);
+ * unpublished: toko baru yang belum dibuka pemiliknya.
  */
 export interface StoreMaintenance {
   active: boolean;
-  reason: "manual" | "setup" | null;
+  reason: "manual" | "setup" | "unpublished" | null;
 }
 
 /** Catatan singkat di dekat tombol beli/checkout yang dimatikan selama perawatan. */
@@ -149,6 +150,6 @@ export function readStoreMaintenance(value: unknown): StoreMaintenance {
   const row = value && typeof value === "object" ? (value as { active?: unknown; reason?: unknown }) : null;
   const active = row?.active === true;
   // Alasan hanya berarti selama perawatan aktif.
-  const reason = active && (row?.reason === "manual" || row?.reason === "setup") ? row.reason : null;
+  const reason = active && (row?.reason === "manual" || row?.reason === "setup" || row?.reason === "unpublished") ? row.reason : null;
   return { active, reason };
 }

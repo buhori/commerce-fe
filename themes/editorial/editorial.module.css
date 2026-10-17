@@ -14,7 +14,8 @@
 .announce {
   padding: 8px var(--gutter);
   background: var(--ink);
-  color: var(--page);
+  /* --on-ink dan --ed-* hanya diisi gaya toko (lib/store-style.ts) bila warna --ink tidak lagi gelap. */
+  color: var(--on-ink, var(--page));
   text-align: center;
   font-size: 12px;
   letter-spacing: 0.04em;
@@ -68,7 +69,7 @@
 .navItem { position: relative; }
 .navItem > a, .navItem > span { display: inline-flex; align-items: center; gap: 4px; padding: 6px 0; cursor: default; }
 .navItem > a { cursor: pointer; }
-.navItem > a:hover { color: var(--accent); }
+.navItem > a:hover { color: var(--accent-text, var(--accent)); }
 .chevron { font-size: 12px; }
 
 .dropdown {
@@ -102,8 +103,25 @@
   font-size: 20px;
 }
 .iconLink { display: inline-flex; }
-.bag { display: inline-flex; align-items: center; gap: 8px; }
-.bag span { font-size: 13px; letter-spacing: 0.04em; }
+.bag { position: relative; display: inline-flex; align-items: center; gap: 8px; }
+.bagLabel { font-size: 13px; letter-spacing: 0.04em; }
+.bagBadge {
+  display: none;
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--page);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
 
 .search {
   display: flex;
@@ -150,7 +168,8 @@
 @media (max-width: 960px) {
   .nav, .headerSearch { display: none; }
   .mobileMenu { display: block; }
-  .bag span { display: none; }
+  .bagLabel { display: none; }
+  .bagBadge { display: inline-flex; }
   .actions { gap: 16px; }
 }
 
@@ -165,6 +184,11 @@
 
 /* .block menimpa padding .main; halaman yang memakai keduanya tetap butuh jarak ke footer. */
 .main.block { padding-bottom: clamp(64px, 9vw, 128px); }
+/* Di builder, jarak antarbagian diatur pembungkusnya (style bagian: padding atas/bawah). */
+:global(.builder-section) > .block { padding-top: 0; }
+/* Lebar bagian "lebar"/"penuh" dari builder melonggarkan batas lebar blok. */
+:global(.section-width-wide) > .block { max-width: 1520px; }
+:global(.section-width-full) > .block { max-width: none; }
 
 .eyebrow {
   margin: 0 0 10px;
@@ -205,7 +229,7 @@
   text-transform: uppercase;
   transition: background 0.2s, color 0.2s;
 }
-.outlineButton:hover { background: var(--ink); color: var(--page); }
+.outlineButton:hover { background: var(--ink); color: var(--on-ink, var(--page)); }
 
 /* ---------- banner ---------- */
 
@@ -290,7 +314,7 @@
   border-bottom: 1px solid currentColor;
   padding-bottom: 2px;
 }
-.moreLink:hover { color: var(--accent); }
+.moreLink:hover { color: var(--accent-text, var(--accent)); }
 
 .row {
   display: grid;
@@ -335,7 +359,7 @@
   font-size: clamp(22px, 2.6vw, 34px);
 }
 .categoryStrip a { border-bottom: 1px solid transparent; }
-.categoryStrip a:hover { color: var(--accent); border-color: currentColor; }
+.categoryStrip a:hover { color: var(--accent-text, var(--accent)); border-color: currentColor; }
 
 /* ---------- produk ---------- */
 
@@ -367,7 +391,7 @@
   margin-left: 8px;
   padding: 1px 6px;
   border: 1px solid currentColor;
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   font-size: 11px;
   letter-spacing: 0.06em;
   vertical-align: 0.15em;
@@ -444,7 +468,7 @@
 .crumbs a:hover { color: var(--text); }
 .productName { font-size: clamp(36px, 4.4vw, 60px); }
 .availability { margin-top: 12px !important; font-size: 13px; letter-spacing: 0.04em; color: var(--muted); }
-.availability[data-tone="low"], .availability[data-tone="preorder"] { color: var(--accent); }
+.availability[data-tone="low"], .availability[data-tone="preorder"] { color: var(--accent-text, var(--accent)); }
 .productPrice { margin-bottom: 20px !important; font-size: 22px; }
 .productDescription { margin-top: 14px !important; font-size: 16px; color: var(--muted); max-width: 52ch; }
 
@@ -465,7 +489,7 @@
   cursor: pointer;
 }
 .variants label i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--line-strong); }
-.variants input:checked + span { border-color: var(--ink); background: var(--ink); color: var(--page); }
+.variants input:checked + span { border-color: var(--ink); background: var(--ink); color: var(--on-ink, var(--page)); }
 .variants input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
 .variants label[data-disabled="true"] span { opacity: 0.4; text-decoration: line-through; cursor: not-allowed; }
 
@@ -485,10 +509,10 @@
   text-transform: uppercase;
   transition: background 0.2s, color 0.2s;
 }
-.primaryButton { background: var(--ink); color: var(--page); }
-.primaryButton:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); }
+.primaryButton { background: var(--ink); color: var(--on-ink, var(--page)); }
+.primaryButton:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); color: var(--on-primary-hover, var(--on-ink, var(--page))); }
 .secondaryButton { background: none; }
-.secondaryButton:hover:not(:disabled) { background: var(--ink); color: var(--page); }
+.secondaryButton:hover:not(:disabled) { background: var(--ink); color: var(--on-ink, var(--page)); }
 /* Tautan, bukan tombol: tata letak ikon + teks; hijau WhatsApp hanya di ikon supaya tetap gaya Editorial. */
 .whatsappButton { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--text); text-decoration: none; }
 .whatsappButton svg { flex-shrink: 0; font-size: 18px; color: #128c7e; }
@@ -516,7 +540,7 @@
 
 .footer {
   background: var(--ink);
-  color: #d8d0c4;
+  color: var(--ed-on-ink-soft, #d8d0c4);
   font-size: 14px;
 }
 .footerInner {
@@ -529,17 +553,17 @@
 }
 @media (max-width: 760px) { .footerInner { grid-template-columns: minmax(0, 1fr); } }
 .footerInner ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
-.footerInner a:hover { color: #fff; }
+.footerInner a:hover { color: var(--on-ink, #fff); }
 .footerBrand p { max-width: 36ch; }
 .footerName {
   margin-bottom: 12px !important;
   font-family: var(--ed-serif), Georgia, serif;
   font-size: clamp(36px, 5vw, 64px);
   line-height: 1;
-  color: var(--page);
+  color: var(--on-ink, var(--page));
   letter-spacing: -0.02em;
 }
-.footerTitle { margin-bottom: 12px !important; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: #8f877c; }
+.footerTitle { margin-bottom: 12px !important; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ed-on-ink-muted, #8f877c); }
 .footerBottom {
   display: flex;
   flex-wrap: wrap;
@@ -549,10 +573,10 @@
   max-width: 1320px;
   margin: 0 auto;
   padding: 20px var(--gutter);
-  border-top: 1px solid #36322c;
+  border-top: 1px solid var(--ed-ink-line, #36322c);
   font-size: 12px;
-  color: #8f877c;
+  color: var(--ed-on-ink-muted, #8f877c);
 }
 .builtWith { display: inline-flex; align-items: center; gap: 8px; }
 /* Logo Sellosy dibuat putih polos supaya terbaca di footer gelap. */
-.builtWith img { filter: brightness(0) invert(1); opacity: 0.7; width: 64px; height: auto; }
+.builtWith img { filter: var(--ed-logo-filter, brightness(0) invert(1)); opacity: 0.7; width: 64px; height: auto; }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import {
-  categoryUrl, paragraphs,
+  categoryUrl, RichText, SectionLink,
   type BannerSectionProps, type BannerSlide, type CategoryGridSectionProps, type ProductListSectionProps, type SectionComponents, type TextSectionProps,
 } from "@sellosy/theme";
 import { ArrowIcon } from "./icons";
@@ -37,9 +37,7 @@ function Slide({ banner, index, total }: { banner: BannerSlide; index: number; t
   );
   const className = `${s.slide} ${hasText ? s.slideCover : ""}`;
   if (!banner.link) return <div className={className}>{content}</div>;
-  return banner.link.startsWith("/")
-    ? <Link href={banner.link} className={className}>{content}</Link>
-    : <a href={banner.link} className={className} target="_blank" rel="noopener noreferrer">{content}</a>;
+  return <SectionLink href={banner.link} className={className}>{content}</SectionLink>;
 }
 
 function Banner({ settings }: BannerSectionProps) {
@@ -91,10 +89,8 @@ function Text({ settings }: TextSectionProps) {
         {settings.title && <h2 className={s.textTitle}>{settings.title}</h2>}
       </div>
       <div className={s.textBody}>
-        {paragraphs(settings.body).map((text, index) => <p key={index}>{text}</p>)}
-        {button && (settings.link!.startsWith("/")
-          ? <Link href={settings.link!} className={s.outlineButton}>{settings.button_label}</Link>
-          : <a href={settings.link!} className={s.outlineButton} target="_blank" rel="noopener noreferrer">{settings.button_label}</a>)}
+        <RichText html={settings.body_html} />
+        {button && <SectionLink href={settings.link!} className={s.outlineButton}>{settings.button_label}</SectionLink>}
       </div>
     </section>
   );

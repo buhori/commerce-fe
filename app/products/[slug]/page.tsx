@@ -77,6 +77,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             : { name: "Produk", url: absoluteUrl(site.base, "/products") },
           { name: product.name, url },
         ]),
+        ...(product.structured_data ? [product.structured_data] : []),
       ]} />
       <StoreHeader name={store.name} logo={store.logo} />
       <Page store={store} product={product} view={view} url={url} />

@@ -1,8 +1,10 @@
 import { cache } from "react";
-import { currentStoreHeaders } from "./store-host";
-import { readHomeSections, type HomeSection } from "./home-sections";
-import { httpUrl, readSeo, readStoreSeo, type PageSeo, type StoreSeo } from "./seo";
+import { currentStoreHeaders, requestPreviewToken } from "./store-host";
+import { readHomeSections, readSections, type HomeSection } from "./home-sections";
+import { httpUrl, readSeo, readStoreSeo, readStructuredData, type PageSeo, type StoreSeo } from "./seo";
 import { readSitemap, type SitemapData } from "./sitemap";
+import { readStoreStyle, type StoreStyle } from "./store-style";
+import { storeCacheEnabled, storeCacheSeconds, storeCacheTags } from "./storefront-cache";
 import { isPageSlug, productQueryString, readPricing, readProductPage, readStoreMaintenance, type Discount, type ProductQuery, type StoreMaintenance } from "./store-shared";
 import { readWhatsapp, type WhatsappChat } from "./whatsapp";
 
@@ -36,8 +38,15 @@ export interface Store {
   /** Alamat publik kanonik toko (domain sendiri atau subdomain), tanpa garis miring akhir. */
   url?: string | null;
   seo?: StoreSeo;
+  /** Warna dan font pilihan toko di atas token tema; null berarti tampilan tema apa adanya. */
+  style?: StoreStyle | null;
   /** Selalu terisi setelah getStore(); selama aktif pesanan belum bisa dibuat. */
   maintenance: StoreMaintenance;
+  /**
+   * Whitelabel: the plan includes it and the owner chose to hide the "Built with Sellosy" badge.
+   * Always set after getStore(); <BuiltWith /> already renders nothing then.
+   */
+  hide_branding: boolean;
 }
 
 export interface ProductVariant {
@@ -92,6 +101,8 @@ export interface Product extends ProductSummary {
   height?: number | null;
   length?: number | null;
   seo?: PageSeo;
+  /** JSON-LD tambahan dari plugin SEO; null bila tidak ada. */
+  structured_data?: Record<string, unknown> | null;
   categories?: { id: number; name: string; slug: string }[];
   updated_at?: string | null;
   /** Nomor chat WhatsApp untuk tombol "Tanya via WhatsApp"; null berarti tanpa tombol. */
@@ -128,15 +139,24 @@ export function storeThemeKey(store: Pick<Store, "theme"> | null | undefined): u
   return typeof key === "string" ? key.trim().toLowerCase() : undefined;
 }
 
-async function storeFetch<T>(path: string, extraHeaders?: Record<string, string>): Promise<T> {
+/**
+ * Server-side read from the store API. Reads without extra headers are public (no customer,
+ * guest-cart, or preview token is ever sent from here) and are cached per store, see
+ * lib/storefront-cache.ts; `{ cache: false }` opts a public read out. Anything sent with extra
+ * headers (a preview token) is never cached.
+ */
+async function storeFetch<T>(path: string, extraHeaders?: Record<string, string>, options: { cache?: boolean } = {}): Promise<T> {
   const baseUrl = process.env.STORE_API_URL || "http://localhost:8000/api";
+  const storeHeaders = await currentStoreHeaders();
+  const cached = !extraHeaders && options.cache !== false && storeCacheEnabled();
   const response = await fetch(`${baseUrl.replace(/\/$/, "")}${path}`, {
     headers: {
       Accept: "application/json",
       ...extraHeaders,
-      ...(await currentStoreHeaders()),
+      ...storeHeaders,
     },
-    cache: "no-store",
+    // The cache key covers the headers above, so each store (X-Store-Id/X-Store-Host) has its own entries.
+    ...(cached ? { next: { revalidate: storeCacheSeconds(), tags: storeCacheTags(storeHeaders) } } : { cache: "no-store" as const }),
     signal: AbortSignal.timeout(10_000),
   });
   if (!response.ok) throw new StoreApiError(response.status);
@@ -202,7 +222,12 @@ export function storeLogoUrl(value: unknown): string | null {
 }
 
 export const getStore = cache(async () => {
-  const store = await storeFetch<Store>("/store");
+  // Pratinjau pemilik toko: dengan token yang sah backend mengirim gaya draf (warna/font), jadi iframe
+  // builder langsung menampilkan draf yang baru disimpan. getPreview di-cache per token, jadi pemeriksaan
+  // ini sama dengan yang dipakai getPreviewState; pengunjung biasa tanpa token tidak menunggu apa pun.
+  const { token } = await requestPreviewToken();
+  const preview = token ? await getPreview(token) : null;
+  const store = await storeFetch<Store>("/store", preview && token ? { "X-Preview-Token": token } : undefined);
   return {
     ...store,
     logo: storeLogoUrl(store.logo),
@@ -211,6 +236,8 @@ export const getStore = cache(async () => {
     url: httpUrl(store.url)?.replace(/\/+$/, "") ?? null,
     seo: readStoreSeo(store.seo),
     maintenance: readStoreMaintenance(store.maintenance),
+    style: readStoreStyle(store.style),
+    hide_branding: store.hide_branding === true,
   };
 });
 
@@ -240,6 +267,7 @@ export const getProduct = cache(async (slug: string): Promise<Product | null> =>
     return {
       ...readPricing(product),
       seo: readSeo(product.seo),
+      structured_data: readStructuredData(product.structured_data),
       categories: readProductCategories(product.categories),
       rating: typeof product.rating === "number" && Number.isFinite(product.rating) ? product.rating : null,
       rating_count: Number.isSafeInteger(product.rating_count) && (product.rating_count as number) > 0 ? product.rating_count : 0,
@@ -258,17 +286,24 @@ export interface PageLink {
 }
 
 export interface StorePage extends PageLink {
-  /** rich: `content` dari editor teks; html: `document` landing page (HTML penuh). */
-  format: "rich" | "html";
+  /**
+   * rich: `content` dari editor teks; html: `document` landing page (HTML penuh); builder: `sections`
+   * dari builder halaman (dirender seperti beranda).
+   */
+  format: "rich" | "html" | "builder";
   /** store: di dalam header dan footer toko; blank: landing page layar penuh. */
   layout: "store" | "blank";
   // Sanitised HTML from the backend's rich text renderer.
   content: string;
   /** Dokumen HTML penuh; wajib dirender di iframe sandbox (LandingFrame), jangan langsung. */
   document: string | null;
+  /** Bagian halaman builder (versi tayang, atau draf pada pratinjau pemilik); null untuk format lain. */
+  sections: HomeSection[] | null;
   meta_description: string | null;
   updated_at: string | null;
   seo: PageSeo;
+  /** JSON-LD tambahan dari plugin SEO; null bila tidak ada. */
+  structured_data: Record<string, unknown> | null;
 }
 
 // Footer links; a failure leaves the footer without them rather than breaking the page.
@@ -290,22 +325,32 @@ export const getPages = cache(async (): Promise<PageLink[]> => {
 export const getPage = cache(async (slug: string): Promise<StorePage | null> => {
   if (!isPageSlug(slug)) return null;
   try {
-    const result = await storeFetch<{ data?: Partial<StorePage> }>(`/pages/${slug}`);
+    // Pratinjau pemilik (builder halaman): dengan token yang sah backend mengirim draf bagian halaman.
+    // getPreview di-cache per token, jadi pengunjung biasa tanpa token tidak menunggu apa pun.
+    const { token } = await requestPreviewToken();
+    const preview = token ? await getPreview(token) : null;
+    const result = await storeFetch<{ data?: Partial<Omit<StorePage, "sections">> & { sections?: unknown } }>(
+      `/pages/${slug}`,
+      preview && token ? { "X-Preview-Token": token } : undefined,
+    );
     const page = result?.data;
-    if (!page || page.slug !== slug || typeof page.title !== "string" || typeof page.content !== "string") {
+    const builder = page?.format === "builder" && Array.isArray(page.sections);
+    if (!page || page.slug !== slug || typeof page.title !== "string" || (typeof page.content !== "string" && !builder)) {
       throw new Error("Invalid page response");
     }
     const html = page.format === "html" && typeof page.document === "string";
     return {
       slug,
       title: page.title,
-      format: html ? "html" : "rich",
-      layout: html && page.layout === "blank" ? "blank" : "store",
-      content: page.content,
+      format: builder ? "builder" : html ? "html" : "rich",
+      layout: (html || builder) && page.layout === "blank" ? "blank" : "store",
+      content: typeof page.content === "string" ? page.content : "",
       document: html ? (page.document as string) : null,
+      sections: builder ? readSections(page.sections as unknown[]) : null,
       meta_description: typeof page.meta_description === "string" && page.meta_description.trim() ? page.meta_description.trim() : null,
       updated_at: typeof page.updated_at === "string" ? page.updated_at : null,
       seo: readSeo(page.seo),
+      structured_data: readStructuredData((page as { structured_data?: unknown }).structured_data),
     };
   } catch (error) {
     if (error instanceof StoreApiError && error.status === 404) return null;
@@ -342,7 +387,8 @@ export async function getSitemap(): Promise<SitemapData> {
 }
 
 export async function getProducts(query: ProductQuery = {}) {
-  return readProductPage(await storeFetch<unknown>(`/products?${productQueryString(query)}`));
+  // Free-text searches are not cached: their keys are unbounded and each is rarely repeated.
+  return readProductPage(await storeFetch<unknown>(`/products?${productQueryString(query)}`, undefined, { cache: !query.q }));
 }
 
 export interface NavigationLink {

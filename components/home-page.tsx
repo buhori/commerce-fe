@@ -1,5 +1,5 @@
 import { ButtonLink } from "@/components/ui/button";
-import { HomeBuilderPage } from "./home-builder-page";
+import { BuilderSections } from "./builder-sections";
 import { MaintenanceNotice } from "./maintenance-notice";
 import { SiteFooter } from "./site-footer";
 import { StoreHeader } from "./store-header";
@@ -35,7 +35,7 @@ export async function HomePage() {
     <>
       <StoreHeader name={store.name} logo={store.logo} />
       {/* Di luar susunan builder supaya tampil di semua tema, termasuk saat beranda gagal dimuat. */}
-      {store.maintenance.active && <div className="container home-maintenance"><MaintenanceNotice /></div>}
+      {store.maintenance.active && <div className="container home-maintenance"><MaintenanceNotice reason={store.maintenance.reason} /></div>}
       {sections === undefined ? (
         <main className="page home-page">
           <div className="container empty-state" role="alert">
@@ -44,7 +44,10 @@ export async function HomePage() {
           </div>
         </main>
       ) : (
-        <HomeBuilderPage store={store} sections={sections ?? []} components={theme.components.sections} />
+        <main className="page home-page home-builder">
+          <h1 className="sr-only">{store.name}</h1>
+          <BuilderSections store={store} sections={sections ?? []} components={theme.components.sections} compact />
+        </main>
       )}
       <SiteFooter store={store} />
     </>

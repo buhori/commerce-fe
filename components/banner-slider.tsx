@@ -126,5 +126,6 @@ export function BannerSlider({ slides: banners }: { slides: BannerSlide[] }) {
 function SlideLink({ link, label, children }: { link: string | null; label: string; children: ReactNode }) {
   if (!link) return <div className="banner-link">{children}</div>;
   if (link.startsWith("/")) return <Link className="banner-link" href={link} aria-label={label}>{children}</Link>;
+  if (link.startsWith("#")) return <a className="banner-link" href={link} aria-label={label}>{children}</a>;
   return <a className="banner-link" href={link} aria-label={label} target="_blank" rel="noopener noreferrer">{children}</a>;
 }

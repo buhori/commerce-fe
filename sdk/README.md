@@ -57,18 +57,19 @@ merender `<main>` sendiri; header dan footer dipasang platform di sekitarnya.
 | Komponen | Props | Catatan |
 | --- | --- | --- |
 | `Header` | `store`, `navigation`, `query`, `accounts` | Tampilkan tombol akun hanya bila `accounts` true. |
-| `Footer` | `store`, `pages` | **Wajib** memuat `<BuiltWith />`. |
+| `Footer` | `store`, `pages` | **Wajib** memuat `<BuiltWith />`, tanpa syarat: di toko whitelabel (`store.hide_branding`) komponen itu sendiri tidak merender apa pun. |
 | `CatalogPage` | `store`, `categories`, `category`, `filter`, `q`, `sort`, `title`, `products` | `category` null kecuali tepat satu kategori. Teruskan `filter` ke `<SortSelect filter>` supaya produk pilihan dan kategori tidak hilang saat urutan diganti. |
 | `ProductPage` | `store`, `product`, `view`, `url` | `view` berisi `gallery`, `availability`, `specs`, `preorder`, `stock` yang sudah dihitung. `url` adalah URL lengkap (kanonik) produk. |
 | `InfoPage` | `store`, `page` | Isi halaman lewat `<PageContent page={page} />`. |
 
 Tipe lengkap ada di [`sdk/types.ts`](./types.ts).
 
-## Widget beranda (builder)
+## Widget builder (beranda dan halaman builder)
 
 Pemilik toko menyusun beranda di builder (`/builder`, menu **Toko → Sesuaikan tampilan**) dari
-7 widget. Beranda **hanya** berisi susunan yang diterbitkan untuk tema yang aktif; tidak ada
-beranda cadangan. Susunan kosong berarti beranda kosong.
+13 widget. Beranda **hanya** berisi susunan yang diterbitkan untuk tema yang aktif; tidak ada
+beranda cadangan. Susunan kosong berarti beranda kosong. Halaman berformat **Builder** (`/{slug}`)
+memakai widget dan tampilan yang sama, dengan atau tanpa header dan footer toko.
 
 Tema boleh menyediakan tampilan sendiri lewat `components.sections`. Widget yang tidak disediakan
 memakai tampilan bawaan, yang sudah mengikuti token warna dan font tema.
@@ -85,10 +86,25 @@ export default defineTheme({
 | `banner` | `settings.height` (`tall`/`short`), `settings.slides` (`image`, `mobile_image`, `title`, `subtitle`, `button_label`, `link`) | Slide diatur di widget; sudah bergambar dan dibatasi paket. Pakai `<BannerSlider slides>` untuk slider siap pakai. |
 | `product-list` | `settings` (judul, keterangan, `source`, `layout`: `grid`/`row`), `products`, `moreHref` | `source`: `latest`, `top_sale`, `top_rating`, `category`, `manual`. Produk sudah dimuat dan dipotong sesuai `limit`; `moreHref` menuju `/products` dengan filter yang sama. |
 | `category-grid` | `settings.title`, `settings.categories` (`name`, `slug`, `image`) | `image` boleh null. |
-| `text` | `settings` (`eyebrow`, `title`, `body`, `align`, `button_label`, `link`) | Pecah `body` dengan `paragraphs()`. `link` sudah aman. |
+| `text` | `settings` (`eyebrow`, `title`, `body_html`, `align`, `button_label`, `link`) | Render `body_html` lewat `<RichText html>` (sudah disanitasi; teks lama sudah diubah menjadi paragraf). `body` usang. |
 | `image` | `settings` (`image`, `alt`, `caption`, `link`, `width`) | |
 | `testimonials` | `settings.title`, `settings.items` (`quote`, `name`, `detail`) | |
 | `video` | `settings.video_id`, `title`, `caption` | Wajib lewat `<VideoEmbed>`: YouTube tanpa cookie, dimuat setelah diklik. |
+| `hero` | `settings` (`eyebrow`, `title`, `subtitle`, `image`, `image_position`: `right`/`left`/`background`, `primary_label`/`primary_link`, `secondary_label`/`secondary_link`, `min_height`: `auto`/`medium`/`screen`) | `title` selalu ada; tombol hanya bila label dan tautannya lengkap. |
+| `features` | `settings` (`title`, `subtitle`, `columns`: 2/3/4, `items`: `icon`, `title`, `text`) | `icon` salah satu `FEATURE_ICONS` atau null; pakai `<FeatureIcon name>`. |
+| `faq` | `settings` (`title`, `subtitle`, `items`: `question`, `answer`) | Pakai `<details>`/`<summary>`. |
+| `cta` | `settings` (`title`, `text`, `button_label`, `link`, `note`) | |
+| `countdown` | `settings` (`title`, `text`, `ends_at` ISO UTC, `expired_text`, `button_label`, `link`) | Wajib lewat `<Countdown endsAt expired>` (dihitung di browser). Yang sudah lewat tanpa `expired_text` tidak dirender. |
+| `gallery` | `settings` (`title`, `columns`: 2/3/4, `images`: `image`, `alt`, `link`) | |
+| `columns` | `settings` (`layout`: `100`/`50-50`/`33-67`/`67-33`/`33-33-33`/`25-50-25`/`25-25-25-25`, `gap`: `sm`/`md`/`lg`, `vertical_align`: `top`/`center`/`bottom`, `mobile`: `stack`/`two`, `columns[].blocks`) | `columns` selalu sebanyak kolom `layout` (kolom kosong tetap ada). Blok: `heading` (`text`, `level` h2/h3/h4), `text` (`html`, lewat `<RichText>`), `image` (`image`, `alt`, `link`), `button` (`label`, `link`, `variant`: `primary`/`secondary`/`link`), `spacer` (`size`: `sm`/`md`/`lg`). |
+
+Tautan widget (`link`, `*_link`) bisa berupa path toko, URL http(s), atau `#anchor` di halaman yang
+sama; pakai `<SectionLink href>` supaya ketiganya dibuka dengan benar.
+
+Tampilan per bagian (latar, gambar latar, warna teks, jarak atas/bawah, lebar, perataan, tampil di
+desktop/ponsel saja, anchor) dipasang platform di pembungkus widget, bukan di komponen tema. Supaya
+ikut berubah, pakai token `var(--text)`, `var(--muted)`, `var(--line)`, `var(--surface)`, `var(--page)`
+dan `.container` untuk lebar isi; jangan menulis warna tetap.
 
 Satu widget merender satu elemen selebar halaman (`<section>`). Platform yang mengatur urutannya.
 Widget dengan data kosong tidak dirender, jadi komponen tema tidak perlu menangani keadaan kosong.
@@ -155,10 +171,11 @@ Semuanya diimpor dari `@sellosy/theme`.
 
 **Tampilan yang sudah menangani kasus sulit:** `<BannerSlider>`, `<ProductGallery>` (geser + zoom),
 `<ProductImage>` (gambar gagal dimuat), `<StoreLogo>`, `<SmartLink>` (tautan menu internal atau eksternal),
-`<PageContent>`, `<Price>`, `<ProductPrice>` (harga diskon), `<BuiltWith>`, `<VideoEmbed>`.
+`<PageContent>`, `<Price>`, `<ProductPrice>` (harga diskon), `<BuiltWith>`, `<VideoEmbed>`,
+`<RichText>`, `<SectionLink>`, `<Countdown>`, `<FeatureIcon>`.
 
 **Helper:** `formatPrice`, `formatDate`, `productUrl`, `categoryUrl`, `pageUrl`, `catalogUrl`,
-`catalogSorts`, `preorderDays`, `paragraphs`, `formatProductStats`, `priceView`, `discountEndDate`,
+`catalogSorts`, `preorderDays`, `paragraphs`, `FEATURE_ICONS`, `formatProductStats`, `priceView`, `discountEndDate`,
 `whatsappChatUrl`.
 
 Teruskan `maintenance={store.maintenance.active}` ke `<AddToCart>` atau `useAddToCart()`. Selama toko
@@ -179,7 +196,7 @@ Aturan ini diperiksa `pnpm lint` untuk setiap file di `themes/<id>/`. Pelanggara
 
 Pemeriksa tetap membaca kode tema sebelum dipasang. Yang diperiksa di luar lint:
 
-- Footer memuat `<BuiltWith />`.
+- Footer memuat `<BuiltWith />` (jangan disembunyikan sendiri berdasarkan `store.hide_branding`).
 - Tidak ada skrip atau layanan pihak ketiga (analytics, chat, font dari luar Google Fonts).
 - Teks yang tampil ke pembeli memakai bahasa yang sama dengan bagian toko lainnya.
 - Tampilan sudah dicek di lebar 390px (HP) dan 1440px (desktop), tanpa halaman melebar ke samping.
@@ -193,13 +210,21 @@ Pemeriksa tetap membaca kode tema sebelum dipasang. Yang diperiksa di luar lint:
   | Token | Fungsi |
   | --- | --- |
   | `--primary`, `--primary-hover` | Tombol utama dan aksen |
+  | `--on-primary`, `--on-primary-hover` | Teks di atas tombol utama (dan saat hover); `--on-primary-hover` boleh kosong, pakai `var(--on-primary-hover, var(--on-primary))` |
+  | `--accent`, `--accent-text` | Warna aksen sekunder (opsional); untuk teks pakai `var(--accent-text, var(--accent))`, versi yang dijamin terbaca di latar |
   | `--page`, `--canvas`, `--surface`, `--surface-hover` | Latar halaman dan kartu |
-  | `--text`, `--muted` | Warna teks |
+  | `--text`, `--muted`, `--text-soft`, `--text-softer` | Warna teks |
+  | `--on-text` | Teks di atas latar `--text` (lencana, tab aktif) |
+  | `--glass-rgb` | Kanal RGB latar tembus pandang: `rgb(var(--glass-rgb) / 0.9)` |
   | `--line`, `--line-strong` | Garis |
   | `--font-body`, `--font-heading` | Font isi dan judul |
   | `--radius-lg`, `--radius`, `--radius-sm` | Sudut kartu dan tombol (diisi di `[data-theme="<id>"] .storefront-shell`) |
 
 - Font: deklarasikan dengan `next/font/google` di `index.tsx` dengan `preload: false`, lalu isi `className` tema dengan kelas `variable`-nya (lihat Editorial).
+- **Gaya toko (gratis untuk setiap tema).** Pemilik toko bisa memilih warna utama, latar, teks, aksen, serta font judul dan isi di panel (`store.style`, tipe `StoreStyle`). Layout root menimpa token di atas pada `<html>` (selektor `html:root[data-theme]`, mengalahkan `:root[data-theme="<id>"]`) dan menurunkan sisanya: hover, permukaan, garis, teks redup, dan teks di atas tombol (putih atau hampir hitam sesuai kontras), termasuk untuk latar gelap. Jadi:
+  - Pakai token, jangan warna tetap. `#fff`, `white`, atau `rgb(255 255 255 / …)` di komponen tidak ikut berubah dan bisa tidak terbaca di latar gelap.
+  - Judul dan teks memakai `var(--font-heading)` / `var(--font-body)`. Font yang dideklarasikan tema sendiri (mis. `--ed-serif` di Editorial) hanya ikut berganti bila tema itu didaftarkan di `lib/store-style.ts`.
+  - Bila nilai `null`, token tema dipakai apa adanya; tema tidak perlu menangani `store.style` sendiri.
 
 ## Sebelum mengirim tema
 

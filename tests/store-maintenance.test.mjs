@@ -22,7 +22,7 @@ function loadStoreApi(file, fetch) {
     process: { env: { STORE_API_URL: "http://backend.test/api", STORE_ID: "404" } },
     require: (name) => {
       if (name === "react") return { cache: (callback) => callback };
-      if (name === "next/headers") return { headers: async () => new Headers({ host: "toko.sellosy.test" }) };
+      if (name === "next/headers") return { headers: async () => new Headers({ host: "toko.sellosy.test" }), cookies: async () => ({ get: () => undefined }) };
       if (name.startsWith("./")) return loadStoreApi(new URL(`${name}.ts`, new URL(file, import.meta.url)).href, fetch);
       return {};
     },
@@ -37,9 +37,10 @@ const { checkoutErrorMessage } = loadModule("../lib/checkout.ts");
 
 const STORE_ERROR = "Toko sedang dalam perawatan. Pesanan belum bisa dibuat untuk sementara.";
 
-test("store maintenance keeps both reasons while active", () => {
+test("store maintenance keeps every known reason while active", () => {
   assert.deepEqual({ ...readStoreMaintenance({ active: true, reason: "manual" }) }, { active: true, reason: "manual" });
   assert.deepEqual({ ...readStoreMaintenance({ active: true, reason: "setup" }) }, { active: true, reason: "setup" });
+  assert.deepEqual({ ...readStoreMaintenance({ active: true, reason: "unpublished" }) }, { active: true, reason: "unpublished" });
   assert.deepEqual({ ...readStoreMaintenance({ active: true, reason: null }) }, { active: true, reason: null });
 });
 

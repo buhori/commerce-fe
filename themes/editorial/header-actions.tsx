@@ -22,7 +22,11 @@ export function HeaderActions({ accounts }: { accounts: boolean }) {
       )}
       <Link href="/cart" className={s.bag} aria-label={`Keranjang${count ? `: ${count} barang` : ""}`}>
         <BagIcon />
-        <span>Tas ({error ? "!" : count ?? 0})</span>
+        <span className={s.bagLabel}>Tas ({error ? "!" : count ?? 0})</span>
+        {/* Layar sempit menyembunyikan teks "Tas (n)"; jumlahnya tetap tampil sebagai lencana. */}
+        {(error || (count ?? 0) > 0) && (
+          <span className={s.bagBadge} aria-hidden="true">{error ? "!" : count! > 99 ? "99+" : count}</span>
+        )}
       </Link>
     </>
   );

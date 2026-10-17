@@ -213,3 +213,13 @@ test("sitemap reads valid rows only and builds absolute, escaped URLs", () => {
   assert.deepEqual(plain(sitemapEntries("https://kopi.test", null)).map((entry) => entry.url), ["https://kopi.test/", "https://kopi.test/products"]);
   assert.throws(() => readSitemap({ data: [] }));
 });
+
+test("plugin structured data is used only when it is a schema.org object", () => {
+  const product = { "@context": "https://schema.org", "@type": "Product", name: "Kaos" };
+  assert.deepEqual(plain(seo.readStructuredData(product)), product);
+  for (const value of [null, "x", [product], { "@type": "Product" }, { "@context": "https://evil.test" }]) {
+    assert.equal(seo.readStructuredData(value), null, JSON.stringify(value));
+  }
+  // Teks plugin tidak bisa menutup tag <script>.
+  assert.ok(!seo.jsonLdString({ ...product, name: "</script><script>alert(1)</script>" }).includes("</script>"));
+});

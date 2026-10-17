@@ -5,7 +5,7 @@ import { useEffect } from "react";
 const SCROLL_KEY = "sellosy-preview-scroll";
 
 /**
- * Hanya di dalam iframe builder (/builder di panel): bagian beranda bisa diklik untuk dipilih,
+ * Hanya di dalam iframe builder (/builder di panel): bagian beranda atau halaman builder bisa diklik untuk dipilih,
  * bagian terpilih disorot dan digulir ke tampilan, dan posisi gulir dipertahankan saat builder
  * memuat ulang pratinjau. Tautan dan formulir tidak membuka halaman lain di pratinjau.
  *
@@ -22,13 +22,15 @@ export function PreviewBridge() {
       }
     })();
 
-    const saved = Number(storage?.getItem(SCROLL_KEY));
+    // Per path: builder beranda dan builder halaman memakai iframe yang sama di tab yang sama.
+    const scrollKey = `${SCROLL_KEY}:${window.location.pathname}`;
+    const saved = Number(storage?.getItem(scrollKey));
     if (saved > 0) window.scrollTo({ top: saved, behavior: "instant" });
 
     let frame = 0;
     const onScroll = () => {
       cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => storage?.setItem(SCROLL_KEY, String(Math.round(window.scrollY))));
+      frame = requestAnimationFrame(() => storage?.setItem(scrollKey, String(Math.round(window.scrollY))));
     };
 
     const style = document.createElement("style");
@@ -41,7 +43,7 @@ export function PreviewBridge() {
 
     const onClick = (event: MouseEvent) => {
       const target = event.target instanceof Element ? event.target : null;
-      // Pratinjau hanya untuk beranda: tautan tidak berpindah halaman.
+      // Pratinjau hanya untuk halaman yang sedang disunting: tautan tidak berpindah halaman.
       if (target?.closest("a")) event.preventDefault();
       const section = target?.closest<HTMLElement>("[data-section-index]");
       if (section) {

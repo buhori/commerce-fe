@@ -20,11 +20,14 @@ export { BannerSlider } from "@/components/banner-slider";
 export { ProductGallery } from "@/components/product-gallery";
 export { ProductImage } from "@/components/product-image";
 export { StoreBrand as StoreLogo } from "@/components/store-brand";
-export { BuiltWith, PageContent, Price, SearchForm, SmartLink } from "./components";
+export { BuiltWith, PageContent, Price, RichText, SearchForm, SectionLink, SmartLink } from "./components";
+// Widget builder: hitung mundur di browser (Countdown) dan ikon Keunggulan (FeatureIcon, nama dari FEATURE_ICONS).
+export { Countdown } from "@/components/countdown";
+export { FeatureIcon } from "@/components/section-icons";
 // Harga akhir + harga normal dicoret + lencana diskon, dengan teks untuk pembaca layar.
 export { ProductPrice } from "@/components/product-price";
 export { VideoEmbed } from "@/components/video-embed";
-export { paragraphs } from "@/lib/home-sections";
+export { FEATURE_ICONS, paragraphs } from "@/lib/home-sections";
 
 // Helper.
 export { formatDate, formatPrice, formatProductStats } from "@/lib/format";

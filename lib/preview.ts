@@ -1,7 +1,6 @@
-import { cookies, headers } from "next/headers";
 import { cache } from "react";
-import { PREVIEW_COOKIE, PREVIEW_HEADER } from "@/themes/registry";
 import { getPreview, type StorefrontPreview } from "./store-api";
+import { requestPreviewToken } from "./store-host";
 
 export interface PreviewState extends StorefrontPreview {
   token: string;
@@ -14,9 +13,7 @@ export interface PreviewState extends StorefrontPreview {
  * atau dari cookie yang dipasang /preview (tab baru). Null untuk pengunjung biasa.
  */
 export const getPreviewState = cache(async (): Promise<PreviewState | null> => {
-  const [headerList, jar] = await Promise.all([headers(), cookies()]);
-  const embeddedToken = headerList.get(PREVIEW_HEADER);
-  const token = embeddedToken ?? jar.get(PREVIEW_COOKIE)?.value;
+  const { token, embedded } = await requestPreviewToken();
   const preview = await getPreview(token);
-  return preview && token ? { ...preview, token, embedded: Boolean(embeddedToken) } : null;
+  return preview && token ? { ...preview, token, embedded } : null;
 });

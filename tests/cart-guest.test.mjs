@@ -26,7 +26,7 @@ function load(file, fetch) {
       env: { STORE_API_URL: "http://backend.test/api", STORE_ID: "404" },
     },
     require: (name) =>
-      name === "./store-host" || name === "./store-id"
+      name === "./store-host" || name === "./store-id" || name === "./auth"
         ? load(`../lib/${name.slice(2)}.ts`, fetch)
         : name === "next/headers"
           ? { headers: async () => new Headers() }
@@ -40,6 +40,8 @@ function load(file, fetch) {
   return exports;
 }
 const json = (data) => Response.json(data);
+// Proxy mengirim body sebagai byte mentah (unggahan file); tes membandingkannya sebagai teks.
+const bodyText = (body) => (typeof body === "string" ? body : new TextDecoder().decode(body));
 const empty = () => new Response(null, { status: 204 });
 const deferred = () => {
   let resolve;
@@ -143,7 +145,7 @@ test("proxy sends guest cookie as X-Guest-Token on count, items and every action
   assert.deepEqual(
     calls
       .filter((c) => c.init.method === "POST")
-      .map((c) => JSON.parse(c.init.body)),
+      .map((c) => JSON.parse(bodyText(c.init.body))),
     [{ action: "add" }, { action: "reduce" }, { action: "remove" }],
   );
 });
@@ -235,7 +237,7 @@ test("proxy preserves backend body, status and metadata for every cart endpoint"
 test("proxy leaves validation to backend and does not follow redirects", async () => {
   const raw = '{ "action": "invalid", "extra": true }';
   const api = load("../lib/api-proxy.ts", async (_, init) => {
-    assert.equal(init.body, raw);
+    assert.equal(bodyText(init.body), raw);
     assert.equal(init.headers.get("Content-Type"), "application/json");
     assert.equal(init.redirect, "manual");
     return new Response(null, { status: 307, headers: { Location: "/another-endpoint" } });
@@ -294,8 +296,8 @@ test("proxy forwards the selected variant id unchanged", async () => {
   const variant = 9;
   const raw = JSON.stringify({ action: "add", variant });
   const api = load("../lib/api-proxy.ts", async (_, init) => {
-    assert.equal(init.body, raw);
-    assert.deepEqual(JSON.parse(init.body).variant, variant);
+    assert.equal(bodyText(init.body), raw);
+    assert.deepEqual(JSON.parse(bodyText(init.body)).variant, variant);
     return json({ message: "success" });
   });
   const req = request("guest", { "Content-Type": "application/json" }, "add");
@@ -377,4 +379,22 @@ test("protected address proxy forwards authentication and preserves unauthorized
   const response = await api.apiProxy(request(undefined, { Authorization: "Bearer test-token", Cookie: "session=test-session", "X-XSRF-TOKEN": "test-csrf" }), "/address");
   assert.equal(response.status, 401);
   assert.equal((await response.json()).message, "Unauthenticated.");
+});
+
+test("a buyer token the backend rejects is dropped, so the shop continues as a guest", async () => {
+  const api = load("../lib/api-proxy.ts", async (_, init) => {
+    assert.equal(init.headers.get("Authorization"), "Bearer stale-token");
+    return new Response('{"message":"Unauthenticated."}', { status: 401, headers: { "Content-Type": "application/json" } });
+  });
+  const req = request(undefined);
+  req.cookies = { get: (name) => (name === "customer_token" ? { value: "stale-token" } : undefined) };
+  const response = await api.apiProxy(req, "/auth/me");
+  assert.equal(response.status, 401);
+  assert.match(response.headers.get("set-cookie"), /^customer_token=; Path=\/; Max-Age=0; HttpOnly; SameSite=Lax/);
+
+  // Tanpa token pembeli, 401 (mis. alamat milik akun) tidak menyentuh cookie apa pun.
+  const guestApi = load("../lib/api-proxy.ts", async () => new Response(null, { status: 401 }));
+  const guest = await guestApi.apiProxy(request("guest"), "/address");
+  assert.equal(guest.status, 401);
+  assert.equal(guest.headers.get("set-cookie"), null);
 });

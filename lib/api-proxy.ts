@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { CUSTOMER_COOKIE, secureCookie } from "./auth";
 import { requestHost, storeHeaders } from "./store-host";
 
 export async function apiProxy(request: NextRequest, path: string) {
@@ -17,7 +18,7 @@ export async function apiProxy(request: NextRequest, path: string) {
     if (value) headers.set(name, value);
   }
   // Token pembeli disimpan HttpOnly, jadi hanya proxy ini yang bisa meneruskannya.
-  const customerToken = request.cookies.get("customer_token")?.value;
+  const customerToken = request.cookies.get(CUSTOMER_COOKIE)?.value;
   if (customerToken) headers.set("Authorization", `Bearer ${customerToken}`);
 
   try {
@@ -43,6 +44,9 @@ export async function apiProxy(request: NextRequest, path: string) {
       "content-encoding", "content-length", "set-cookie",
     ]) responseHeaders.delete(name);
     responseHeaders.set("Cache-Control", "no-store");
+    // Token pembeli ditolak (kedaluwarsa, dicabut, atau kunci Passport berganti): buang cookienya,
+    // supaya request berikutnya berjalan sebagai tamu, bukan 401 terus-menerus.
+    if (upstream.status === 401 && customerToken) responseHeaders.append("Set-Cookie", expiredCustomerCookie());
     for (const value of upstream.headers.getSetCookie()) {
       // Scope backend cookies to the storefront so the browser can persist them.
       responseHeaders.append("Set-Cookie", value
@@ -61,4 +65,9 @@ export async function apiProxy(request: NextRequest, path: string) {
       { status: 502, headers: { "Cache-Control": "no-store" } },
     );
   }
+}
+
+/** Set-Cookie yang menghapus token pembeli; atributnya sama dengan saat dipasang di callback login. */
+export function expiredCustomerCookie() {
+  return `${CUSTOMER_COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${secureCookie ? "; Secure" : ""}`;
 }

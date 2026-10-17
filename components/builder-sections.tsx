@@ -1,18 +1,25 @@
+import Image from "next/image";
+import type { CSSProperties } from "react";
 import { catalogUrl } from "@/lib/catalog-url";
-import { scopedSectionCss, type HomeSection, type ProductListSettings } from "@/lib/home-sections";
+import { countdownEnded, scopedSectionCss, sectionAppearance, type HomeSection, type ProductListSettings } from "@/lib/home-sections";
 import { getProducts, type ProductSummary, type Store } from "@/lib/store-api";
 import type { SectionComponents } from "@/sdk/types";
 import { defaultSections } from "./home-sections";
 
 /**
- * Beranda dari builder: data tiap widget dimuat paralel, lalu dirender dengan komponen tema
- * (theme.components.sections) atau tampilan bawaan; slide banner sudah ada di pengaturan widgetnya.
- * Widget yang datanya kosong atau gagal dimuat dilewati, supaya tidak merusak seluruh beranda.
+ * Bagian dari builder (beranda dan halaman builder): data tiap widget dimuat paralel, lalu dirender
+ * dengan komponen tema (theme.components.sections) atau tampilan bawaan. Widget yang datanya kosong
+ * atau gagal dimuat dilewati, supaya tidak merusak seluruh halaman.
+ *
+ * Pembungkus tiap bagian membawa `style`-nya (latar, warna teks, jarak, lebar, perataan, anchor) sebagai
+ * kelas di app/home.css, plus `data-section`/`data-section-index` untuk custom CSS dan klik-untuk-edit.
  */
-export async function HomeBuilderPage({ store, sections, components = {} }: {
+export async function BuilderSections({ store, sections, components = {}, compact = false }: {
   store: Store;
   sections: HomeSection[];
   components?: SectionComponents;
+  /** Di antara header dan footer toko: jarak bawaan di awal dan akhir dipangkas (beranda, layout "store"). */
+  compact?: boolean;
 }) {
   const products = await Promise.all(sections.map((section) => section.type === "product-list"
     ? getProducts(productQuery(section.settings))
@@ -21,21 +28,33 @@ export async function HomeBuilderPage({ store, sections, components = {} }: {
     : Promise.resolve([])));
 
   return (
-    <main className="page home-page home-builder">
-      <h1 className="sr-only">{store.name}</h1>
+    <div className={`builder-sections ${compact ? "builder-sections-compact" : ""}`}>
       {sections.map((section, index) => {
         const rendered = renderSection({ store, section, components, products: products[index] });
         // Nomor bagian di draf (section-3 = bagian ke-4), untuk klik-untuk-edit di pratinjau builder.
         const position = Number(section.id.replace("section-", ""));
-        // Custom CSS bagian dibungkus selektor `data-section`-nya; `<` sudah dibuang di readHomeSections.
+        const look = sectionAppearance(section.style);
+        // Custom CSS bagian dibungkus selektor `data-section`-nya; `<` sudah dibuang di readSections.
         return rendered && (
-          <div key={section.id} className="home-block" data-section={section.id} data-section-index={Number.isInteger(position) ? position : index}>
+          <div
+            key={section.id}
+            id={look.id}
+            className={`home-block ${look.className}`}
+            style={look.style as CSSProperties | undefined}
+            data-section={section.id}
+            data-section-index={Number.isInteger(position) ? position : index}
+          >
             {section.css && <style dangerouslySetInnerHTML={{ __html: scopedSectionCss(section.id, section.css) }} />}
+            {section.style.background_image && (
+              <span className="builder-section-image" aria-hidden="true">
+                <Image src={section.style.background_image} alt="" fill unoptimized sizes="100vw" style={{ objectFit: "cover" }} />
+              </span>
+            )}
             {rendered}
           </div>
         );
       })}
-    </main>
+    </div>
   );
 }
 
@@ -74,6 +93,36 @@ function renderSection({ store, section, components, products }: {
     case "video": {
       const Video = components.video ?? defaultSections.video;
       return <Video store={store} settings={section.settings} />;
+    }
+    case "hero": {
+      const Hero = components.hero ?? defaultSections.hero;
+      return <Hero store={store} settings={section.settings} />;
+    }
+    case "features": {
+      const Features = components.features ?? defaultSections.features;
+      return <Features store={store} settings={section.settings} />;
+    }
+    case "faq": {
+      const Faq = components.faq ?? defaultSections.faq;
+      return <Faq store={store} settings={section.settings} />;
+    }
+    case "cta": {
+      const Cta = components.cta ?? defaultSections.cta;
+      return <Cta store={store} settings={section.settings} />;
+    }
+    case "countdown": {
+      // Sudah lewat tanpa teks penutup: tidak ada yang perlu ditampilkan (yang lewat saat dibuka disembunyikan di browser).
+      if (!section.settings.expired_text && countdownEnded(section.settings)) return null;
+      const Countdown = components.countdown ?? defaultSections.countdown;
+      return <Countdown store={store} settings={section.settings} />;
+    }
+    case "gallery": {
+      const Gallery = components.gallery ?? defaultSections.gallery;
+      return <Gallery store={store} settings={section.settings} />;
+    }
+    case "columns": {
+      const Columns = components.columns ?? defaultSections.columns;
+      return <Columns store={store} settings={section.settings} />;
     }
   }
 }

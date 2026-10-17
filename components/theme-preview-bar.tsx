@@ -1,6 +1,6 @@
-/** Penanda pratinjau dari panel (tema dan/atau draf beranda): hanya di browser pemilik toko. */
+/** Penanda pratinjau dari panel (tema dan/atau draf builder: beranda atau halaman): hanya di browser pemilik toko. */
 export function ThemePreviewBar({ themeName, draft }: { themeName: string | null; draft: boolean }) {
-  const subject = [themeName && <>tema <strong key="theme">{themeName}</strong></>, draft && "draf beranda"].filter(Boolean);
+  const subject = [themeName && <>tema <strong key="theme">{themeName}</strong></>, draft && "draf"].filter(Boolean);
   return (
     <aside className="theme-preview-bar" role="status">
       <span>
