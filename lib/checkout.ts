@@ -96,6 +96,19 @@ export interface PaymentMethod {
   code: string;
   name: string;
   icon: string | null;
+  /** Metode dari plugin payment gateway, mis. "payment-xendit:va_bca"; dibayar & dikonfirmasi otomatis. */
+  online: boolean;
+  /** Pengelompokan dari plugin: "bank_transfer" (virtual account), "qr", "ewallet", ...; null untuk metode toko. */
+  group: string | null;
+  /** Nama penyedia, mis. "Xendit Payment"; null untuk metode toko. */
+  provider: string | null;
+}
+
+/** Satu bagian di daftar metode pembayaran; label null bila hanya ada metode toko. */
+export interface PaymentMethodSection {
+  key: string;
+  label: string | null;
+  methods: PaymentMethod[];
 }
 
 export interface BankAccount {
@@ -152,6 +165,50 @@ export interface OrderSummary {
   items: OrderLine[];
   // YYYY-MM-DD, set when the order contains pre-order items.
   preorder_ready_at: string | null;
+  /**
+   * Tagihan plugin payment gateway terbaru; null untuk pesanan yang dibayar manual. Bisa tetap
+   * terisi (gagal/diganti) setelah pembeli pindah ke transfer/QRIS, lihat usesOnlinePayment.
+   */
+  online_payment: OnlinePayment | null;
+}
+
+export type OnlinePaymentStatus = "pending" | "paid" | "failed" | "expired" | "needs_review";
+
+/** Kode bayar atau nomor virtual account yang ditampilkan ke pembeli. */
+export interface OnlinePaymentDisplay {
+  kind: string | null;
+  bank: string | null;
+  account_number: string | null;
+  account_name: string | null;
+  payment_code: string | null;
+  amount: number;
+  instructions: string[];
+}
+
+/**
+ * Langkah berikut untuk pembeli dari gateway. Hanya dipakai sebagai teks dan href, tidak pernah
+ * sebagai HTML; URL yang tidak aman dibuang saat dibaca (lihat readOnlinePayment).
+ */
+export type OnlinePaymentAction =
+  | { type: "redirect"; url: string }
+  | { type: "display"; display: OnlinePaymentDisplay }
+  | { type: "qr"; qr_string: string; amount: number }
+  | { type: "deeplink"; mobile_url: string | null; desktop_url: string | null }
+  | { type: "none" };
+
+export interface OnlinePayment {
+  public_id: string;
+  method: string;
+  method_label: string;
+  provider: string | null;
+  amount: number;
+  currency: string;
+  status: OnlinePaymentStatus;
+  action: OnlinePaymentAction | null;
+  /** Pesan untuk pembeli saat tagihan gagal atau kedaluwarsa. */
+  error_message: string | null;
+  paid_at: string | null;
+  expires_at: string | null;
 }
 
 
@@ -236,7 +293,46 @@ export function readPaymentMethods(data: unknown): PaymentMethod[] {
   if (!rows || !rows.every((row): row is PaymentMethod =>
     isNamedMethod(row) && typeof (row as PaymentMethod).code === "string" && (row as PaymentMethod).code.trim().length > 0,
   )) throw new Error("Metode pembayaran belum dapat dibaca.");
-  return rows.map((row) => ({ code: row.code, name: row.name, icon: typeof row.icon === "string" ? row.icon : null }));
+  return rows.map((row) => {
+    const online = (row as { online?: unknown }).online === true;
+    return {
+      code: row.code,
+      name: row.name,
+      // Logo penyedia dipakai sebagai src gambar, jadi hanya URL http(s) absolut.
+      icon: online ? readHttpUrl(row.icon) : typeof row.icon === "string" ? row.icon : null,
+      online,
+      group: online ? readText(row.group) : null,
+      provider: online ? readText(row.provider) : null,
+    };
+  });
+}
+
+// Urutan dan label kelompok metode online; kelompok lain digabung di "lainnya".
+const onlineGroups: [string, string][] = [
+  ["bank_transfer", "Virtual account"],
+  ["qr", "QRIS"],
+  ["ewallet", "E-wallet"],
+  ["retail", "Gerai retail"],
+  ["card", "Kartu kredit/debit"],
+];
+
+/**
+ * Metode toko (transfer, QRIS statis, ...) lebih dulu, lalu metode online per kelompok. Urutan di
+ * dalam kelompok mengikuti backend.
+ */
+export function paymentMethodSections(methods: PaymentMethod[]): PaymentMethodSection[] {
+  const manual = methods.filter((method) => !method.online);
+  const online = methods.filter((method) => method.online);
+  if (!online.length) return manual.length ? [{ key: "store", label: null, methods: manual }] : [];
+  const sections: PaymentMethodSection[] = manual.length ? [{ key: "store", label: "Bayar langsung ke toko", methods: manual }] : [];
+  const known = new Set(onlineGroups.map(([group]) => group));
+  for (const [group, label] of onlineGroups) {
+    const rows = online.filter((method) => method.group === group);
+    if (rows.length) sections.push({ key: `online-${group}`, label: `Pembayaran online · ${label}`, methods: rows });
+  }
+  const others = online.filter((method) => !method.group || !known.has(method.group));
+  if (others.length) sections.push({ key: "online-other", label: "Pembayaran online lainnya", methods: others });
+  return sections;
 }
 
 export function readBankAccounts(data: unknown): BankAccount[] {
@@ -260,6 +356,125 @@ function readHttpUrl(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const url = value.trim();
   return /^https?:\/\/[^\s/?#]+[^\s]*$/i.test(url) ? url : null;
+}
+
+function readText(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+// Tautan ke halaman gateway: hanya https, karena pembeli diarahkan ke sana untuk membayar.
+export function readHttpsUrl(value: unknown): string | null {
+  const url = readHttpUrl(value);
+  return url && /^https:/i.test(url) ? url : null;
+}
+
+/**
+ * Tautan ke aplikasi e-wallet (mis. gojek://, shopeeid://, atau https). Skema apa pun boleh kecuali
+ * yang bisa menjalankan kode atau membuka berkas; spasi dan karakter kontrol ditolak.
+ */
+export function readAppUrl(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const url = value.trim();
+  if (!/^[a-z][a-z0-9+.-]*:[^\s\p{Cc}]+$/iu.test(url)) return null;
+  return /^(?:javascript|data|vbscript|file|blob|about):/i.test(url) ? null : url;
+}
+
+const onlineStatuses: OnlinePaymentStatus[] = ["pending", "paid", "failed", "expired", "needs_review"];
+
+function readMoney(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
+function readDate(value: unknown): string | null {
+  return typeof value === "string" && Number.isFinite(Date.parse(value)) ? value : null;
+}
+
+// Satu string QR (QRIS dinamis ~ 200-400 karakter); batas atas menjaga kanvas QR tetap terbaca.
+const MAX_QR_LENGTH = 1500;
+
+function readOnlineAction(value: unknown, amount: number): OnlinePaymentAction | null {
+  if (!value || typeof value !== "object") return null;
+  const action = value as Record<string, unknown>;
+  switch (action.type) {
+    case "redirect": {
+      const url = readHttpsUrl(action.url);
+      return url ? { type: "redirect", url } : null;
+    }
+    case "display": {
+      const display = action.display && typeof action.display === "object" ? action.display as Record<string, unknown> : {};
+      const result: OnlinePaymentDisplay = {
+        kind: readText(display.kind),
+        bank: readText(display.bank),
+        account_number: readText(display.account_number),
+        account_name: readText(display.account_name),
+        payment_code: readText(display.payment_code),
+        amount: readMoney(display.amount, amount),
+        instructions: Array.isArray(display.instructions)
+          ? display.instructions.flatMap((step) => readText(step) ?? [])
+          : [],
+      };
+      // Tanpa nomor atau kode bayar tidak ada yang bisa dibayar pembeli.
+      return result.account_number || result.payment_code ? { type: "display", display: result } : null;
+    }
+    case "qr": {
+      const qr = typeof action.qr_string === "string" ? action.qr_string.trim() : "";
+      return qr && qr.length <= MAX_QR_LENGTH ? { type: "qr", qr_string: qr, amount: readMoney(action.amount, amount) } : null;
+    }
+    case "deeplink": {
+      const mobile = readAppUrl(action.mobile_url);
+      const desktop = readHttpsUrl(action.desktop_url);
+      return mobile || desktop ? { type: "deeplink", mobile_url: mobile, desktop_url: desktop } : null;
+    }
+    case "none":
+      return { type: "none" };
+    default:
+      return null;
+  }
+}
+
+/**
+ * online_payment pada pesanan. Bentuk yang rusak dibaca sebagai null (atau aksi null) supaya
+ * halaman pembayaran tetap tampil; status yang tidak dikenal dianggap sedang diperiksa toko.
+ */
+export function readOnlinePayment(value: unknown, fallbackAmount = 0): OnlinePayment | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  const method = readText(row.method);
+  if (!method) return null;
+  const amount = readMoney(row.amount, fallbackAmount);
+  const status = onlineStatuses.find((status) => status === row.status) ?? "needs_review";
+  return {
+    public_id: readText(row.public_id) ?? "",
+    method,
+    method_label: readText(row.method_label) ?? method,
+    provider: readText(row.provider),
+    amount,
+    currency: readText(row.currency) ?? "IDR",
+    status,
+    action: readOnlineAction(row.action, amount),
+    error_message: readText(row.error_message),
+    paid_at: readDate(row.paid_at),
+    expires_at: readDate(row.expires_at),
+  };
+}
+
+/** Halaman pembayaran memakai tampilan tagihan online, bukan transfer/QRIS manual. */
+export function usesOnlinePayment(order: Pick<OrderSummary, "online_payment" | "payment_method">): boolean {
+  return order.online_payment !== null && !isManualPayment(order.payment_method);
+}
+
+/** Status diperiksa berkala selama gateway belum mengonfirmasi tagihan pesanan yang masih menunggu. */
+export function shouldPollPayment(order: Pick<OrderSummary, "status" | "online_payment" | "payment_method">): boolean {
+  return order.status === "pending" && usesOnlinePayment(order) && order.online_payment?.status === "pending";
+}
+
+/** Pesan untuk pembeli dari POST /orders/{id}/payment yang gagal. */
+export function paymentChangeErrorMessage(status: number, data: unknown): string {
+  const fallback = "Metode pembayaran belum dapat diganti. Silakan coba lagi.";
+  if (status >= 500) return fallback;
+  const message = data && typeof data === "object" ? (data as { message?: unknown }).message : null;
+  return fieldError(data, "payment_method") ?? fieldError(data, "bank_account_id")
+    ?? (typeof message === "string" && message.trim() ? message.trim() : fallback);
 }
 
 function readBankAccount(value: unknown): BankAccount | null {
@@ -299,6 +514,7 @@ export function readOrder(data: unknown): OrderSummary {
     sender_name: typeof payment?.sender_name === "string" ? payment.sender_name : null,
     items: readOrderLines(row.items),
     preorder_ready_at: typeof row.preorder_ready_at === "string" ? row.preorder_ready_at : null,
+    online_payment: readOnlinePayment(row.online_payment, row.grand_total as number),
   };
 }
 

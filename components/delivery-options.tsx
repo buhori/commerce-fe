@@ -5,7 +5,7 @@ import { Spinner } from "./spinner";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  readBankAccounts, readPaymentMethods, readShippingQuote, shippingHighlights, shippingOptionKey, shippingOptionLabel,
+  paymentMethodSections, readBankAccounts, readPaymentMethods, readShippingQuote, shippingHighlights, shippingOptionKey, shippingOptionLabel,
   type BankAccount, type PaymentMethod, type ShippingOption, type ShippingQuote,
 } from "@/lib/checkout";
 import { formatPrice, formatWeight } from "@/lib/format";
@@ -41,7 +41,7 @@ function useOnlyOption<T>(state: State<T>, selected: unknown, select: (row: T) =
   }, [only, selected, select]);
 }
 
-function MethodGroup<T>({ legend, name, state, retry, emptyText, errorText, keyOf, render, isSelected, onSelect, notice, children }: {
+function MethodGroup<T>({ legend, name, state, retry, emptyText, errorText, keyOf, render, isSelected, onSelect, notice, sections, children }: {
   legend: string;
   name: string;
   state: State<T>;
@@ -54,6 +54,8 @@ function MethodGroup<T>({ legend, name, state, retry, emptyText, errorText, keyO
   onSelect: (row: T) => void;
   // Shown above the choices, e.g. a warning that applies to all of them.
   notice?: ReactNode;
+  // Splits the choices under subheadings; still one radio group.
+  sections?: (rows: T[]) => { key: string; label: string | null; rows: T[] }[];
   children?: ReactNode;
 }) {
   if (state.status === "loading") return <section className="method-group"><h3>{legend} <span className="required-indicator" aria-hidden="true">*</span></h3><Spinner label={`Memuat ${legend.toLowerCase()}…`} /></section>;
@@ -63,18 +65,28 @@ function MethodGroup<T>({ legend, name, state, retry, emptyText, errorText, keyO
     </section>
   );
   if (!state.rows.length) return <section className="method-group"><h3>{legend} <span className="required-indicator" aria-hidden="true">*</span></h3><div className="address-notice"><p>{emptyText}</p><Button type="button" variant="secondary" onClick={retry}>Muat ulang</Button></div></section>;
+  const list = (rows: T[]) => (
+    <div className="method-list">
+      {rows.map((row) => (
+        <label className="method-card" key={keyOf(row)} data-selected={isSelected(row)}>
+          <input type="radio" required name={name} value={keyOf(row)} checked={isSelected(row)} onChange={() => onSelect(row)} />
+          <span className="method-card-body">{render(row)}</span>
+        </label>
+      ))}
+    </div>
+  );
   return (
     <fieldset className="method-group">
       <legend>{legend} <span className="required-indicator" aria-hidden="true">*</span></legend>
       {notice}
-      <div className="method-list">
-        {state.rows.map((row) => (
-          <label className="method-card" key={keyOf(row)} data-selected={isSelected(row)}>
-            <input type="radio" required name={name} value={keyOf(row)} checked={isSelected(row)} onChange={() => onSelect(row)} />
-            <span className="method-card-body">{render(row)}</span>
-          </label>
-        ))}
-      </div>
+      {sections
+        ? sections(state.rows).map((section) => (
+          <div className="method-section" key={section.key}>
+            {section.label && <p className="method-section-title">{section.label}</p>}
+            {list(section.rows)}
+          </div>
+        ))
+        : list(state.rows)}
       {children}
     </fieldset>
   );
@@ -195,6 +207,57 @@ function BankAccounts({ selected, onSelect }: {
   );
 }
 
+const paymentSections = (methods: PaymentMethod[]) =>
+  paymentMethodSections(methods).map(({ key, label, methods: rows }) => ({ key, label, rows }));
+
+function PaymentMethodLabel({ method }: { method: PaymentMethod }) {
+  if (!method.online) return <><strong>{method.name}</strong><span>Instruksi pembayaran dikirim setelah pesanan dibuat.</span></>;
+  return (
+    <>
+      <strong className="payment-method-head">
+        {method.icon && (
+          // eslint-disable-next-line @next/next/no-img-element -- logo penyedia dari backend, ukurannya kecil.
+          <img className="payment-method-logo" src={method.icon} alt="" width={40} height={24} loading="lazy" referrerPolicy="no-referrer" />
+        )}
+        {method.name}
+      </strong>
+      <span>{method.provider ? `${method.provider} · ` : ""}Dikonfirmasi otomatis</span>
+    </>
+  );
+}
+
+/**
+ * Metode pembayaran toko lalu metode online dari plugin, plus pilihan rekening untuk transfer bank.
+ * Dipakai di checkout dan saat mengganti metode bayar di halaman pembayaran.
+ */
+export function PaymentChoices({ payment, bankAccount, onPaymentChange, onBankAccountChange, legend = "Metode pembayaran" }: {
+  payment: PaymentMethod | null;
+  bankAccount: BankAccount | null;
+  onPaymentChange: (method: PaymentMethod) => void;
+  onBankAccountChange: (account: BankAccount) => void;
+  legend?: string;
+}) {
+  const [paymentState, retryPayment] = useMethods("/api/payment/methods", readPaymentMethods);
+  useOnlyOption(paymentState, payment, onPaymentChange);
+  return (
+    <>
+      <MethodGroup
+        legend={legend} name="payment-method"
+        state={paymentState} retry={retryPayment}
+        emptyText="Belum ada metode pembayaran tersedia."
+        errorText="Metode pembayaran belum dapat dimuat."
+        keyOf={(method) => method.code}
+        isSelected={(method) => payment?.code === method.code}
+        onSelect={onPaymentChange}
+        sections={paymentSections}
+        render={(method) => <PaymentMethodLabel method={method} />} />
+      {payment?.code === "bank_transfer" && (
+        <BankAccounts selected={bankAccount} onSelect={onBankAccountChange} />
+      )}
+    </>
+  );
+}
+
 export function DeliveryOptions({ shipping, payment, bankAccount, addressCode, currency, preorder = false, refreshKey = 0, onShippingChange, onPaymentChange, onBankAccountChange }: {
   preorder?: boolean;
   // Bumped to reload shipping options, e.g. after the server says a chosen rate changed.
@@ -208,26 +271,13 @@ export function DeliveryOptions({ shipping, payment, bankAccount, addressCode, c
   onPaymentChange: (method: PaymentMethod) => void;
   onBankAccountChange: (account: BankAccount) => void;
 }) {
-  const [paymentState, retryPayment] = useMethods("/api/payment/methods", readPaymentMethods);
-  useOnlyOption(paymentState, payment, onPaymentChange);
-
   return (
     <div className="delivery-options">
       <p className="checkout-description">Pilih layanan pengiriman dan cara pembayaran untuk pesanan ini. Pilihan bertanda * wajib diisi.</p>
       <ShippingChoices key={`${addressCode}-${preorder}-${refreshKey}`} addressCode={addressCode} currency={currency}
         preorder={preorder} selected={shipping} onSelect={onShippingChange} />
-      <MethodGroup
-        legend="Metode pembayaran" name="payment-method"
-        state={paymentState} retry={retryPayment}
-        emptyText="Belum ada metode pembayaran tersedia."
-        errorText="Metode pembayaran belum dapat dimuat."
-        keyOf={(method) => method.code}
-        isSelected={(method) => payment?.code === method.code}
-        onSelect={onPaymentChange}
-        render={(method) => <><strong>{method.name}</strong><span>Instruksi pembayaran dikirim setelah pesanan dibuat.</span></>} />
-      {payment?.code === "bank_transfer" && (
-        <BankAccounts selected={bankAccount} onSelect={onBankAccountChange} />
-      )}
+      <PaymentChoices payment={payment} bankAccount={bankAccount}
+        onPaymentChange={onPaymentChange} onBankAccountChange={onBankAccountChange} />
     </div>
   );
 }

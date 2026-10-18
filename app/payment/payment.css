@@ -50,7 +50,7 @@
 .payment-account > p strong { color: var(--text); font-weight: 500; }
 .payment-qris-code { display: flex; justify-content: center; margin-top: 18px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; }
 /* Kartu putih berpadding: QR tetap terbaca pemindai di tema gelap sekalipun. */
-.payment-qris-code img { display: block; width: 100%; max-width: 280px; height: auto; padding: 14px; border-radius: 10px; background: #fff; box-shadow: 0 0 0 1px var(--line); }
+.payment-qris-code img, .payment-qris-code canvas { display: block; width: 100%; max-width: 280px; height: auto; padding: 14px; border-radius: 10px; background: #fff; box-shadow: 0 0 0 1px var(--line); }
 .payment-qris-steps { display: grid; gap: 6px; margin: 18px 0 0; padding-left: 20px; color: var(--muted); font-size: .75rem; line-height: 1.7; }
 .payment-qris-steps strong { color: var(--text); font-weight: 600; }
 .payment-qris-actions { display: flex; justify-content: center; margin-top: 16px; }
@@ -160,3 +160,33 @@
 .payment-page .copy-value { min-width: 0; overflow-wrap: anywhere; }
 .payment-page .copy-button { flex-shrink: 0; }
 .payment-page .copy-failed { color: var(--danger); }
+
+/* Tagihan online (plugin payment gateway). */
+.payment-online { display: grid; gap: 16px; }
+.payment-online .payment-account { margin-top: 0; }
+.payment-online .payment-qris-code, .payment-online .payment-qris-steps, .payment-online .payment-qris-actions { margin-top: 0; }
+.payment-online-field { margin-top: 16px; }
+.payment-online-amount { font-size: 1.25rem; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.payment-online-qr-amount { display: flex; justify-content: center; align-items: baseline; gap: 8px; font-size: .8125rem; color: var(--muted); }
+.payment-online-qr-amount strong { color: var(--text); font-size: 1.125rem; font-variant-numeric: tabular-nums; }
+.payment-online-text { color: var(--muted); font-size: .8125rem; line-height: 1.7; }
+.payment-online-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.payment-online-actions > .button-primary { min-height: 48px; }
+@media (max-width: 480px) { .payment-online-actions > .button-primary { width: 100%; } }
+.payment-deadline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 10px 14px; border-radius: 8px; background: #fffbf2; color: #80551a; font-size: .75rem; line-height: 1.6; }
+.payment-deadline svg { flex-shrink: 0; width: 16px; height: 16px; }
+.payment-deadline strong { font-weight: 600; }
+.payment-deadline-timer { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
+.payment-deadline[data-expired="true"] { background: var(--surface); color: var(--muted); }
+.payment-online-notice { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; font-size: .8125rem; }
+.payment-online-notice > svg { flex-shrink: 0; width: 20px; height: 20px; margin-top: 1px; color: var(--primary); }
+.payment-online-notice p { margin-top: 4px; color: var(--muted); font-size: .75rem; line-height: 1.7; overflow-wrap: anywhere; }
+.payment-online-notice[data-tone="error"] { border-color: color-mix(in srgb, var(--danger) 35%, var(--line)); background: var(--danger-soft); }
+.payment-online-notice[data-tone="error"] > svg { color: var(--danger); }
+.payment-online-notice[data-tone="neutral"] { background: var(--surface); }
+.payment-online-notice[data-tone="neutral"] > svg { color: var(--muted); }
+.payment-online-notice[data-tone="success"] { background: var(--primary-soft); }
+.payment-change { display: grid; gap: 16px; }
+.payment-change .method-list { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+.payment-change-toggle { padding-top: 16px; }
+.payment-change-toggle > .button-text { justify-self: start; color: var(--muted); }

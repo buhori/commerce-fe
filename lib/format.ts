@@ -24,6 +24,11 @@ export function formatDate(date: Date) {
   return new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric" }).format(date);
 }
 
+/** "17 Okt 2026, 14.30" dalam zona waktu pembeli. */
+export function formatDateTime(date: Date) {
+  return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
 const relativeUnits: [Intl.RelativeTimeFormatUnit, number][] = [
   ["year", 365 * 24 * 3600], ["month", 30 * 24 * 3600], ["week", 7 * 24 * 3600],
   ["day", 24 * 3600], ["hour", 3600], ["minute", 60],

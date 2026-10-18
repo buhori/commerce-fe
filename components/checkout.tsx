@@ -298,7 +298,9 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
           </section>
         )}
       </section>
-      <p className="commerce-note"><Icon name="info" />{isManualPayment(payment?.code) ? "Nominal akhir beserta kode unik akan ditampilkan setelah pesanan dibuat." : "Periksa kembali rincian pesanan sebelum melanjutkan ke pembayaran."}</p>
+      <p className="commerce-note"><Icon name="info" />{isManualPayment(payment?.code) ? "Nominal akhir beserta kode unik akan ditampilkan setelah pesanan dibuat."
+        : payment?.online ? `Instruksi ${payment.name} ditampilkan setelah pesanan dibuat. Pembayaran dikonfirmasi otomatis.`
+        : "Periksa kembali rincian pesanan sebelum melanjutkan ke pembayaran."}</p>
       <ButtonLink variant="secondary" href={preorder ? "/" : "/cart"} className="commerce-continue">{preorder ? "Lanjut belanja" : "Edit keranjang"}<Icon name="arrow" /></ButtonLink>
       </aside>
     </div>
