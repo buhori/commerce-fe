@@ -8,6 +8,8 @@ name: deploy
 # Repository settings:
 #   secret    COOLIFY_TOKEN       Coolify API token with the "deploy" and "write" permissions
 #                                 (Settings -> Secrets and variables -> Actions -> Repository secrets)
+#   secret    CF_ACCESS_CLIENT_ID      Cloudflare Access service token in front of Coolify
+#   secret    CF_ACCESS_CLIENT_SECRET  (Zero Trust -> Access -> Service credentials)
 # Optional repository variables override the defaults below:
 #   variable  COOLIFY_URL         default https://dev.sellosy.com
 #   variable  COOLIFY_APP_UUIDS   default the storefront (fe)
@@ -69,6 +71,9 @@ jobs:
         env:
           COOLIFY_URL: ${{ vars.COOLIFY_URL || 'https://dev.sellosy.com' }}
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          # Coolify sits behind Cloudflare Access: every API call carries the service token headers.
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           UUIDS: ${{ vars.COOLIFY_APP_UUIDS || 'qr95slh4fwgzm9ppy1fzvqyb' }}
           TAG: ${{ github.sha }}
         run: |
@@ -76,7 +81,18 @@ jobs:
             echo "::error::Secret COOLIFY_TOKEN is empty. Add it under this repository's Settings -> Secrets and variables -> Actions -> Repository secrets."
             exit 1
           fi
-          api() { curl -fsS -H "Authorization: Bearer $COOLIFY_TOKEN" -H 'Content-Type: application/json' "$@"; }
+          if [ -z "$CF_ACCESS_CLIENT_ID" ] || [ -z "$CF_ACCESS_CLIENT_SECRET" ]; then
+            echo "::error::Secrets CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET are empty. Add the Cloudflare Access service token under this repository's Settings -> Secrets and variables -> Actions -> Repository secrets."
+            exit 1
+          fi
+          api() {
+            curl -fsS \
+              -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+              -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+              -H "Authorization: Bearer $COOLIFY_TOKEN" \
+              -H 'Content-Type: application/json' \
+              "$@"
+          }
           for uuid in $UUIDS; do
             api -X PATCH -d "{\"docker_registry_image_tag\":\"$TAG\"}" "$COOLIFY_URL/api/v1/applications/$uuid" >/dev/null
           done
