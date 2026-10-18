@@ -2,7 +2,17 @@ import type { NextRequest } from "next/server";
 import { CUSTOMER_COOKIE, secureCookie } from "./auth";
 import { requestHost, storeHeaders } from "./store-host";
 
-export async function apiProxy(request: NextRequest, path: string) {
+/** Batas tunggu bawaan; endpoint yang memanggil payment gateway memakai GATEWAY_TIMEOUT_MS. */
+const DEFAULT_TIMEOUT_MS = 10_000;
+
+/**
+ * Checkout dan bayar ulang menunggu backend membuat tagihan di payment gateway (plugin, hingga 10
+ * detik). Batasnya harus di atas itu: bila proxy menyerah lebih dulu, pesanan sudah tercipta tetapi
+ * pembeli melihat error, lalu percobaan ulangnya ditolak "Keranjang kosong".
+ */
+export const GATEWAY_TIMEOUT_MS = 30_000;
+
+export async function apiProxy(request: NextRequest, path: string, { timeoutMs = DEFAULT_TIMEOUT_MS }: { timeoutMs?: number } = {}) {
   const headers = new Headers({
     Accept: request.headers.get("accept") || "application/json",
     ...storeHeaders(requestHost(request.headers)),
@@ -32,7 +42,7 @@ export async function apiProxy(request: NextRequest, path: string) {
         : await request.arrayBuffer(),
       redirect: "manual",
       cache: "no-store",
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     const responseHeaders = new Headers(upstream.headers);
     // Fetch decompresses the body. Transport headers cannot describe the new hop.
