@@ -15,6 +15,21 @@ import { Spinner } from "./spinner";
 
 const POLL_INTERVAL = 5000;
 
+const readOptions = { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } } as const;
+
+/**
+ * Status pembayaran langsung dari payment gateway (backend membalas detail pesanan terbaru). Gagal,
+ * mis. gateway lambat atau batas request: baca pesanan saja.
+ */
+async function checkPayment(orderId: string, signal: AbortSignal): Promise<Response> {
+  const url = `/api/orders/${encodeURIComponent(orderId)}`;
+  const checked = await fetch(`${url}/payment/check`, { ...readOptions, method: "POST", signal }).catch((error: unknown) => {
+    if (signal.aborted) throw error;
+    return null;
+  });
+  return checked?.ok ? checked : fetch(url, { ...readOptions, signal });
+}
+
 type State =
   | { status: "loading" }
   | { status: "error" }
@@ -44,17 +59,11 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
 
   useEffect(() => {
     const controller = new AbortController();
-    const url = `/api/orders/${encodeURIComponent(orderId)}`;
-    const options = { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" }, signal: controller.signal } as const;
-    const load = async () => {
-      // Tombol "Cek status": tanya payment gateway sekarang. Gagal (mis. gateway lambat): baca pesanan saja.
-      if (attempt > 0) {
-        const checked = await fetch(`${url}/payment/check`, { ...options, method: "POST" }).catch(() => null);
-        if (checked?.ok) return checked;
-      }
-      return fetch(url, options);
-    };
-    load().then(async (response) => {
+    // Tombol "Cek status": tanya payment gateway sekarang; muatan pertama cukup membaca pesanan.
+    const load = attempt > 0
+      ? checkPayment(orderId, controller.signal)
+      : fetch(`/api/orders/${encodeURIComponent(orderId)}`, { ...readOptions, signal: controller.signal });
+    load.then(async (response) => {
       // A 404 also covers an order belonging to someone else's session.
       if (response.status === 404 || response.status === 400) {
         if (!controller.signal.aborted) setState({ status: "missing" });
@@ -79,8 +88,9 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
     return () => controller.abort();
   }, [orderId, attempt, router]);
 
-  // Tagihan online menunggu konfirmasi gateway: periksa tiap 5 detik selama tab terlihat, langsung
-  // periksa lagi saat pembeli kembali ke tab (mis. dari aplikasi e-wallet), berhenti setelah berubah.
+  // Tagihan online menunggu konfirmasi gateway: tanya gateway tiap 5 detik selama tab terlihat (tanpa
+  // menunggu webhook), langsung periksa lagi saat pembeli kembali ke tab (mis. dari aplikasi e-wallet),
+  // berhenti setelah berubah.
   const polling = state.status === "ready" && shouldPollPayment(state.order);
   useEffect(() => {
     if (!polling) return;
@@ -99,10 +109,7 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
       clearTimeout(timer);
       controller = new AbortController();
       try {
-        const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
-          credentials: "same-origin", cache: "no-store",
-          headers: { Accept: "application/json" }, signal: controller.signal,
-        });
+        const response = await checkPayment(orderId, controller.signal);
         if (response.ok) {
           const order = readOrder(await response.json());
           if (!stopped) {
