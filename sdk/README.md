@@ -168,6 +168,8 @@ Semuanya diimpor dari `@sellosy/theme`.
 | `<ProductGrid>` | `useProductFeed()` | Grid produk yang memuat halaman berikutnya saat digulir |
 | `<SortSelect>`, `<CategoryTabs>` | `catalogUrl()` | Urutan dan filter kategori |
 | `<SearchForm>` | | Pencarian (form GET, jalan tanpa JavaScript) |
+| `<CompareButton product>` | `useCompare()` | Tambah/hapus produk dari daftar bandingkan (maks. 4, disimpan di browser). Bilah bandingkan dan halaman `/compare` disediakan platform |
+| `<ShareButton url title>` | | Bagikan produk: lembar bagikan bawaan di ponsel, menu salin tautan/WhatsApp/Facebook/X/Telegram di desktop |
 
 **Tampilan yang sudah menangani kasus sulit:** `<BannerSlider>`, `<ProductGallery>` (geser + zoom),
 `<ProductImage>` (gambar gagal dimuat), `<StoreLogo>`, `<SmartLink>` (tautan menu internal atau eksternal),

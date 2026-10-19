@@ -12,6 +12,9 @@ export { AccountMenu as AccountButton } from "@/components/account-menu";
 export { SortSelect } from "@/components/sort-select";
 // Tombol hati wishlist (tersembunyi bila paket toko tanpa akun pembeli); useWishlist untuk tampilan sendiri.
 export { WishlistButton, useWishlist } from "@/components/wishlist-button";
+// Bandingkan produk (daftar di browser, bilahnya dipasang platform) dan bagikan tautan produk.
+export { CompareButton, useCompare } from "@/components/compare-button";
+export { ShareButton } from "@/components/share-button";
 export { CategoryTabs } from "@/components/category-tabs";
 export { ProductGrid, useCartCount, useCustomer, useProductFeed } from "./client";
 

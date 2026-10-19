@@ -3,6 +3,8 @@ import { Icon } from "@/components/icons";
 import { ProductCartActions } from "@/components/product-cart-actions";
 import { ProductDescription } from "@/components/product-description";
 import { ProductGallery } from "@/components/product-gallery";
+import { CompareButton } from "@/components/compare-button";
+import { ShareButton } from "@/components/share-button";
 import { WishlistButton } from "@/components/wishlist-button";
 import { addDays, formatDate } from "@/lib/format";
 import type { ProductPageProps } from "@/sdk";
@@ -48,6 +50,10 @@ export function ProductDetail({ store, product, view, url }: ProductPageProps) {
               whatsapp={product.whatsapp ? { number: product.whatsapp.number, storeName: store.name, productName: product.name, productUrl: url } : null}
             />
             <WishlistButton productId={product.id} productName={product.name} variant="button" />
+            <div className="product-secondary-actions">
+              <CompareButton product={product} />
+              <ShareButton url={url} title={product.name} />
+            </div>
             <div className="detail-delivery">
               <span className="detail-delivery-icon"><Icon name="truck" /></span>
               <div>

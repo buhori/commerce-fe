@@ -1,0 +1,43 @@
+name: commit-message
+
+# Pesan commit harus "type(scope): pesan" (aturan di .githooks/commit-msg). Hook lokal menolak lebih
+# dulu; job ini menangkap commit yang lolos tanpa hook. Terpisah dari deploy, jadi tidak menahan rilis.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check commit messages
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          # Branch baru atau force push: commit sebelumnya tidak dikenal, periksa commit terakhir saja.
+          if git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            commits=$(git rev-list --no-merges "$BASE..$HEAD")
+          else
+            commits=$(git rev-list --no-merges -1 "$HEAD")
+          fi
+
+          failed=0
+          for commit in $commits; do
+            git log -1 --format=%B "$commit" > "$RUNNER_TEMP/message"
+            if ! sh .githooks/commit-msg "$RUNNER_TEMP/message"; then
+              echo "::error::$(git log -1 --format='%h %s' "$commit")"
+              failed=1
+            fi
+          done
+          exit $failed

@@ -170,6 +170,13 @@ export interface OrderSummary {
    * terisi (gagal/diganti) setelah pembeli pindah ke transfer/QRIS, lihat usesOnlinePayment.
    */
   online_payment: OnlinePayment | null;
+  /** Untuk event store:purchase_completed: ID pesanan versi plugin dan barangnya; null di backend lama. */
+  tracking: OrderTracking | null;
+}
+
+export interface OrderTracking {
+  order_id: string;
+  items: { product_id: number | null; variant_id: number | null; name: string | null; qty: number; price: number }[];
 }
 
 export type OnlinePaymentStatus = "pending" | "paid" | "failed" | "expired" | "needs_review";
@@ -515,6 +522,24 @@ export function readOrder(data: unknown): OrderSummary {
     items: readOrderLines(row.items),
     preorder_ready_at: typeof row.preorder_ready_at === "string" ? row.preorder_ready_at : null,
     online_payment: readOnlinePayment(row.online_payment, row.grand_total as number),
+    tracking: readOrderTracking(row.tracking),
+  };
+}
+
+/** Blok `tracking` dari detail pesanan; baris barang yang rusak dibuang. */
+export function readOrderTracking(value: unknown): OrderTracking | null {
+  if (!value || typeof value !== "object") return null;
+  const { order_id: orderId, items } = value as { order_id?: unknown; items?: unknown };
+  if (typeof orderId !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(orderId)) return null;
+  const id = (raw: unknown) => (Number.isSafeInteger(raw) && (raw as number) > 0 ? raw as number : null);
+  return {
+    order_id: orderId,
+    items: (Array.isArray(items) ? items : []).flatMap((raw) => {
+      if (!raw || typeof raw !== "object") return [];
+      const item = raw as Record<string, unknown>;
+      if (!Number.isSafeInteger(item.qty) || typeof item.price !== "number") return [];
+      return [{ product_id: id(item.product_id), variant_id: id(item.variant_id), name: typeof item.name === "string" ? item.name : null, qty: item.qty as number, price: item.price }];
+    }),
   };
 }
 

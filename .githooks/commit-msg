@@ -1,0 +1,27 @@
+#!/bin/sh
+# Format pesan commit: type(scope): pesan, mis. "fix(checkout): tombol bayar tidak redirect".
+# Dipakai sebagai hook commit-msg (aktif lewat core.hooksPath=.githooks) dan oleh workflow
+# commit-message.yml. Argumen: file berisi pesan commit.
+
+types='feat|fix|ci|chore|docs|refactor|test|perf|style|build|revert'
+header=$(grep -v '^#' "$1" | sed '/^[[:space:]]*$/d' | head -n 1)
+
+case "$header" in
+    # Commit merge dan fixup/squash (dirapikan lewat rebase) tidak diperiksa.
+    "Merge "* | "fixup! "* | "squash! "* | "amend! "*) exit 0 ;;
+esac
+
+if ! printf '%s\n' "$header" | grep -Eq "^($types)\([^()[:space:]]+\)!?: [^[:space:]].*$"; then
+    echo "Pesan commit tidak sesuai format: $header" >&2
+    echo "" >&2
+    echo "  type(scope): pesan" >&2
+    echo "  type: ${types}" >&2
+    echo "  contoh: fix(checkout): tombol bayar tidak redirect ke Xendit" >&2
+    echo "          feat(plugins): plugin internal Midtrans" >&2
+    exit 1
+fi
+
+if [ "${#header}" -gt 100 ]; then
+    echo "Baris pertama pesan commit maksimal 100 karakter (sekarang ${#header})." >&2
+    exit 1
+fi

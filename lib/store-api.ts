@@ -3,6 +3,7 @@ import { currentStoreHeaders, requestPreviewToken } from "./store-host";
 import { readHomeSections, readSections, type HomeSection } from "./home-sections";
 import { httpUrl, readSeo, readStoreSeo, readStructuredData, type PageSeo, type StoreSeo } from "./seo";
 import { readSitemap, type SitemapData } from "./sitemap";
+import { readPluginScripts, type PluginScript } from "./store-events";
 import { readStoreStyle, type StoreStyle } from "./store-style";
 import { storeCacheEnabled, storeCacheSeconds, storeCacheTags } from "./storefront-cache";
 import { isPageSlug, productQueryString, readPricing, readProductPage, readStoreMaintenance, type Discount, type ProductQuery, type StoreMaintenance } from "./store-shared";
@@ -47,6 +48,8 @@ export interface Store {
    * Always set after getStore(); <BuiltWith /> already renders nothing then.
    */
   hide_branding: boolean;
+  /** Script plugin aktif (mis. Meta Pixel); selalu terisi setelah getStore(), kosong di backend lama. */
+  plugin_scripts: PluginScript[];
 }
 
 export interface ProductVariant {
@@ -238,6 +241,7 @@ export const getStore = cache(async () => {
     maintenance: readStoreMaintenance(store.maintenance),
     style: readStoreStyle(store.style),
     hide_branding: store.hide_branding === true,
+    plugin_scripts: readPluginScripts(store.plugin_scripts),
   };
 });
 

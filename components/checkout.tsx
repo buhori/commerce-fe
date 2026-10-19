@@ -7,7 +7,8 @@ import { useId, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { cartItemsOptions, preorderItemsOptions } from "@/lib/cart-queries";
 import { useRouter } from "next/navigation";
-import { getCartUnitPrice } from "@/lib/cart";
+import { getCartUnitPrice, getCartVariantId } from "@/lib/cart";
+import { StoreEventOnMount } from "./plugin-scripts";
 import { checkoutErrorMessage, couponErrorMessage, fieldError, isManualPayment, jsonHeaders, readCoupon, readOrderId, shippingOptionLabel, type AddressDetails, type AppliedCoupon, type BankAccount, type PaymentMethod, type ShippingOption } from "@/lib/checkout";
 import { addDays, formatDate, formatPrice } from "@/lib/format";
 import { preorderDays } from "@/lib/store-shared";
@@ -154,6 +155,19 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
 
   return (
     <div className="checkout-layout">
+      {/* Untuk plugin analytics (mis. Meta Pixel InitiateCheckout); sekali per isi keranjang. */}
+      <StoreEventOnMount name="store:checkout_started" detail={{
+        cart_id: null,
+        total,
+        currency,
+        items: items.map((item, index) => ({
+          product_id: item.product?.id ?? item.product_id,
+          variant_id: getCartVariantId(item) ?? null,
+          name: item.product?.name ?? null,
+          qty: item.amount,
+          price: prices[index] ?? 0,
+        })),
+      }} />
       <section className="checkout-addresses" aria-labelledby="checkout-step-title">
         <ol className="checkout-steps">
           {steps.map((entry, index) => (

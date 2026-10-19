@@ -1,5 +1,6 @@
 "use client";
 
+import { PurchaseCompletedEvent } from "./plugin-scripts";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { readOrder, shouldPollPayment, usesOnlinePayment, type OrderSummary } from "@/lib/checkout";
@@ -158,6 +159,9 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
 
   return (
     <div className="payment-content">
+      {confirmed && order.tracking && (
+        <PurchaseCompletedEvent detail={{ order_id: order.tracking.order_id, total: order.grand_total, currency, items: order.tracking.items }} />
+      )}
       <header className="payment-heading">
         <div>
           <p className="payment-eyebrow">PEMBAYARAN PESANAN</p>

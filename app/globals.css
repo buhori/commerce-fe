@@ -2231,3 +2231,169 @@ p {
   font-weight: 600;
 }
 .wishlist-error { margin-top: 6px; color: var(--danger); font-size: 0.8125rem; }
+
+/* Bandingkan + Bagikan di halaman produk, berdampingan di bawah wishlist. */
+.product-secondary-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.product-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--page);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.product-action-button svg { width: 18px; height: 18px; flex-shrink: 0; }
+.product-action-button:hover { border-color: var(--muted); }
+.product-action-button[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-soft); }
+.product-action-note { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 0.8125rem; }
+
+.share-menu-wrapper { position: relative; }
+.share-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 30;
+  display: grid;
+  min-width: 220px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--page);
+  box-shadow: var(--shadow-pop, 0 12px 32px rgb(0 0 0 / 0.14));
+}
+.share-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: calc(var(--radius-sm) - 2px);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.share-menu-item:hover, .share-menu-item:focus-visible { background: var(--surface); }
+.share-menu-item svg { width: 18px; height: 18px; color: var(--muted); }
+.share-menu-error { margin: 4px 12px 8px; color: var(--danger); font-size: 0.8125rem; }
+
+/* Bilah bandingkan: melayang di bawah tengah layar selama ada produk yang dipilih. */
+.compare-tray {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + var(--compare-tray-offset, 0px));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: calc(100vw - 24px);
+  padding: 10px 10px 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--page);
+  box-shadow: var(--shadow-pop, 0 12px 32px rgb(0 0 0 / 0.16));
+  transform: translateX(-50%);
+}
+.compare-tray-items { display: flex; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.compare-tray-items li { position: relative; }
+.compare-tray-thumb {
+  position: relative;
+  display: block;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.compare-tray-thumb .product-placeholder span { display: none; }
+.compare-tray-remove, .compare-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--page);
+  color: var(--text);
+  cursor: pointer;
+}
+.compare-tray-remove svg, .compare-remove svg { width: 12px; height: 12px; }
+.compare-tray-actions { display: flex; align-items: center; gap: 12px; white-space: nowrap; }
+.compare-tray-clear { border: 0; background: none; color: var(--muted); font: inherit; font-size: 0.8125rem; cursor: pointer; }
+.compare-tray-clear:hover { color: var(--text); text-decoration: underline; }
+.compare-tray-hint { color: var(--muted); font-size: 0.8125rem; }
+.compare-tray-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.compare-tray-go svg { width: 18px; height: 18px; }
+@media (max-width: 640px) {
+  .compare-tray { left: 12px; right: 12px; bottom: calc(12px + var(--compare-tray-offset, 0px)); gap: 10px; justify-content: space-between; transform: none; }
+  .compare-tray-thumb { width: 40px; height: 40px; }
+  .compare-tray-clear, .compare-tray-hint { display: none; }
+}
+
+/* Halaman /compare */
+.compare-heading { margin: 8px 0 24px; }
+.compare-heading h1 { margin: 0; font-family: var(--font-heading, inherit); font-size: clamp(1.875rem, 4vw, 2.75rem); line-height: 1.1; }
+.compare-empty { display: grid; justify-items: center; gap: 14px; padding: 64px 16px; color: var(--muted); text-align: center; }
+.compare-empty > svg { width: 40px; height: 40px; }
+.compare-empty p { max-width: 420px; margin: 0; }
+.compare-empty-link { display: inline-flex; align-items: center; gap: 6px; color: var(--text); font-weight: 600; }
+.compare-empty-link svg { width: 16px; height: 16px; }
+.compare-diff-toggle { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px; color: var(--text-soft, var(--text)); font-size: 0.875rem; cursor: pointer; }
+.compare-shell[data-diff-only="true"] tr[data-same="true"] { display: none; }
+.compare-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+.compare-table {
+  width: 100%;
+  min-width: calc(140px + var(--compare-columns, 2) * 200px);
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+.compare-table th, .compare-table td { padding: 14px 16px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.compare-table tbody tr:last-child > * { border-bottom: 0; }
+.compare-table thead th { position: relative; width: calc((100% - 140px) / var(--compare-columns, 2)); font-weight: 400; }
+/* Kolom label tetap terlihat saat tabel digeser ke samping di ponsel. */
+.compare-table tbody th, .compare-table thead td:first-child, .compare-table tbody td:first-child:empty {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: 140px;
+  background: var(--page);
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.compare-remove { top: 10px; right: 10px; z-index: 2; }
+.compare-product { display: grid; gap: 10px; color: var(--text); text-decoration: none; }
+.compare-product-art { position: relative; display: block; width: 100%; max-width: 200px; aspect-ratio: 1; overflow: hidden; border-radius: var(--radius-sm); background: var(--surface); }
+.compare-product-name { font-weight: 600; line-height: 1.35; }
+.compare-product:hover .compare-product-name { text-decoration: underline; }
+.compare-price { font-weight: 600; }
+.compare-view-link { display: inline-flex; align-items: center; gap: 6px; color: var(--text); font-size: 0.875rem; font-weight: 600; }
+.compare-view-link svg { width: 16px; height: 16px; }

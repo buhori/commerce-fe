@@ -8,6 +8,7 @@ import { cartItemsOptions } from "@/lib/cart-queries";
 import { getCartOriginalUnitPrice, getCartStockLimit, getCartUnitPrice, getCartVariantId, type CartItem } from "@/lib/cart";
 import { addDays, formatDate, formatPrice } from "@/lib/format";
 import { MAINTENANCE_NOTE, preorderDays, readDiscount } from "@/lib/store-shared";
+import { emitStoreEvent } from "@/lib/store-events";
 import { ProductImage } from "./product-image";
 import { useCart, type CartAction } from "./cart-provider";
 import { Icon } from "./icons";
@@ -43,6 +44,12 @@ function CartContents({ currency, maintenance }: { currency: string; maintenance
     setFeedback(null);
     try {
       const countSynced = await modify(item.product_id, action, getCartVariantId(item));
+      const product = { product_id: item.product?.id ?? item.product_id, variant_id: getCartVariantId(item) ?? null };
+      if (action === "add") {
+        emitStoreEvent("store:cart_item_added", { ...product, qty: 1, price: getCartUnitPrice(item) ?? 0, currency, name: item.product?.name ?? null });
+      } else {
+        emitStoreEvent("store:cart_item_removed", { ...product, qty: action === "remove" ? item.amount : 1 });
+      }
       if (!countSynced) {
         setFeedback({ message: "Jumlah pada header belum dapat dimuat ulang.", error: false });
       }

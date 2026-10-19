@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useId } from "react";
-import { formatDate, formatPrice, useAddToCart, WishlistButton, type Product } from "@sellosy/theme";
+import { CompareButton, formatDate, formatPrice, ShareButton, useAddToCart, WishlistButton, type Product } from "@sellosy/theme";
 import { WhatsappIcon } from "./icons";
 import s from "./editorial.module.css";
 
@@ -78,6 +78,10 @@ export function BuyBox({ product, currency, preorder, maintenance, storeName, ur
         </a>
       )}
       <WishlistButton productId={product.id} productName={product.name} variant="button" className={s.wishlist} />
+      <div className={s.secondaryActions}>
+        <CompareButton product={product} className={s.wishlist} />
+        <ShareButton url={url} title={product.name} className={s.wishlist} />
+      </div>
 
       {cart.feedback && (
         <p className={cart.feedback.error ? s.feedbackError : s.feedback} role={cart.feedback.error ? "alert" : "status"}>

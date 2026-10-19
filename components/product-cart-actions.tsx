@@ -11,6 +11,7 @@ import type { Discount, Product } from "@/lib/store-api";
 import { formatDate, formatPrice } from "@/lib/format";
 import { discountEndDate, priceView, type PriceView } from "@/lib/price";
 import { MAINTENANCE_NOTE } from "@/lib/store-shared";
+import { emitStoreEvent } from "@/lib/store-events";
 import { whatsappChatUrl, type WhatsappProductChat } from "@/lib/whatsapp";
 
 const MAX_QUANTITY = 99;
@@ -101,15 +102,20 @@ export function useAddToCart({ productId, stock, price, finalPrice, discount, cu
     }
     setActiveAction(mode);
     setFeedback(null);
+    const added = () => emitStoreEvent("store:cart_item_added", {
+      product_id: productId, variant_id: selectedVariant?.id ?? null, qty: quantity, price: unitPrice, currency,
+    });
     try {
       if (preorder) {
         // Pre-orders never share a cart with ready items; they get their own checkout.
         await startPreorder({ productId, variantId: selectedVariant?.id, quantity });
+        added();
         await queryClient.invalidateQueries({ queryKey: cartKeys.preorder });
         router.push("/checkout?type=preorder");
         return;
       }
       const synced = await modify(productId, "add", selectedVariant?.id, quantity);
+      added();
       if (mode === "buy") {
         router.push("/checkout");
         return;

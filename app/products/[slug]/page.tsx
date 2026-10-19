@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { JsonLd } from "@/components/json-ld";
+import { StoreEventOnMount } from "@/components/plugin-scripts";
 import { StoreHeader } from "@/components/store-header";
 import { SiteFooter } from "@/components/site-footer";
 import { ProductDetail } from "@/components/product-detail";
@@ -81,6 +82,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
       ]} />
       <StoreHeader name={store.name} logo={store.logo} />
       <Page store={store} product={product} view={view} url={url} />
+      {/* Untuk plugin analytics (mis. Meta Pixel ViewContent); berlaku untuk semua tema. */}
+      <StoreEventOnMount name="store:product_viewed" detail={{
+        product_id: product.id,
+        name: product.name,
+        price: product.final_price ?? product.price,
+        currency: store.currency || "IDR",
+        category: category?.name ?? null,
+      }} />
       <SiteFooter store={store} />
     </>
   );
