@@ -3,6 +3,7 @@
 import { PurchaseCompletedEvent } from "./plugin-scripts";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { readOrder, shouldPollPayment, usesOnlinePayment, type OrderSummary } from "@/lib/checkout";
 import { formatDate, formatPrice } from "@/lib/format";
 import { CopyValue } from "./copy-value";
@@ -37,6 +38,7 @@ const statusLabels: Record<string, string> = {
 export function OrderPayment({ orderId, currency, storeName }: { orderId: string; currency: string; storeName: string }) {
   const [state, setState] = useState<State>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
+  const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMessage, setRefreshMessage] = useState("");
 
@@ -62,6 +64,8 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
       const order = readOrder(await response.json());
       if (!controller.signal.aborted) {
         setState({ status: "ready", order });
+        // Link lama dengan nomor pesanan asli (masa transisi): pakai alamat dengan nomor tersamar.
+        if (String(order.id) !== orderId) router.replace(`/payment/${order.id}`);
         if (attempt > 0) setRefreshMessage("Status pesanan sudah diperbarui.");
       }
     }).catch(() => {
@@ -73,7 +77,7 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
       if (!controller.signal.aborted) setRefreshing(false);
     });
     return () => controller.abort();
-  }, [orderId, attempt]);
+  }, [orderId, attempt, router]);
 
   // Tagihan online menunggu konfirmasi gateway: periksa tiap 5 detik selama tab terlihat, langsung
   // periksa lagi saat pembeli kembali ke tab (mis. dari aplikasi e-wallet), berhenti setelah berubah.

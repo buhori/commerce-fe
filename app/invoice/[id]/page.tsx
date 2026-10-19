@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { ButtonLink } from "@/components/ui/button";
 import { PrintButton } from "@/components/print-button";
 import { formatDate, formatPrice } from "@/lib/format";
@@ -32,6 +33,8 @@ const day = (iso: string | null) => (iso ? formatDate(new Date(`${iso.slice(0, 1
 export default async function InvoicePage({ params }: PageProps<"/invoice/[id]">) {
   const { id } = await params;
   const invoice = await getInvoice(id);
+  // Link lama dengan nomor pesanan asli (masa transisi): pakai alamat dengan nomor tersamar.
+  if (invoice && String(invoice.order_id) !== id) redirect(`/invoice/${invoice.order_id}`);
 
   if (!invoice) {
     return (
