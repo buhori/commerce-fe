@@ -7,7 +7,7 @@ import { Icon } from "./icons";
 import { Spinner } from "./spinner";
 
 // Mirrors UploadPaymentProofRequest on the backend.
-const MAX_BYTES = 5 * 1024 * 1024;
+const MAX_BYTES = 2 * 1024 * 1024;
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 
 /** Browser-only: the XSRF echo Laravel expects. Content-Type is left to the browser for multipart. */
@@ -22,7 +22,7 @@ const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
 
 function checkFile(file: File, proof: string): string | null {
   if (!ACCEPTED_TYPES.includes(file.type)) return `${capitalize(proof)} harus berupa gambar JPG, PNG, WebP, atau PDF.`;
-  if (file.size > MAX_BYTES) return `Ukuran ${proof} maksimal 5 MB.`;
+  if (file.size > MAX_BYTES) return `Ukuran ${proof} maksimal 2 MB.`;
   return null;
 }
 
@@ -128,7 +128,7 @@ export function PaymentProofForm({ order, onUploaded }: {
               : <Icon name={file ? "check" : "upload"} width={24} height={24} />}
             <span>
               <strong>{file ? file.name : `Pilih foto atau PDF ${proof}`}</strong>
-              <small>{file ? "Ketuk untuk mengganti file" : "JPG, PNG, WebP, atau PDF · maks. 5 MB"}</small>
+              <small>{file ? "Ketuk untuk mengganti file" : "JPG, PNG, WebP, atau PDF · maks. 2 MB"}</small>
             </span>
           </label>
           <div className="checkout-fields">

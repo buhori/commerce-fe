@@ -42,10 +42,17 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
-      credentials: "same-origin", cache: "no-store",
-      headers: { Accept: "application/json" }, signal: controller.signal,
-    }).then(async (response) => {
+    const url = `/api/orders/${encodeURIComponent(orderId)}`;
+    const options = { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" }, signal: controller.signal } as const;
+    const load = async () => {
+      // Tombol "Cek status": tanya payment gateway sekarang. Gagal (mis. gateway lambat): baca pesanan saja.
+      if (attempt > 0) {
+        const checked = await fetch(`${url}/payment/check`, { ...options, method: "POST" }).catch(() => null);
+        if (checked?.ok) return checked;
+      }
+      return fetch(url, options);
+    };
+    load().then(async (response) => {
       // A 404 also covers an order belonging to someone else's session.
       if (response.status === 404 || response.status === 400) {
         if (!controller.signal.aborted) setState({ status: "missing" });
