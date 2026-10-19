@@ -48,6 +48,8 @@ export function ProductDetail({ store, product, view, url }: ProductPageProps) {
               currency={currency}
               maintenance={store.maintenance.active}
               whatsapp={product.whatsapp ? { number: product.whatsapp.number, storeName: store.name, productName: product.name, productUrl: url } : null}
+              productName={product.name}
+              image={gallery[0] ?? null}
             />
             <WishlistButton productId={product.id} productName={product.name} variant="button" />
             <div className="product-secondary-actions">

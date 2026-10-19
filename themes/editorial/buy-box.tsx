@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useId } from "react";
 import { CompareButton, formatDate, formatPrice, ShareButton, useAddToCart, WishlistButton, type Product } from "@sellosy/theme";
 import { WhatsappIcon } from "./icons";
@@ -18,6 +17,8 @@ export function BuyBox({ product, currency, preorder, maintenance, storeName, ur
     productId: product.id, stock: product.stock, price: product.price, finalPrice: product.final_price, discount: product.discount,
     currency, variants: product.variants, preorder, maintenance,
     whatsapp: product.whatsapp ? { number: product.whatsapp.number, storeName, productName: product.name, productUrl: url } : null,
+    productName: product.name,
+    image: product.images,
   });
 
   return (
@@ -83,9 +84,10 @@ export function BuyBox({ product, currency, preorder, maintenance, storeName, ur
         <ShareButton url={url} title={product.name} className={s.wishlist} />
       </div>
 
-      {cart.feedback && (
-        <p className={cart.feedback.error ? s.feedbackError : s.feedback} role={cart.feedback.error ? "alert" : "status"}>
-          {cart.feedback.message} {cart.feedback.added && <Link href="/cart">Lihat tas →</Link>}
+      {/* Berhasil ditambahkan: notifikasi melayang dari platform (dengan tombol Lihat Cart); di sini hanya kesalahan. */}
+      {cart.feedback?.error && (
+        <p className={s.feedbackError} role="alert">
+          {cart.feedback.message}
         </p>
       )}
     </div>

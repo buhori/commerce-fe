@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CartProvider } from "@/components/cart-provider";
+import { CartToast } from "@/components/cart-toast";
 import { CompareTray } from "@/components/compare-tray";
 import { PluginScripts } from "@/components/plugin-scripts";
 import { QueryProvider } from "@/components/query-provider";
@@ -50,7 +51,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <p>Alamat ini belum dipakai toko mana pun. Periksa lagi ejaan alamatnya.</p>
           </main>
         ) : (
-          <QueryProvider><CartProvider>{children}<CompareTray /></CartProvider></QueryProvider>
+          <QueryProvider><CartProvider>{children}<CompareTray /><CartToast /></CartProvider></QueryProvider>
         )}
         {!missing && !preview?.embedded && <PluginScripts scripts={scripts} />}
         {preview && !preview.embedded && <ThemePreviewBar themeName={preview.theme?.name ?? null} draft={preview.draft} />}

@@ -5,6 +5,7 @@ import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { cartKeys, startPreorder } from "@/lib/cart-queries";
+import { showCartToast } from "./cart-toast";
 import { useCart } from "./cart-provider";
 import { Icon } from "./icons";
 import type { Discount, Product } from "@/lib/store-api";
@@ -34,13 +35,16 @@ export interface AddToCartOptions {
    * dipilih ke pesannya. Tidak ikut dimatikan saat perawatan atau pre-order: hanya tautan chat.
    */
   whatsapp?: WhatsappProductChat | null;
+  /** Nama dan foto produk untuk notifikasi "Ditambahkan ke keranjang"; tanpa keduanya notifikasinya umum. */
+  productName?: string | null;
+  image?: string | null;
 }
 
 /**
  * Buying logic without markup: variant choice, quantity limits, price, and the add/buy actions.
  * Pre-orders skip the cart and open their own checkout.
  */
-export function useAddToCart({ productId, stock, price, finalPrice, discount, currency, variants = [], preorder = false, maintenance = false, whatsapp = null }: AddToCartOptions) {
+export function useAddToCart({ productId, stock, price, finalPrice, discount, currency, variants = [], preorder = false, maintenance = false, whatsapp = null, productName = null, image = null }: AddToCartOptions) {
   const { modify, pending } = useCart();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -125,6 +129,8 @@ export function useAddToCart({ productId, stock, price, finalPrice, discount, cu
         error: false,
         added: true,
       });
+      // Notifikasi melayang dengan tombol "Lihat Cart", sama di semua tema (CartToast di layout).
+      showCartToast({ name: productName, variant: selectedVariant?.label ?? null, quantity, image });
       setQuantity(1);
     } catch (error) {
       setFeedback({
@@ -257,11 +263,9 @@ export function ProductCartActions(options: AddToCartOptions) {
           Tanya via WhatsApp<span className="sr-only"> (membuka tab baru)</span>
         </ButtonLink>
       )}
-      {feedback && (
-        <p className={`cart-feedback ${feedback.error ? "cart-feedback-error" : ""}`} role={feedback.error ? "alert" : "status"}>
-          {feedback.message}
-          {feedback.added && <> <ButtonLink variant="text" href="/cart">Lihat keranjang →</ButtonLink></>}
-        </p>
+      {/* Berhasil ditambahkan: diberitahukan lewat notifikasi melayang (CartToast); di sini hanya kesalahan. */}
+      {feedback?.error && (
+        <p className="cart-feedback cart-feedback-error" role="alert">{feedback.message}</p>
       )}
     </section>
   );

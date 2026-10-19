@@ -115,7 +115,7 @@ test("public store reads are cached per store with a fallback lifetime", async (
 
   for (const call of calls) {
     assert.equal(call.cache, undefined);
-    assert.deepEqual(call.next, { revalidate: 300, tags: ["store:ref:404", "store:host:kopisaya.com"] });
+    assert.deepEqual(call.next, { revalidate: 60, tags: ["store:ref:404", "store:host:kopisaya.com"] });
     // The cache key includes these headers, so stores never share an entry.
     assert.equal(call.headers["X-Store-Host"], "kopisaya.com");
     assert.equal(call.headers["X-Store-Id"], "404");

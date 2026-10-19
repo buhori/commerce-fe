@@ -2289,6 +2289,72 @@ p {
 .share-menu-item svg { width: 18px; height: 18px; color: var(--muted); }
 .share-menu-error { margin: 4px 12px 8px; color: var(--danger); font-size: 0.8125rem; }
 
+/* Notifikasi "Ditambahkan ke keranjang": melayang di atas tengah layar, hilang saat progresnya habis. */
+.cart-toast-region { position: fixed; top: 16px; left: 50%; z-index: 70; width: min(440px, calc(100vw - 24px)); transform: translateX(-50%); pointer-events: none; }
+.cart-toast {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+  padding: 12px 12px 15px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--page);
+  box-shadow: var(--shadow-pop, 0 16px 40px rgb(0 0 0 / 0.16));
+  pointer-events: auto;
+  animation: cart-toast-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.cart-toast-art { position: relative; width: 48px; height: 48px; overflow: hidden; border-radius: var(--radius-sm); background: var(--surface); }
+.cart-toast-art .product-placeholder span { display: none; }
+.cart-toast-text { display: grid; gap: 2px; min-width: 0; }
+.cart-toast-text strong { display: inline-flex; align-items: center; gap: 6px; color: var(--text); font-size: 0.875rem; }
+.cart-toast-text strong svg { width: 16px; height: 16px; color: var(--success, var(--primary)); }
+.cart-toast-text span { overflow: hidden; color: var(--muted); font-size: 0.8125rem; text-overflow: ellipsis; white-space: nowrap; }
+.cart-toast-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.cart-toast-close { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 999px; background: none; color: var(--muted); cursor: pointer; }
+.cart-toast-close:hover { background: var(--surface); color: var(--text); }
+.cart-toast-close svg { width: 16px; height: 16px; }
+/* Garis waktu: menyusut selama --cart-toast-ms; habis = notifikasi ditutup (onAnimationEnd). */
+.cart-toast-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--primary);
+  transform-origin: left;
+  animation: cart-toast-progress var(--cart-toast-ms, 3000ms) linear forwards;
+}
+.cart-toast:hover .cart-toast-progress,
+.cart-toast:focus-within .cart-toast-progress { animation-play-state: paused; }
+@keyframes cart-toast-in { from { opacity: 0; transform: translateY(-12px); } }
+@keyframes cart-toast-progress { to { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .cart-toast { animation: none; }
+}
+@media (max-width: 640px) {
+  .cart-toast-region { top: 12px; }
+  .cart-toast { grid-template-columns: 44px minmax(0, 1fr) auto; }
+  .cart-toast-art { width: 44px; height: 44px; }
+  .cart-toast-close { display: none; }
+  .cart-toast-text strong { font-size: 0.8125rem; white-space: nowrap; }
+  .cart-toast-action { padding: 0 12px; }
+}
+
 /* Bilah bandingkan: melayang di bawah tengah layar selama ada produk yang dipilih. */
 .compare-tray {
   position: fixed;

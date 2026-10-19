@@ -10,10 +10,13 @@ import { createHash, timingSafeEqual } from "node:crypto";
  * know the store's numeric id before asking the API.
  */
 
-/** Fallback lifetime: a missed webhook heals itself after this many seconds. */
+/**
+ * Fallback lifetime: a missed webhook (storefront down, wrong secret) heals itself after this many
+ * seconds. Kept short so a new product never stays hidden for long even then.
+ */
 export function storeCacheSeconds(): number {
   const value = Number(process.env.STORE_CACHE_SECONDS);
-  return Number.isSafeInteger(value) && value > 0 ? value : 300;
+  return Number.isSafeInteger(value) && value > 0 ? value : 60;
 }
 
 /**
