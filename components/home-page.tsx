@@ -9,7 +9,8 @@ import { getActiveTheme } from "@/themes/active";
 
 /**
  * Beranda: murni susunan dari builder milik tema yang tampil (tema aktif, atau tema/draf yang
- * dipratinjau pemilik). Tidak ada beranda cadangan; susunan kosong berarti beranda kosong.
+ * dipratinjau pemilik). Beranda yang belum pernah diterbitkan dikirim backend sebagai susunan awal
+ * builder (banner dan produk terbaru); susunan yang sengaja dikosongkan berarti beranda kosong.
  */
 export async function HomePage() {
   const [storeResult, theme, preview] = await Promise.all([

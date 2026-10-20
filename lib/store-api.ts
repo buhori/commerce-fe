@@ -238,7 +238,9 @@ export const getStore = cache(async () => {
     // Backend lama tidak mengirim keduanya; tanpa url, SEO memakai origin request.
     url: httpUrl(store.url)?.replace(/\/+$/, "") ?? null,
     seo: readStoreSeo(store.seo),
-    maintenance: readStoreMaintenance(store.maintenance),
+    // Pratinjau pemilik toko menampilkan toko seperti setelah dibuka: tanpa pemberitahuan "segera
+    // dibuka"/perawatan. Checkout tetap ditolak backend selama toko belum siap.
+    maintenance: preview ? { active: false, reason: null } : readStoreMaintenance(store.maintenance),
     style: readStoreStyle(store.style),
     hide_branding: store.hide_branding === true,
     plugin_scripts: readPluginScripts(store.plugin_scripts),
