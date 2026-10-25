@@ -3,6 +3,7 @@ import { getPages, type Store } from "@/lib/store-api";
 import { Icon } from "./icons";
 import { StoreBrand } from "./store-brand";
 import { BuiltWith } from "@/sdk/components";
+import { displayPhone, e164 } from "@/lib/phone";
 import { BrandingProvider } from "./branding";
 import { getActiveTheme } from "@/themes/active";
 
@@ -12,9 +13,9 @@ export async function SiteFooter({ store }: { store: Store }) {
   // <BuiltWith /> in either footer reads this to hide itself on whitelabel stores.
   if (Footer) return <BrandingProvider hidden={store.hide_branding}><Footer store={store} pages={pages} /></BrandingProvider>;
 
-  const rawPhone = store.phone?.replace(/\D/g, "") || "";
-  const countryCode = store.phone_country_code?.replace(/\D/g, "") || "";
-  const phone = rawPhone.startsWith(countryCode) ? rawPhone : `${countryCode}${rawPhone.replace(/^0/, "")}`;
+  // Kode negara toko (bawaan Indonesia, 62); lihat lib/phone.ts.
+  const phoneLink = e164(store.phone_country_code, store.phone);
+  const phone = displayPhone(store.phone_country_code, store.phone);
 
   return (
     <BrandingProvider hidden={store.hide_branding}>
@@ -30,11 +31,11 @@ export async function SiteFooter({ store }: { store: Store }) {
               {pages.map((page) => <Link key={page.slug} href={`/${page.slug}`}>{page.title}</Link>)}
             </nav>
           )}
-          {(store.email || rawPhone || store.address) && (
+          {(store.email || phone || store.address) && (
             <div className="contact-info">
               <h2>Kontak</h2>
               {store.email && <a href={`mailto:${store.email}`}><Icon name="mail" />{store.email}</a>}
-              {rawPhone && <a href={`tel:+${phone}`}><Icon name="phone" />+{phone}</a>}
+              {phone && (phoneLink ? <a href={`tel:${phoneLink}`}><Icon name="phone" />{phone}</a> : <span><Icon name="phone" />{phone}</span>)}
               {store.address && <p><Icon name="pin" />{store.address}</p>}
             </div>
           )}

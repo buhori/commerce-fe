@@ -2,6 +2,7 @@
 // lib/catalog-url.ts) supaya bisa diuji langsung; yang membaca request ada di lib/site-seo.ts.
 import type { Metadata } from "next";
 import { catalogUrl, type CatalogFilter } from "./catalog-url";
+import { e164 } from "./phone";
 
 /** SEO halaman dari backend (produk, kategori, halaman); semua opsional di backend lama. */
 export interface PageSeo {
@@ -375,16 +376,8 @@ export function websiteJsonLd(store: { name: string; language?: unknown }, base:
   };
 }
 
-/** Nomor E.164 (+62812…) dari kode negara dan nomor lokal; null bila tidak masuk akal. */
-export function e164(countryCode: unknown, phone: unknown): string | null {
-  if (typeof phone !== "string" && typeof phone !== "number") return null;
-  const raw = String(phone).trim();
-  const digits = raw.replace(/\D/g, "");
-  if (!digits) return null;
-  // Nomor yang sudah berawalan + dianggap lengkap; selain itu 0 di depan diganti kode negara.
-  const full = raw.startsWith("+") ? digits : `${String(countryCode ?? "").replace(/\D/g, "")}${digits.replace(/^0+/, "")}`;
-  return /^[1-9]\d{7,14}$/.test(full) ? `+${full}` : null;
-}
+// Nomor E.164 (+62812…): aturan yang sama dengan tampilan nomor toko (lib/phone.ts).
+export { e164 };
 
 export interface OrganizationInput {
   name: string;

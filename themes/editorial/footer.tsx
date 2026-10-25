@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BuiltWith, pageUrl, type FooterProps } from "@sellosy/theme";
+import { BuiltWith, displayPhone, pageUrl, type FooterProps } from "@sellosy/theme";
 import s from "./editorial.module.css";
 
 export function Footer({ store, pages }: FooterProps) {
@@ -21,7 +21,7 @@ export function Footer({ store, pages }: FooterProps) {
             <p className={s.footerTitle}>Kunjungi kami</p>
             <ul>
               {store.address && <li>{store.address}</li>}
-              {store.phone && <li>{store.phone}</li>}
+              {store.phone && <li>{displayPhone(store.phone_country_code, store.phone)}</li>}
               {store.email && <li><a href={`mailto:${store.email}`}>{store.email}</a></li>}
             </ul>
           </div>

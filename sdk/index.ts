@@ -34,6 +34,8 @@ export { FEATURE_ICONS, paragraphs } from "@/lib/home-sections";
 
 // Helper.
 export { formatDate, formatPrice, formatProductStats } from "@/lib/format";
+// Nomor telepon toko dengan kode negara (bawaan 62), mis. "+62 812-3456-7890"; e164 untuk tautan tel:.
+export { displayPhone, e164 } from "@/lib/phone";
 // Aturan harga diskon yang sama dengan tampilan bawaan; jangan membandingkan price dan final_price sendiri.
 export { discountEndDate, priceView } from "@/lib/price";
 // Tautan wa.me dengan pesan tentang produk; useAddToCart({ whatsapp }) sudah membuatnya dengan varian terpilih.
