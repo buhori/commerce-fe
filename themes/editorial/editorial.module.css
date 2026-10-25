@@ -306,6 +306,18 @@
 .bannerShort .slideCover { height: min(56vh, 520px); min-height: 340px; }
 .bannerShort .slide:not(.slideCover) img { max-height: 520px; object-fit: cover; }
 
+/*
+ * Desktop: banner berbentuk kotak, sejajar dengan tepi konten di bawahnya (.block), dan tidak setinggi
+ * layar. Lebar "lebar"/"penuh" dari builder tetap berlaku; "penuh" kembali selebar layar.
+ */
+@media (min-width: 761px) {
+  .banner { width: 100%; max-width: 1320px; margin: 0 auto; padding: 0 var(--gutter); }
+  :global(.section-width-wide) > .banner { max-width: 1520px; }
+  :global(.section-width-full) > .banner { max-width: none; padding: 0; }
+  .slideCover { height: min(64vh, 600px); min-height: 400px; }
+  .bannerShort .slideCover { height: min(44vh, 420px); min-height: 300px; }
+}
+
 .moreLink {
   flex-shrink: 0;
   font-size: 13px;
