@@ -22,7 +22,7 @@ function loadModule(file, fetch = () => {}) {
   return exports;
 }
 
-const { readWhatsapp, whatsappChatUrl } = loadModule("../lib/whatsapp.ts");
+const { readWhatsapp, whatsappAvailable, whatsappChatUrl } = loadModule("../lib/whatsapp.ts");
 const plain = (value) => JSON.parse(JSON.stringify(value));
 const input = { number: "6281234567890", storeName: "Kopi Senja", productName: "Kopi Arabika", productUrl: "https://kopisenja.id/products/kopi-arabika" };
 const message = (url) => new URL(url).searchParams.get("text");
@@ -51,9 +51,9 @@ test("characters that mean something in a URL stay inside the message", () => {
 });
 
 test("only a digits-only number of 8 to 15 characters is read", () => {
-  assert.deepEqual(plain(readWhatsapp({ number: "6281234567890" })), { number: "6281234567890" });
-  assert.deepEqual(plain(readWhatsapp({ number: "12345678" })), { number: "12345678" });
-  assert.deepEqual(plain(readWhatsapp({ number: "123456789012345" })), { number: "123456789012345" });
+  assert.deepEqual(plain(readWhatsapp({ number: "6281234567890" })), { number: "6281234567890", quantityAbove: null });
+  assert.deepEqual(plain(readWhatsapp({ number: "12345678" })), { number: "12345678", quantityAbove: null });
+  assert.deepEqual(plain(readWhatsapp({ number: "123456789012345" })), { number: "123456789012345", quantityAbove: null });
   for (const number of ["+6281234567890", "0812-3456-7890", "1234567", "1234567890123456", "62812abc", "", 6281234567890, null]) {
     assert.equal(readWhatsapp({ number }), null, String(number));
   }
@@ -66,7 +66,9 @@ test("product detail carries a valid whatsapp number and null when it is missing
     data: { id: 1, slug: "kopi", name: "Kopi", status: "published", deleted_at: null, ...(whatsapp === undefined ? {} : { whatsapp }) },
   }));
   whatsapp = { number: "6281234567890" };
-  assert.deepEqual(plain((await getProduct("kopi")).whatsapp), { number: "6281234567890" });
+  assert.deepEqual(plain((await getProduct("kopi")).whatsapp), { number: "6281234567890", quantityAbove: null });
+  whatsapp = { number: "6281234567890", quantity_above: 10 };
+  assert.deepEqual(plain((await getProduct("kopi")).whatsapp), { number: "6281234567890", quantityAbove: 10 });
   whatsapp = { number: "08123<script>" };
   assert.equal((await getProduct("kopi")).whatsapp, null);
   whatsapp = null;
@@ -74,4 +76,26 @@ test("product detail carries a valid whatsapp number and null when it is missing
   // Backend lama tanpa field ini: tanpa tombol.
   whatsapp = undefined;
   assert.equal((await getProduct("kopi")).whatsapp, null);
+});
+
+test("a quantity limit is read only as a positive whole number; anything else keeps the button always on", () => {
+  assert.equal(readWhatsapp({ number: "6281234567890", quantity_above: 10 }).quantityAbove, 10);
+  for (const above of [undefined, null, 0, -5, 2.5, "10", NaN, {}]) {
+    assert.equal(readWhatsapp({ number: "6281234567890", quantity_above: above }).quantityAbove, null, String(above));
+  }
+});
+
+test("the button opens only when the chosen quantity is more than the limit", () => {
+  assert.equal(whatsappAvailable(10, 10), false);
+  assert.equal(whatsappAvailable(10, 11), true);
+  assert.equal(whatsappAvailable(1, 1), false);
+  for (const above of [null, undefined, 0]) assert.equal(whatsappAvailable(above, 1), true);
+});
+
+test("the chosen quantity is mentioned in the message when it is more than one", () => {
+  assert.equal(message(whatsappChatUrl({ ...input, variantLabel: "Biji", quantity: 15 })),
+    "Halo Kopi Senja, saya ingin bertanya tentang Kopi Arabika (Biji) sebanyak 15 barang.\nhttps://kopisenja.id/products/kopi-arabika");
+  for (const quantity of [undefined, null, 1]) {
+    assert.equal(message(whatsappChatUrl({ ...input, quantity })), message(whatsappChatUrl(input)));
+  }
 });

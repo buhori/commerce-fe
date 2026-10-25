@@ -143,14 +143,18 @@ Contohnya `ProductCard` di `themes/editorial/product-grid.tsx` dan `themes/edito
 
 ## Chat WhatsApp
 
-`product.whatsapp` berisi `{ number }` (angka saja, dengan kode negara) bila toko menyalakan chat
-WhatsApp untuk produk itu dan paketnya mencakup fitur ini; selain itu `null`. Tampilkan tombol
-"Tanya via WhatsApp" hanya bila terisi, di bawah tombol beli.
+`product.whatsapp` berisi `{ number, quantityAbove }` bila toko menyalakan chat WhatsApp untuk produk
+itu dan paketnya mencakup fitur ini; selain itu `null`. `number` angka saja dengan kode negara;
+`quantityAbove` (atau `null`) berarti tombolnya baru aktif bila jumlah yang dipilih lebih dari itu, mis.
+untuk pembelian grosir. Tampilkan tombol "Tanya via WhatsApp" hanya bila terisi, di bawah tombol beli.
 
-- Teruskan `whatsapp={{ number: product.whatsapp.number, storeName: store.name, productName: product.name, productUrl: url }}`
+- Teruskan `whatsapp={{ ...product.whatsapp, storeName: store.name, productName: product.name, productUrl: url }}`
   ke `<AddToCart>` (tombolnya ikut dirender) atau `useAddToCart()`, yang mengembalikan `whatsappUrl`: tautan wa.me
-  dengan varian terpilih di pesannya, `null` bila tanpa chat. `url` datang dari props `ProductPage`.
-- Di luar hook: `whatsappChatUrl({ number, storeName, productName, variantLabel, productUrl })`.
+  dengan varian dan jumlah terpilih di pesannya, `null` bila tanpa chat atau jumlahnya belum melebihi batas.
+  Saat batas belum terlewati, `whatsappNote` berisi alasannya: tampilkan tombolnya nonaktif dengan catatan itu.
+  `url` datang dari props `ProductPage`.
+- Di luar hook: `whatsappChatUrl({ number, storeName, productName, variantLabel, quantity, productUrl })` dan
+  `whatsappAvailable(quantityAbove, quantity)`.
 - Buka dengan `target="_blank" rel="noopener noreferrer"`. Jangan dimatikan saat perawatan toko atau untuk
   pre-order: tombol ini hanya membuka chat, bukan membuat pesanan.
 

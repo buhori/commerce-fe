@@ -863,6 +863,8 @@ p {
 /* Tombol sekunder di bawah tombol beli; hijau WhatsApp hanya sebagai aksen ikon dan garis saat hover. */
 .purchase-whatsapp { width: 100%; margin-top: -14px; }
 .purchase-whatsapp svg { color: #128c7e; }
+.purchase-whatsapp:disabled svg { color: currentColor; }
+.purchase-whatsapp-note { margin-top: -10px; color: var(--muted); font-size: 0.75rem; text-align: center; }
 .purchase-whatsapp.button-secondary:hover:not(:disabled) { border-color: #128c7e; }
 
 .purchase-mobile-summary { display: none; }

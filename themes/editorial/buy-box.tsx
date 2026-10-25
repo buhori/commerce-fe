@@ -16,7 +16,7 @@ export function BuyBox({ product, currency, preorder, maintenance, storeName, ur
   const cart = useAddToCart({
     productId: product.id, stock: product.stock, price: product.price, finalPrice: product.final_price, discount: product.discount,
     currency, variants: product.variants, preorder, maintenance,
-    whatsapp: product.whatsapp ? { number: product.whatsapp.number, storeName, productName: product.name, productUrl: url } : null,
+    whatsapp: product.whatsapp ? { ...product.whatsapp, storeName, productName: product.name, productUrl: url } : null,
     productName: product.name,
     image: product.images,
   });
@@ -77,6 +77,14 @@ export function BuyBox({ product, currency, preorder, maintenance, storeName, ur
         <a className={`${s.secondaryButton} ${s.whatsappButton}`} href={cart.whatsappUrl} target="_blank" rel="noopener noreferrer">
           <WhatsappIcon />Tanya via WhatsApp<span className={s.srOnly}> (membuka tab baru)</span>
         </a>
+      )}
+      {cart.whatsappNote && (
+        <>
+          <button type="button" className={`${s.secondaryButton} ${s.whatsappButton}`} disabled aria-describedby={`${name}-whatsapp`}>
+            <WhatsappIcon />Tanya via WhatsApp
+          </button>
+          <p className={s.hint} id={`${name}-whatsapp`}>{cart.whatsappNote}</p>
+        </>
       )}
       <WishlistButton productId={product.id} productName={product.name} variant="button" className={s.wishlist} />
       <div className={s.secondaryActions}>

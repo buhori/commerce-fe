@@ -13,7 +13,7 @@ import { formatDate, formatPrice } from "@/lib/format";
 import { discountEndDate, priceView, type PriceView } from "@/lib/price";
 import { MAINTENANCE_NOTE } from "@/lib/store-shared";
 import { emitStoreEvent } from "@/lib/store-events";
-import { whatsappChatUrl, type WhatsappProductChat } from "@/lib/whatsapp";
+import { whatsappAvailable, whatsappChatUrl, type WhatsappProductChat } from "@/lib/whatsapp";
 
 const MAX_QUANTITY = 99;
 
@@ -31,8 +31,9 @@ export interface AddToCartOptions {
   /** store.maintenance.active: beli sekarang dan pre-order ditutup, tambah ke keranjang tetap bisa. */
   maintenance?: boolean;
   /**
-   * Chat WhatsApp tentang produk ini (bila product.whatsapp ada); hook menambahkan varian yang
-   * dipilih ke pesannya. Tidak ikut dimatikan saat perawatan atau pre-order: hanya tautan chat.
+   * Chat WhatsApp tentang produk ini (bila product.whatsapp ada); hook menambahkan varian dan jumlah
+   * yang dipilih ke pesannya. Dengan `quantityAbove`, tombolnya baru aktif bila jumlahnya lebih dari itu.
+   * Tidak ikut dimatikan saat perawatan atau pre-order: hanya tautan chat.
    */
   whatsapp?: WhatsappProductChat | null;
   /** Nama dan foto produk untuk notifikasi "Ditambahkan ke keranjang"; tanpa keduanya notifikasinya umum. */
@@ -83,8 +84,10 @@ export function useAddToCart({ productId, stock, price, finalPrice, discount, cu
   const originalPriceLabel = originalLabel !== priceLabel ? originalLabel : null;
   const discountLabel = discounted?.label ?? null;
   const discountEnds = discountEndDate(discounted?.endsAt);
-  // Dibuat ulang setiap pilihan varian berubah, supaya penjual tahu varian yang ditanyakan.
-  const whatsappUrl = whatsapp ? whatsappChatUrl({ ...whatsapp, variantLabel: selectedVariant?.label }) : null;
+  // Dibuat ulang setiap pilihan varian/jumlah berubah, supaya penjual tahu apa yang ditanyakan.
+  const whatsappReady = whatsapp !== null && whatsappAvailable(whatsapp.quantityAbove, quantity);
+  const whatsappUrl = whatsapp && whatsappReady ? whatsappChatUrl({ ...whatsapp, variantLabel: selectedVariant?.label, quantity }) : null;
+  const whatsappNote = whatsapp && !whatsappReady ? `Chat WhatsApp untuk pembelian lebih dari ${whatsapp.quantityAbove} barang.` : null;
 
   function changeQuantity(value: number) {
     setQuantity(Math.max(1, Math.min(Math.max(1, max), Number.isFinite(value) ? Math.trunc(value) : 1)));
@@ -155,8 +158,13 @@ export function useAddToCart({ productId, stock, price, finalPrice, discount, cu
     variantPrice,
     /** Harga produk tanpa varian terpilih. */
     basePrice,
-    /** Tautan wa.me dengan varian terpilih di pesannya; null bila produk tanpa chat WhatsApp. Buka di tab baru. */
+    /**
+     * Tautan wa.me dengan varian dan jumlah terpilih di pesannya; null bila produk tanpa chat WhatsApp
+     * atau jumlahnya belum melebihi batas. Buka di tab baru.
+     */
     whatsappUrl,
+    /** Alasan tombol WhatsApp belum aktif (jumlah belum melebihi batas); tampilkan tombolnya nonaktif. */
+    whatsappNote,
   };
 }
 
@@ -166,7 +174,7 @@ export function ProductCartActions(options: AddToCartOptions) {
   const {
     variants, selectedVariant, selectVariant, quantity, changeQuantity, max, complete, soldOut, disabled, pending,
     preorder, unitPrice, priceLabel, activeAction, feedback, add, checkoutNote,
-    originalPriceLabel, discountLabel, discountEnds, variantPrice, basePrice, whatsappUrl,
+    originalPriceLabel, discountLabel, discountEnds, variantPrice, basePrice, whatsappUrl, whatsappNote,
   } = useAddToCart(options);
 
   return (
@@ -262,6 +270,15 @@ export function ProductCartActions(options: AddToCartOptions) {
           <Icon name="whatsapp" />
           Tanya via WhatsApp<span className="sr-only"> (membuka tab baru)</span>
         </ButtonLink>
+      )}
+      {whatsappNote && (
+        <>
+          <Button variant="secondary" className="purchase-whatsapp" type="button" disabled aria-describedby={`${variantGroupId}-whatsapp`}>
+            <Icon name="whatsapp" />
+            Tanya via WhatsApp
+          </Button>
+          <p className="purchase-whatsapp-note" id={`${variantGroupId}-whatsapp`}>{whatsappNote}</p>
+        </>
       )}
       {/* Berhasil ditambahkan: diberitahukan lewat notifikasi melayang (CartToast); di sini hanya kesalahan. */}
       {feedback?.error && (

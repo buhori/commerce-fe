@@ -47,7 +47,7 @@ export function ProductDetail({ store, product, view, url }: ProductPageProps) {
               discount={product.discount}
               currency={currency}
               maintenance={store.maintenance.active}
-              whatsapp={product.whatsapp ? { number: product.whatsapp.number, storeName: store.name, productName: product.name, productUrl: url } : null}
+              whatsapp={product.whatsapp ? { ...product.whatsapp, storeName: store.name, productName: product.name, productUrl: url } : null}
               productName={product.name}
               image={gallery[0] ?? null}
             />

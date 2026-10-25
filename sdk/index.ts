@@ -39,7 +39,7 @@ export { displayPhone, e164 } from "@/lib/phone";
 // Aturan harga diskon yang sama dengan tampilan bawaan; jangan membandingkan price dan final_price sendiri.
 export { discountEndDate, priceView } from "@/lib/price";
 // Tautan wa.me dengan pesan tentang produk; useAddToCart({ whatsapp }) sudah membuatnya dengan varian terpilih.
-export { whatsappChatUrl } from "@/lib/whatsapp";
+export { whatsappAvailable, whatsappChatUrl } from "@/lib/whatsapp";
 export { catalogSorts, catalogUrl } from "@/lib/catalog-url";
 export { preorderDays } from "@/lib/store-shared";
 
