@@ -30,22 +30,38 @@ export interface Invoice {
   unique_code: number;
   grand_total: number;
   payment_method: string | null;
-  bank_account: { bank: string; name: string; number: string } | null;
+  bank_account: { bank: string; logo_url?: string | null; name: string; number: string } | null;
+  /** "Powered by Sellosy" di invoice; false untuk toko whitelabel. */
+  powered_by?: boolean;
+}
+
+/** Tanda tangan link invoice dari email bukti bayar (InvoiceLink di backend). */
+export type InvoiceAccess = { expires: string; signature: string };
+
+/** expires dan signature dari query string, bila keduanya ada dan berbentuk wajar. */
+export function readInvoiceAccess(query: Record<string, string | string[] | undefined>): InvoiceAccess | null {
+  const expires = typeof query.expires === "string" ? query.expires : "";
+  const signature = typeof query.signature === "string" ? query.signature : "";
+  return /^\d{1,12}$/.test(expires) && /^[a-f0-9]{64}$/.test(signature) ? { expires, signature } : null;
 }
 
 /**
  * Invoice milik pembeli ini: sesi akun (Bearer) atau token tamu yang membuat pesanan, persis seperti
- * proxy /api. null bila pesanan tidak ada atau milik orang lain (backend menjawab 404 untuk keduanya).
+ * proxy /api, atau link bertanda tangan dari email bukti bayar (expires + signature) yang bisa dibuka
+ * dari perangkat mana pun. null bila pesanan tidak ada, milik orang lain, atau tanda tangannya tidak
+ * berlaku (backend menjawab 404 untuk semuanya).
  */
-export const getInvoice = cache(async (id: string): Promise<Invoice | null> => {
+export const getInvoice = cache(async (id: string, expires?: string, signature?: string): Promise<Invoice | null> => {
   if (!/^\d{1,10}$/.test(id)) return null;
   const jar = await cookies();
   const customerToken = jar.get(CUSTOMER_COOKIE)?.value;
   const guestToken = jar.get("guest_token")?.value;
-  if (!customerToken && !guestToken) return null;
+  const signed = Boolean(expires && signature);
+  if (!signed && !customerToken && !guestToken) return null;
 
   const baseUrl = process.env.STORE_API_URL || "http://localhost:8000/api";
-  const response = await fetch(`${baseUrl.replace(/\/$/, "")}/orders/${id}/invoice`, {
+  const query = signed ? `?${new URLSearchParams({ expires: expires!, signature: signature! })}` : "";
+  const response = await fetch(`${baseUrl.replace(/\/$/, "")}/orders/${id}/invoice${query}`, {
     headers: {
       Accept: "application/json",
       ...(await currentStoreHeaders()),

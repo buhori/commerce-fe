@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandLogo } from "./brand-logo";
 import { Icon } from "./icons";
 import { Spinner } from "./spinner";
 import { Button } from "@/components/ui/button";
@@ -159,7 +160,7 @@ function ShippingChoices({ addressCode, currency, preorder, selected, onSelect }
         return (
           <>
             <strong className="shipping-option-head">
-              {shippingOptionLabel(option)}
+              <span className="shipping-option-courier"><BrandLogo src={option.courier_logo} />{shippingOptionLabel(option)}</span>
               <span className="shipping-option-price">{formatPrice(option.cost, currency)}</span>
             </strong>
             <span className="shipping-option-meta">
@@ -203,7 +204,7 @@ function BankAccounts({ selected, onSelect }: {
       keyOf={(account) => String(account.id)}
       isSelected={(account) => selected?.id === account.id}
       onSelect={onSelect}
-      render={(account) => <><strong>{account.bank} {account.number}</strong><span>a.n. {account.name}</span></>} />
+      render={(account) => <><strong className="payment-method-head"><BrandLogo src={account.logo_url} />{account.bank} {account.number}</strong><span>a.n. {account.name}</span></>} />
   );
 }
 

@@ -38,7 +38,10 @@
 .invoice-grand-total { padding-top: 8px; border-top: 2px solid #1f1f1f; font-size: 1rem; font-weight: 700; }
 .invoice-grand-total dt { color: inherit; }
 .invoice-note { margin-top: 24px !important; padding: 12px 14px; background: #fffbeb; border-radius: 8px; color: #78350f; }
+.invoice-bank-logo { display: inline-block; width: 44px; height: 22px; margin-right: 8px; padding: 2px 4px; border-radius: 4px; background: #fff; object-fit: contain; vertical-align: middle; }
 .invoice-footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e5e5; color: #6b7280; text-align: center; }
+.invoice-powered { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; color: #9ca3af; font-size: .75rem; text-decoration: none; }
+.invoice-powered img { width: auto; height: 18px; }
 
 @media (max-width: 640px) {
   .invoice-sheet { padding: 24px 18px; }
@@ -53,5 +56,5 @@
   .invoice-page { padding: 0; background: #fff; min-height: 0; }
   .invoice-toolbar { display: none; }
   .invoice-sheet { max-width: none; padding: 0; border: 0; border-radius: 0; }
-  .invoice-note { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .invoice-note, .invoice-powered { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

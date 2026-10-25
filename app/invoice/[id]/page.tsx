@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { BrandLogo } from "@/components/brand-logo";
 import { ButtonLink } from "@/components/ui/button";
 import { PrintButton } from "@/components/print-button";
 import { formatDate, formatPrice } from "@/lib/format";
-import { getInvoice, type Invoice } from "@/lib/invoice";
+import { getInvoice, readInvoiceAccess, type Invoice } from "@/lib/invoice";
 import "../invoice.css";
 
-export async function generateMetadata({ params }: PageProps<"/invoice/[id]">): Promise<Metadata> {
-  const invoice = await getInvoice((await params).id);
+export async function generateMetadata({ params, searchParams }: PageProps<"/invoice/[id]">): Promise<Metadata> {
+  const access = readInvoiceAccess(await searchParams);
+  const invoice = await getInvoice((await params).id, access?.expires, access?.signature);
   return {
     title: invoice ? `Invoice ${invoice.number}` : "Invoice",
     robots: { index: false, follow: false },
@@ -28,13 +30,15 @@ const day = (iso: string | null) => (iso ? formatDate(new Date(`${iso.slice(0, 1
 
 /**
  * Invoice pesanan untuk pembeli, siap dicetak atau disimpan sebagai PDF. Hanya pemilik pesanan
- * (akun atau perangkat tamu yang membuatnya) yang bisa membukanya.
+ * (akun atau perangkat tamu yang membuatnya) yang bisa membukanya, atau siapa pun yang memegang link
+ * bertanda tangan dari email bukti bayar.
  */
-export default async function InvoicePage({ params }: PageProps<"/invoice/[id]">) {
+export default async function InvoicePage({ params, searchParams }: PageProps<"/invoice/[id]">) {
   const { id } = await params;
-  const invoice = await getInvoice(id);
+  const access = readInvoiceAccess(await searchParams);
+  const invoice = await getInvoice(id, access?.expires, access?.signature);
   // Link lama dengan nomor pesanan asli (masa transisi): pakai alamat dengan nomor tersamar.
-  if (invoice && String(invoice.order_id) !== id) redirect(`/invoice/${invoice.order_id}`);
+  if (invoice && String(invoice.order_id) !== id && !access) redirect(`/invoice/${invoice.order_id}`);
 
   if (!invoice) {
     return (
@@ -131,11 +135,22 @@ export default async function InvoicePage({ params }: PageProps<"/invoice/[id]">
 
         {invoice.bank_account && (
           <p className="invoice-note">
+            <BrandLogo src={invoice.bank_account.logo_url} className="invoice-bank-logo" />
             Transfer <strong>{money(invoice.grand_total)}</strong> ke {invoice.bank_account.bank} {invoice.bank_account.number} a.n. {invoice.bank_account.name}, tepat hingga digit terakhir.
           </p>
         )}
 
-        <footer className="invoice-footer">Terima kasih telah berbelanja di {store.name}.</footer>
+        <footer className="invoice-footer">
+          <p>Terima kasih telah berbelanja di {store.name}.</p>
+          {/* Disembunyikan untuk toko whitelabel, seperti lencana "Built with Sellosy" di kaki toko. */}
+          {invoice.powered_by !== false && (
+            <a className="invoice-powered" href="https://sellosy.com" target="_blank" rel="noopener">
+              Powered by
+              {/* eslint-disable-next-line @next/next/no-img-element -- logo kecil, dicetak apa adanya. */}
+              <img src="/sellosy-logo.png" alt="Sellosy" width={80} height={24} />
+            </a>
+          )}
+        </footer>
       </article>
     </main>
   );

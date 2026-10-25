@@ -42,6 +42,9 @@
 .payment-bank { margin-inline: 28px; padding-block: 24px; border-top: 1px solid var(--line); }
 .payment-section-heading { display: flex; align-items: center; gap: 12px; }
 .payment-small-icon { display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 10px; color: var(--primary); }
+/* Logo bank di kotak putih, sebesar ikon bagian lain, supaya tetap terbaca di tema gelap. */
+.payment-bank-logo { flex-shrink: 0; width: 64px; height: 42px; padding: 6px; border-radius: 10px; background: #fff; box-shadow: 0 0 0 1px var(--line); object-fit: contain; }
+.payment-order-courier { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .payment-section-heading h3 { font-size: .875rem; }
 .payment-section-heading p { margin-top: 4px; font-size: .75rem; color: var(--muted); }
 .payment-account { padding: 18px; margin-top: 18px; border: 1px solid var(--line); border-radius: 12px; }

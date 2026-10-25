@@ -25,6 +25,8 @@ export interface ShippingOption {
   shipping_method_id: number;
   courier: string;
   courier_name: string;
+  /** Logo kurir; null bila backend belum punya logonya. */
+  courier_logo: string | null;
   // Null for the store's flat rate (no courier service).
   service: string | null;
   description: string | null;
@@ -116,6 +118,8 @@ export interface BankAccount {
   bank: string;
   name: string;
   number: string;
+  /** Logo bank/e-wallet; null bila backend belum punya logonya. */
+  logo_url: string | null;
 }
 
 export interface OrderLine {
@@ -159,6 +163,8 @@ export interface OrderSummary {
   // Gambar QRIS statis milik toko; hanya terisi untuk pesanan QRIS.
   qris_image: string | null;
   shipping_method: string | null;
+  /** Logo kurir pesanan; null bila backend belum punya logonya. */
+  shipping_logo: string | null;
   // The file itself stays with the store; the buyer only learns that it arrived.
   proof_uploaded: boolean;
   sender_name: string | null;
@@ -287,6 +293,7 @@ export function readShippingQuote(data: unknown): ShippingQuote {
       shipping_method_id: option.shipping_method_id,
       courier: option.courier,
       courier_name: option.courier_name,
+      courier_logo: readHttpUrl(option.courier_logo),
       service: option.service || null,
       description: option.description || null,
       cost: option.cost,
@@ -351,7 +358,7 @@ export function readBankAccounts(data: unknown): BankAccount[] {
       Number.isSafeInteger(account.id) && Number(account.id) > 0 &&
       filled(account.bank) && filled(account.name) && filled(account.number);
   })) throw new Error("Rekening tujuan transfer belum dapat dibaca.");
-  return rows.map(({ id, bank, name, number }) => ({ id, bank, name, number }));
+  return rows.map(({ id, bank, name, number, logo_url }) => ({ id, bank, name, number, logo_url: readHttpUrl(logo_url) }));
 }
 
 // Pembayaran manual: pembeli membayar nominal berkode unik lalu mengunggah bukti.
@@ -501,7 +508,7 @@ export function readOrder(data: unknown): OrderSummary {
     throw new Error("Pesanan belum dapat dibaca.");
   }
   const payment = row.payment as { method?: { code?: unknown; name?: unknown } | null; bank_account?: unknown; qris_image?: unknown; has_proof?: unknown; sender_name?: unknown } | null | undefined;
-  const shipping = row.shipping as { method?: { name?: unknown } | null; service?: unknown } | null | undefined;
+  const shipping = row.shipping as { method?: { name?: unknown; logo_url?: unknown } | null; service?: unknown } | null | undefined;
   return {
     id: row.id as number,
     status: typeof row.status === "string" ? row.status : "pending",
@@ -517,6 +524,7 @@ export function readOrder(data: unknown): OrderSummary {
     shipping_method: typeof shipping?.method?.name === "string"
       ? shippingOptionLabel({ courier_name: shipping.method.name, service: typeof shipping.service === "string" && shipping.service ? shipping.service : null })
       : null,
+    shipping_logo: readHttpUrl(shipping?.method?.logo_url),
     proof_uploaded: payment?.has_proof === true,
     sender_name: typeof payment?.sender_name === "string" ? payment.sender_name : null,
     items: readOrderLines(row.items),

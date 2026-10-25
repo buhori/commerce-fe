@@ -10,6 +10,7 @@ import { CopyValue } from "./copy-value";
 import { OnlinePaymentPanel } from "./online-payment";
 import { PaymentProofForm } from "./payment-proof-form";
 import { ProductImage } from "./product-image";
+import { BrandLogo } from "./brand-logo";
 import { Icon } from "./icons";
 import { Spinner } from "./spinner";
 
@@ -233,7 +234,12 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
                     onOrderChange={(updated) => { setRefreshMessage(""); setState({ status: "ready", order: updated }); }} />
                 ) : transferAvailable && order.bank_account ? (
                   <section className="payment-bank" aria-labelledby="payment-bank-title">
-                    <div className="payment-section-heading"><span className="payment-small-icon"><Icon name="bank" /></span><div><h3 id="payment-bank-title">Rekening tujuan</h3><p>Transfer Bank · {order.bank_account.bank}</p></div></div>
+                    <div className="payment-section-heading">
+                      {order.bank_account.logo_url
+                        ? <BrandLogo src={order.bank_account.logo_url} className="payment-bank-logo" />
+                        : <span className="payment-small-icon"><Icon name="bank" /></span>}
+                      <div><h3 id="payment-bank-title">Rekening tujuan</h3><p>Transfer Bank · {order.bank_account.bank}</p></div>
+                    </div>
                     <div className="payment-account">
                       <span className="payment-label">Nomor rekening</span>
                       <CopyValue value={order.bank_account.number.replace(/[\s-]/g, "")} label={`Salin nomor rekening ${order.bank_account.number}`}>
@@ -326,7 +332,7 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
             </dl>
             <dl className="payment-order-details">
               <div><dt><Icon name="bank" />Pembayaran</dt><dd>{online ? `${online.method_label}${online.provider ? ` · ${online.provider}` : ""}` : order.payment_method_name ?? order.payment_method ?? "—"}</dd></div>
-              {order.shipping_method && <div><dt><Icon name="truck" />Pengiriman</dt><dd>{order.shipping_method}</dd></div>}
+              {order.shipping_method && <div><dt><Icon name="truck" />Pengiriman</dt><dd className="payment-order-courier"><BrandLogo src={order.shipping_logo} />{order.shipping_method}</dd></div>}
             </dl>
             {order.preorder_ready_at && !stopped && (
               <div className="payment-preorder"><Icon name="box" /><p>Pesanan berisi barang pre-order dan dikirim bersama, perkiraan mulai <strong>{formatDate(new Date(`${order.preorder_ready_at}T00:00:00`))}</strong>.</p></div>

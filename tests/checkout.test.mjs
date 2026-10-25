@@ -64,7 +64,8 @@ test("address lists validate saved identifiers instead of treating arbitrary res
 test("shipping options keep courier, service, price, and estimate, and reject malformed rows", () => {
   const quote = readShippingQuote({ data: { weight: 1500, estimated: false, options: [
     { shipping_method_id: 2, courier: "sicepat", courier_name: "SiCepat", service: "REG", description: "Reguler", cost: 22000, etd: "1-2 hari" },
-    { shipping_method_id: 1, courier: "jne", courier_name: "JNE", service: null, description: null, cost: 15000, etd: null },
+    { shipping_method_id: 1, courier: "jne", courier_name: "JNE", courier_logo: "https://sellosy.com/images/couriers/jne.webp", service: null, description: null, cost: 15000, etd: null },
+    { shipping_method_id: 3, courier: "tiki", courier_name: "TIKI", courier_logo: "javascript:alert(1)", service: null, description: null, cost: 18000, etd: null },
   ] } });
   assert.equal(quote.weight, 1500);
   assert.equal(quote.estimated, false);
@@ -72,6 +73,10 @@ test("shipping options keep courier, service, price, and estimate, and reject ma
   assert.equal(shippingOptionLabel(quote.options[1]), "JNE");
   assert.equal(shippingOptionKey(quote.options[0]), "2:REG");
   assert.equal(shippingOptionKey(quote.options[1]), "1:");
+  // Logo kurir hanya URL http(s); yang lain (atau tidak ada) jadi null.
+  assert.equal(quote.options[0].courier_logo, null);
+  assert.equal(quote.options[1].courier_logo, "https://sellosy.com/images/couriers/jne.webp");
+  assert.equal(quote.options[2].courier_logo, null);
   assert.equal(readShippingQuote({ weight: 0, estimated: true, options: [] }).estimated, true);
   assert.throws(() => readShippingQuote({ message: "The address code field is required." }));
   assert.throws(() => readShippingQuote({ weight: 1500, options: [{ shipping_method_id: 0, courier: "jne", courier_name: "JNE", cost: 1 }] }));
@@ -94,7 +99,11 @@ test("payment methods are keyed by code, so an unnamed or code-less row is rejec
 test("bank accounts drop server-only columns and reject rows missing a bank, name or number", () => {
   const rows = readBankAccounts([{ id: 2, store_id: 404, bank: "BCA", name: "Demo Store", number: "12345", deleted_at: null }]);
   assert.equal(rows.length, 1);
-  assert.deepEqual(Object.keys(rows[0]).sort(), ["bank", "id", "name", "number"]);
+  assert.deepEqual(Object.keys(rows[0]).sort(), ["bank", "id", "logo_url", "name", "number"]);
+  // Logo bank hanya URL http(s); yang lain (atau tidak ada) jadi null.
+  assert.equal(rows[0].logo_url, null);
+  assert.equal(readBankAccounts([{ id: 4, bank: "BCA", name: "Toko", number: "1", logo_url: "https://sellosy.com/images/banks/bca.webp" }])[0].logo_url, "https://sellosy.com/images/banks/bca.webp");
+  assert.equal(readBankAccounts([{ id: 5, bank: "BCA", name: "Toko", number: "1", logo_url: "javascript:alert(1)" }])[0].logo_url, null);
   assert.equal(readBankAccounts({ data: [{ id: 3, bank: "BNI", name: "Toko", number: "9" }] })[0].bank, "BNI");
   assert.throws(() => readBankAccounts({ message: "failed" }));
   assert.throws(() => readBankAccounts([{ id: 2, bank: "BCA", name: "Demo Store" }]));
