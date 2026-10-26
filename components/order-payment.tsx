@@ -222,10 +222,13 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
                     </CopyValue>
                   )}
                   {!online && order.unique_payment_code !== null && (
-                    <div className="payment-code-note">
-                      <Icon name="info" />
-                      <p>Bayar sesuai nominal hingga digit terakhir. Kode unik <strong>{order.unique_payment_code}</strong> sudah termasuk dalam total pembayaran.</p>
-                    </div>
+                    <>
+                      <p className="payment-code-alert" role="note"><Icon name="alert" /><span><strong>Perhatian!</strong> Transfer tanpa kode unik lebih lama diverifikasi.</span></p>
+                      <div className="payment-code-note">
+                        <Icon name="info" />
+                        <p>Bayar sesuai nominal hingga digit terakhir. Kode unik <strong>{order.unique_payment_code}</strong> sudah termasuk dalam total pembayaran.</p>
+                      </div>
+                    </>
                   )}
                 </section>
 

@@ -200,10 +200,7 @@ function BankAccounts({ selected, onSelect }: {
       legend="Rekening tujuan transfer" name="bank-account"
       state={state} retry={retry}
       // Nomor rekening sengaja baru tampil setelah pesanan dibuat, bersama nominal berkode unik.
-      notice={<>
-        <p className="method-group-alert"><Icon name="alert" /><span><strong>Perhatian!</strong> Transfer tanpa kode unik lebih lama diverifikasi.</span></p>
-        <p className="method-group-hint">Nomor rekening dan nominal transfer (dengan kode unik) tampil setelah pesanan dibuat.</p>
-      </>}
+      notice={<p className="method-group-hint">Nomor rekening dan nominal transfer (dengan kode unik) tampil setelah pesanan dibuat.</p>}
       emptyText="Toko belum menyediakan rekening untuk transfer."
       errorText="Daftar rekening belum dapat dimuat."
       keyOf={(account) => String(account.id)}

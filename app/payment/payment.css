@@ -39,6 +39,9 @@
 .payment-code-note { display: flex; align-items: flex-start; gap: 9px; margin-top: 20px; padding: 12px 14px; border-radius: 8px; background: #fffbf2; color: #80551a; font-size: .75rem; line-height: 1.7; }
 .payment-code-note svg, .payment-method-notice svg, .payment-preorder svg, .payment-save-note svg { flex-shrink: 0; width: 16px; height: 16px; margin-top: 2px; }
 .payment-code-note strong { font-weight: 700; }
+.payment-code-alert { display: flex; align-items: flex-start; gap: 9px; margin: 20px 0 0; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent); border-radius: 8px; background: var(--danger-soft); color: var(--danger); font-size: .8125rem; line-height: 1.6; }
+.payment-code-alert svg { flex-shrink: 0; width: 16px; height: 16px; margin-top: 2px; }
+.payment-code-alert + .payment-code-note { margin-top: 10px; }
 .payment-bank { margin-inline: 28px; padding-block: 24px; border-top: 1px solid var(--line); }
 .payment-section-heading { display: flex; align-items: center; gap: 12px; }
 .payment-small-icon { display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 10px; color: var(--primary); }
