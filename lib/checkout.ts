@@ -113,6 +113,18 @@ export interface PaymentMethodSection {
   methods: PaymentMethod[];
 }
 
+/**
+ * Rekening tujuan yang dipilih sebelum pesanan dibuat: hanya bank dan logonya. Nomor rekening baru
+ * tampil di halaman pembayaran bersama nominal berkode unik, supaya pembeli tidak mentransfer tanpa
+ * kode unik (pesanannya tidak bisa dicocokkan otomatis).
+ */
+export interface BankChoice {
+  id: number;
+  bank: string;
+  /** Logo bank/e-wallet; null bila backend belum punya logonya. */
+  logo_url: string | null;
+}
+
 export interface BankAccount {
   id: number;
   bank: string;
@@ -359,6 +371,18 @@ export function readBankAccounts(data: unknown): BankAccount[] {
       filled(account.bank) && filled(account.name) && filled(account.number);
   })) throw new Error("Rekening tujuan transfer belum dapat dibaca.");
   return rows.map(({ id, bank, name, number, logo_url }) => ({ id, bank, name, number, logo_url: readHttpUrl(logo_url) }));
+}
+
+/** GET /payment/accounts: pilihan rekening di checkout. Nomor dan nama pemilik sengaja tidak dibaca. */
+export function readBankChoices(data: unknown): BankChoice[] {
+  const rows = readRows(data);
+  if (!rows || !rows.every((row): row is BankChoice => {
+    const choice = row as Partial<BankChoice>;
+    return Boolean(row) && typeof row === "object" &&
+      Number.isSafeInteger(choice.id) && Number(choice.id) > 0 &&
+      typeof choice.bank === "string" && choice.bank.trim().length > 0;
+  })) throw new Error("Rekening tujuan transfer belum dapat dibaca.");
+  return rows.map(({ id, bank, logo_url }) => ({ id, bank, logo_url: readHttpUrl(logo_url) }));
 }
 
 // Pembayaran manual: pembeli membayar nominal berkode unik lalu mengunggah bukti.

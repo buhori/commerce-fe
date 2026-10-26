@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } fro
 import { QRCodeCanvas } from "qrcode.react";
 import {
   jsonHeaders, paymentChangeErrorMessage, readOrder,
-  type BankAccount, type OnlinePayment, type OnlinePaymentDisplay, type OrderSummary, type PaymentMethod,
+  type BankChoice, type OnlinePayment, type OnlinePaymentDisplay, type OrderSummary, type PaymentMethod,
 } from "@/lib/checkout";
 import { formatDateTime, formatPrice } from "@/lib/format";
 import { CopyValue } from "./copy-value";
@@ -229,7 +229,7 @@ function ChangePaymentMethod({ orderId, onChanged, onCancel }: {
   onCancel?: () => void;
 }) {
   const [payment, setPayment] = useState<PaymentMethod | null>(null);
-  const [bankAccount, setBankAccount] = useState<BankAccount | null>(null);
+  const [bankAccount, setBankAccount] = useState<BankChoice | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const lock = useRef(false);

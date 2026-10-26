@@ -844,6 +844,7 @@ p {
 .variant-check svg { display: none; width: 12px; height: 12px; stroke-width: 2; }
 .variant-option input:checked + .variant-choice .variant-check { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
 .variant-option input:checked + .variant-choice .variant-check svg { display: block; }
+.method-group-hint { margin: 0 0 10px; color: var(--muted); font-size: 0.8125rem; }
 .variant-hint { margin-top: -10px; color: var(--muted); font-size: 0.75rem; }
 .purchase-order-row { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: 16px; }
 .purchase-quantity { display: grid; gap: 10px; }

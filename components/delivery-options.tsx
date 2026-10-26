@@ -6,8 +6,8 @@ import { Spinner } from "./spinner";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  paymentMethodSections, readBankAccounts, readPaymentMethods, readShippingQuote, shippingHighlights, shippingOptionKey, shippingOptionLabel,
-  type BankAccount, type PaymentMethod, type ShippingOption, type ShippingQuote,
+  paymentMethodSections, readBankChoices, readPaymentMethods, readShippingQuote, shippingHighlights, shippingOptionKey, shippingOptionLabel,
+  type BankChoice, type PaymentMethod, type ShippingOption, type ShippingQuote,
 } from "@/lib/checkout";
 import { formatPrice, formatWeight } from "@/lib/format";
 
@@ -190,21 +190,23 @@ function ShippingChoices({ addressCode, currency, preorder, selected, onSelect }
 
 // Only mounted for bank transfer, so the account list is never fetched otherwise.
 function BankAccounts({ selected, onSelect }: {
-  selected: BankAccount | null;
-  onSelect: (account: BankAccount) => void;
+  selected: BankChoice | null;
+  onSelect: (account: BankChoice) => void;
 }) {
-  const [state, retry] = useMethods("/api/payment/accounts", readBankAccounts);
+  const [state, retry] = useMethods("/api/payment/accounts", readBankChoices);
   useOnlyOption(state, selected, onSelect);
   return (
     <MethodGroup
       legend="Rekening tujuan transfer" name="bank-account"
       state={state} retry={retry}
+      // Nomor rekening sengaja baru tampil setelah pesanan dibuat, bersama nominal berkode unik.
+      notice={<p className="method-group-hint">Nomor rekening dan nominal transfer (dengan kode unik) tampil setelah pesanan dibuat.</p>}
       emptyText="Toko belum menyediakan rekening untuk transfer."
       errorText="Daftar rekening belum dapat dimuat."
       keyOf={(account) => String(account.id)}
       isSelected={(account) => selected?.id === account.id}
       onSelect={onSelect}
-      render={(account) => <><strong className="payment-method-head"><BrandLogo src={account.logo_url} />{account.bank} {account.number}</strong><span>a.n. {account.name}</span></>} />
+      render={(account) => <strong className="payment-method-head"><BrandLogo src={account.logo_url} />{account.bank}</strong>} />
   );
 }
 
@@ -233,9 +235,9 @@ function PaymentMethodLabel({ method }: { method: PaymentMethod }) {
  */
 export function PaymentChoices({ payment, bankAccount, onPaymentChange, onBankAccountChange, legend = "Metode pembayaran" }: {
   payment: PaymentMethod | null;
-  bankAccount: BankAccount | null;
+  bankAccount: BankChoice | null;
   onPaymentChange: (method: PaymentMethod) => void;
-  onBankAccountChange: (account: BankAccount) => void;
+  onBankAccountChange: (account: BankChoice) => void;
   legend?: string;
 }) {
   const [paymentState, retryPayment] = useMethods("/api/payment/methods", readPaymentMethods);
@@ -265,12 +267,12 @@ export function DeliveryOptions({ shipping, payment, bankAccount, addressCode, c
   refreshKey?: number;
   shipping: ShippingOption | null;
   payment: PaymentMethod | null;
-  bankAccount: BankAccount | null;
+  bankAccount: BankChoice | null;
   addressCode: string;
   currency: string;
   onShippingChange: (option: ShippingOption | null) => void;
   onPaymentChange: (method: PaymentMethod) => void;
-  onBankAccountChange: (account: BankAccount) => void;
+  onBankAccountChange: (account: BankChoice) => void;
 }) {
   return (
     <div className="delivery-options">

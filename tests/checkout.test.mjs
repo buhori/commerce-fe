@@ -8,7 +8,7 @@ const exports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL("../lib/checkout.ts", import.meta.url), "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS },
 }).outputText, { exports });
-const { readRegions, resetRegionChildren, readAddresses, readShippingQuote, shippingOptionKey, shippingOptionLabel, etdRange, shippingHighlights, readPaymentMethods, readBankAccounts, readOrder } = exports;
+const { readRegions, resetRegionChildren, readAddresses, readShippingQuote, shippingOptionKey, shippingOptionLabel, etdRange, shippingHighlights, readPaymentMethods, readBankAccounts, readBankChoices, readOrder } = exports;
 
 test("delivery estimates are read as day ranges", () => {
   assert.deepEqual([...etdRange("1-2 hari")], [1, 2]);
@@ -94,6 +94,17 @@ test("payment methods are keyed by code, so an unnamed or code-less row is rejec
   assert.throws(() => readPaymentMethods({ message: "failed" }));
   assert.throws(() => readPaymentMethods([{ name: "Tanpa kode" }]));
   assert.throws(() => readPaymentMethods([{ code: "qris" }]));
+});
+
+test("checkout bank choices keep only the bank and logo, never the account number", () => {
+  const rows = readBankChoices([{ id: 2, bank: "BCA", bank_code: "bca", logo_url: "https://sellosy.com/images/banks/bca.webp", number: "12345", name: "Toko" }]);
+  assert.deepEqual(Object.keys(rows[0]).sort(), ["bank", "id", "logo_url"]);
+  assert.equal(rows[0].logo_url, "https://sellosy.com/images/banks/bca.webp");
+  assert.equal(readBankChoices({ data: [{ id: 3, bank: "Jago" }] })[0].logo_url, null);
+  assert.equal(readBankChoices([{ id: 4, bank: "BNI", logo_url: "javascript:alert(1)" }])[0].logo_url, null);
+  assert.throws(() => readBankChoices({ message: "failed" }));
+  assert.throws(() => readBankChoices([{ id: 2, bank: " " }]));
+  assert.throws(() => readBankChoices([{ id: 0, bank: "BCA" }]));
 });
 
 test("bank accounts drop server-only columns and reject rows missing a bank, name or number", () => {

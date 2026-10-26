@@ -9,7 +9,7 @@ import { cartItemsOptions, preorderItemsOptions } from "@/lib/cart-queries";
 import { useRouter } from "next/navigation";
 import { getCartUnitPrice, getCartVariantId } from "@/lib/cart";
 import { StoreEventOnMount } from "./plugin-scripts";
-import { checkoutErrorMessage, couponErrorMessage, fieldError, isManualPayment, jsonHeaders, readCoupon, readOrderId, shippingOptionLabel, type AddressDetails, type AppliedCoupon, type BankAccount, type PaymentMethod, type ShippingOption } from "@/lib/checkout";
+import { checkoutErrorMessage, couponErrorMessage, fieldError, isManualPayment, jsonHeaders, readCoupon, readOrderId, shippingOptionLabel, type AddressDetails, type AppliedCoupon, type BankChoice, type PaymentMethod, type ShippingOption } from "@/lib/checkout";
 import { addDays, formatDate, formatPrice } from "@/lib/format";
 import { preorderDays } from "@/lib/store-shared";
 import { ProductImage } from "./product-image";
@@ -37,7 +37,7 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
   const [shipping, setShipping] = useState<ShippingOption | null>(null);
   const [payment, setPayment] = useState<PaymentMethod | null>(null);
   const [optionsVersion, setOptionsVersion] = useState(0);
-  const [bankAccount, setBankAccount] = useState<BankAccount | null>(null);
+  const [bankAccount, setBankAccount] = useState<BankChoice | null>(null);
   const [placing, setPlacing] = useState(false);
   const [placeError, setPlaceError] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState("");
