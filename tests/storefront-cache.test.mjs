@@ -143,3 +143,54 @@ test("the store says whether the built-with badge is hidden; anything but true k
     assert.equal((await storeWith({ hide_branding: value })).hide_branding, false, String(value));
   }
 });
+
+const PROXY_ENV = { ...ENV, STOREFRONT_PROXY_SECRET: "proxy-secret" };
+
+test("the buyer's IP comes from the nearest proxy, or the configured header", () => {
+  const host = load("../lib/store-host.ts", { env: PROXY_ENV });
+  assert.equal(host.requestClientIp(new Headers({ "x-real-ip": "203.0.113.10", "x-forwarded-for": "1.1.1.1, 203.0.113.99" })), "203.0.113.10");
+  // The visitor can write the first X-Forwarded-For entries; the last one is the proxy's.
+  assert.equal(host.requestClientIp(new Headers({ "x-forwarded-for": "1.1.1.1, 203.0.113.99" })), "203.0.113.99");
+  assert.equal(host.requestClientIp(new Headers({ "x-real-ip": "2001:db8::1" })), "2001:db8::1");
+  assert.equal(host.requestClientIp(new Headers({ "x-real-ip": "<script>" })), null);
+  assert.equal(host.requestClientIp(new Headers()), null);
+
+  const cloudflare = load("../lib/store-host.ts", { env: { ...PROXY_ENV, CLIENT_IP_HEADER: "CF-Connecting-IP" } });
+  assert.equal(cloudflare.requestClientIp(new Headers({ "cf-connecting-ip": "198.51.100.7", "x-real-ip": "172.70.1.1" })), "198.51.100.7");
+});
+
+test("the buyer's IP is sent to the backend only with the shared proxy secret", () => {
+  const ip = new Headers({ "x-real-ip": "203.0.113.10" });
+  assert.deepEqual({ ...load("../lib/store-host.ts", { env: PROXY_ENV }).clientIpHeaders(ip) }, {
+    "X-Storefront-Client-Ip": "203.0.113.10",
+    "X-Storefront-Secret": "proxy-secret",
+  });
+  assert.deepEqual({ ...load("../lib/store-host.ts").clientIpHeaders(ip) }, {});
+  assert.deepEqual({ ...load("../lib/store-host.ts", { env: PROXY_ENV }).clientIpHeaders(new Headers()) }, {});
+});
+
+test("the API proxy forwards the buyer's IP with the secret", async () => {
+  let sent;
+  const fetch = async (url, init) => { sent = init.headers; return new Response("{}", { status: 200 }); };
+  const { apiProxy } = load("../lib/api-proxy.ts", { env: PROXY_ENV, fetch });
+  const request = Object.assign(new Request("http://kopi.sellosy.test/api/shipping/options", {
+    headers: { host: "kopi.sellosy.test", "x-real-ip": "203.0.113.10" },
+  }), { cookies: { get: () => undefined } });
+
+  await apiProxy(request, "/shipping/options");
+  assert.equal(sent.get("X-Storefront-Client-Ip"), "203.0.113.10");
+  assert.equal(sent.get("X-Storefront-Secret"), "proxy-secret");
+});
+
+test("cached reads never carry the buyer's IP, uncached ones do", async () => {
+  const { calls, fetch } = recordingFetch({ data: [] });
+  const headers = { "x-real-ip": "203.0.113.10" };
+  await load("../lib/store-api.ts", { fetch, headers, env: PROXY_ENV }).getNavigation();
+  await load("../lib/store-api.ts", { fetch, headers, env: PROXY_ENV }).getProducts({ q: "kopi" });
+
+  // An IP in a cached read's headers would give every visitor their own cache entry.
+  assert.equal(calls[0].headers["X-Storefront-Client-Ip"], undefined);
+  assert.ok(calls[0].next);
+  assert.equal(calls[1].headers["X-Storefront-Client-Ip"], "203.0.113.10");
+  assert.equal(calls[1].cache, "no-store");
+});

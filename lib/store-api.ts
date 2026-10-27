@@ -1,5 +1,6 @@
 import { cache } from "react";
-import { currentStoreHeaders, requestPreviewToken } from "./store-host";
+import { headers } from "next/headers";
+import { clientIpHeaders, currentStoreHeaders, requestPreviewToken } from "./store-host";
 import { readHomeSections, readSections, type HomeSection } from "./home-sections";
 import { httpUrl, readSeo, readStoreSeo, readStructuredData, type PageSeo, type StoreSeo } from "./seo";
 import { readSitemap, type SitemapData } from "./sitemap";
@@ -157,6 +158,9 @@ async function storeFetch<T>(path: string, extraHeaders?: Record<string, string>
       Accept: "application/json",
       ...extraHeaders,
       ...storeHeaders,
+      // Hanya untuk bacaan tanpa cache (mis. pratinjau, ber-throttle): IP pembeli di header cache
+      // membuat setiap pengunjung punya entri cache sendiri.
+      ...(cached ? {} : clientIpHeaders(await headers())),
     },
     // The cache key covers the headers above, so each store (X-Store-Id/X-Store-Host) has its own entries.
     ...(cached ? { next: { revalidate: storeCacheSeconds(), tags: storeCacheTags(storeHeaders) } } : { cache: "no-store" as const }),

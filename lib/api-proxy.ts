@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { CUSTOMER_COOKIE, secureCookie } from "./auth";
-import { requestHost, storeHeaders } from "./store-host";
+import { clientIpHeaders, requestHost, storeHeaders } from "./store-host";
 
 /** Batas tunggu bawaan; endpoint yang memanggil payment gateway memakai GATEWAY_TIMEOUT_MS. */
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -16,6 +16,7 @@ export async function apiProxy(request: NextRequest, path: string, { timeoutMs =
   const headers = new Headers({
     Accept: request.headers.get("accept") || "application/json",
     ...storeHeaders(requestHost(request.headers)),
+    ...clientIpHeaders(request.headers),
   });
   const cookie = request.headers.get("cookie");
   if (cookie) headers.set("Cookie", cookie);
