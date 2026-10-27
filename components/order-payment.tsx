@@ -193,7 +193,7 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
       {(awaitingPayment || confirmed) && (
         <ol className="payment-progress" aria-label="Tahapan pesanan">
           <li data-complete="true"><span><Icon name="check" /></span>Pesanan dibuat</li>
-          <li data-complete={confirmed} aria-current={awaitingPayment ? "step" : undefined}><span>{confirmed ? <Icon name="check" /> : "2"}</span>Pembayaran</li>
+          <li data-complete={confirmed} data-tone={confirmed ? "success" : undefined} aria-current={awaitingPayment ? "step" : undefined}><span>{confirmed ? <Icon name="check" /> : "2"}</span>Pembayaran</li>
           <li aria-current={confirmed ? "step" : undefined}><span>3</span>{["delivered", "done"].includes(order.status) ? "Pesanan selesai" : order.status === "delivering" ? "Pesanan dikirim" : "Pesanan diproses"}</li>
         </ol>
       )}
@@ -201,7 +201,7 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
       <div className="payment-layout">
         <div className="payment-main">
           <section className="payment-card" aria-labelledby="payment-status-title">
-            <div className="payment-status" data-tone={awaitingPayment ? "pending" : stopped ? "stopped" : "neutral"}>
+            <div className="payment-status" data-tone={awaitingPayment ? "pending" : stopped ? "stopped" : confirmed ? "success" : "neutral"}>
               <span className="payment-status-icon"><Icon name={awaitingPayment ? "clock" : stopped ? "info" : confirmed ? "check" : "box"} width={24} height={24} /></span>
               <div>
                 <h2 id="payment-status-title">{statusLabels[order.status] ?? order.status}</h2>
@@ -291,7 +291,9 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
 
             {!awaitingPayment && (
               <div className="payment-result">
-                <Icon name={stopped ? "info" : "box"} width={40} height={40} />
+                {confirmed
+                  ? <span className="payment-result-check" aria-hidden="true"><Icon name="check" width={32} height={32} /></span>
+                  : <Icon name={stopped ? "info" : "box"} width={40} height={40} />}
                 <h3>{stopped ? "Pembayaran tidak diperlukan" : confirmed ? "Pembayaran sudah diterima" : "Pantau pesanan Anda"}</h3>
                 <p>{stopped ? "Silakan lihat produk lainnya jika ingin membuat pesanan baru." : "Simpan nomor pesanan untuk memudahkan pengecekan dengan toko."}</p>
                 <Button variant="secondary" onClick={refreshStatus} disabled={refreshing}><Icon name="refresh" />{refreshing ? "Memeriksa…" : "Perbarui status pesanan"}</Button>

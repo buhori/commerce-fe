@@ -15,6 +15,8 @@
 .payment-progress li:last-child { flex: 0 0 auto; }
 .payment-progress li > span { display: grid; place-items: center; width: 28px; height: 28px; flex-shrink: 0; border: 1px solid var(--line-strong); border-radius: 50%; font-size: .75rem; }
 .payment-progress li[data-complete="true"] > span { background: var(--primary-soft); border-color: transparent; color: var(--primary); }
+/* Pembayaran diterima: centang hijau, bukan warna tema toko. */
+.payment-progress li[data-tone="success"] > span { background: var(--success); color: #fff; }
 .payment-progress li[aria-current] { color: var(--text); font-weight: 600; }
 .payment-progress li[aria-current] > span { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
 .payment-progress svg { width: 15px; height: 15px; }
@@ -24,9 +26,11 @@
 .payment-status { display: flex; align-items: center; gap: 14px; padding: 22px 28px; border-bottom: 1px solid var(--line); background: var(--primary-soft); }
 .payment-status[data-tone="pending"] { background: #fffbf2; }
 .payment-status[data-tone="stopped"] { background: var(--surface); }
+.payment-status[data-tone="success"] { background: var(--success-soft); }
 .payment-status-icon { display: grid; place-items: center; flex: 0 0 42px; height: 42px; border-radius: 50%; background: var(--page); color: var(--primary); }
 .payment-status[data-tone="pending"] .payment-status-icon { color: var(--warning); background: #fff1d0; }
 .payment-status[data-tone="stopped"] .payment-status-icon { color: var(--muted); }
+.payment-status[data-tone="success"] .payment-status-icon { background: var(--success); color: #fff; }
 .payment-status h2 { font-size: .9375rem; line-height: 1.4; }
 .payment-status h2::first-letter { text-transform: uppercase; }
 .payment-status p { font-size: .75rem; color: var(--muted); margin-top: 4px; }
@@ -85,6 +89,7 @@
 .payment-method-notice { display: flex; gap: 10px; font-size: .8125rem; color: var(--muted); padding: 0 28px 24px; }
 .payment-result { display: grid; justify-items: center; text-align: center; gap: 16px; padding: 36px 28px; }
 .payment-result > svg { color: var(--primary); }
+.payment-result-check { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--success); color: #fff; box-shadow: 0 0 0 8px var(--success-soft); }
 .payment-result h3 { font-size: 1.125rem; }
 .payment-result p { color: var(--muted); font-size: .8125rem; max-width: 320px; }
 .payment-guide { padding: 28px 4px 0; }
