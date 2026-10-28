@@ -144,6 +144,21 @@ test("the store says whether the built-with badge is hidden; anything but true k
   }
 });
 
+test("the store address shows unless the owner turned it off; the address itself is kept for invoices", async () => {
+  const api = (extra) => load("../lib/store-api.ts", { fetch: recordingFetch({ id: 1, name: "Kopi", address: "Jl. Senja 1", ...extra }).fetch });
+  const { publicAddress } = load("../lib/store-shared.ts", {});
+  const hidden = await api({ show_address: false }).getStore();
+  assert.equal(hidden.show_address, false);
+  assert.equal(hidden.address, "Jl. Senja 1");
+  assert.equal(publicAddress(hidden), null);
+  // Backend lama tanpa show_address, atau nilai lain: tetap tampil.
+  for (const value of [undefined, true, null, "false"]) {
+    const store = await api({ show_address: value }).getStore();
+    assert.equal(store.show_address, true, String(value));
+    assert.equal(publicAddress(store), "Jl. Senja 1", String(value));
+  }
+});
+
 const PROXY_ENV = { ...ENV, STOREFRONT_PROXY_SECRET: "proxy-secret" };
 
 test("the buyer's IP comes from the nearest proxy, or the configured header", () => {

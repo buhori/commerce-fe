@@ -7,6 +7,7 @@ import { CompareButton } from "@/components/compare-button";
 import { ShareButton } from "@/components/share-button";
 import { WishlistButton } from "@/components/wishlist-button";
 import { addDays, formatDate } from "@/lib/format";
+import { publicAddress } from "@/lib/store-shared";
 import type { ProductPageProps } from "@/sdk";
 
 /** The built-in product page, used when the active theme has no ProductPage. */
@@ -63,7 +64,7 @@ export function ProductDetail({ store, product, view, url }: ProductPageProps) {
                 <p>{preorder > 0 ? `Estimasi siap dikirim ${formatDate(addDays(preorder))}.` : "Pengiriman diproses setelah pembayaran diterima."} Ongkos kirim dihitung saat checkout.</p>
               </div>
             </div>
-            {(store.email || store.phone || store.address) && <a className="detail-help" href="#kontak"><Icon name="mail" /><span>Ada pertanyaan? <strong>Hubungi toko</strong></span><Icon name="arrow" /></a>}
+            {(store.email || store.phone || publicAddress(store)) && <a className="detail-help" href="#kontak"><Icon name="mail" /><span>Ada pertanyaan? <strong>Hubungi toko</strong></span><Icon name="arrow" /></a>}
           </div>
         </article>
         <section className="product-information" id="detail-produk" data-has-description={Boolean(product.description)} aria-labelledby="product-information-title">

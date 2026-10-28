@@ -5,7 +5,7 @@ import vm from "node:vm";
 import ts from "typescript";
 
 // Host yang dibuka pembeli; storefront meneruskannya ke API sebagai X-Store-Host.
-const REQUEST_HOST = "kopi-senja.sellosy.test";
+const REQUEST_HOST = "luneva-skincare.sellosy.test";
 
 function loadModule(file, fetch = () => {}) {
   const exports = {};

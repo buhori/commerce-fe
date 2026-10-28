@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getPages, type Store } from "@/lib/store-api";
+import { publicAddress } from "@/lib/store-shared";
 import { Icon } from "./icons";
 import { StoreBrand } from "./store-brand";
 import { BuiltWith } from "@/sdk/components";
@@ -7,9 +8,11 @@ import { displayPhone, e164 } from "@/lib/phone";
 import { BrandingProvider } from "./branding";
 import { getActiveTheme } from "@/themes/active";
 
-export async function SiteFooter({ store }: { store: Store }) {
+export async function SiteFooter({ store: fullStore }: { store: Store }) {
   const [pages, theme] = await Promise.all([getPages(), getActiveTheme()]);
   const { Footer } = theme.components;
+  // Alamat yang disembunyikan pemilik toko sudah kosong di sini, jadi footer tema mana pun mematuhinya.
+  const store = { ...fullStore, address: publicAddress(fullStore) };
   // <BuiltWith /> in either footer reads this to hide itself on whitelabel stores.
   if (Footer) return <BrandingProvider hidden={store.hide_branding}><Footer store={store} pages={pages} /></BrandingProvider>;
 

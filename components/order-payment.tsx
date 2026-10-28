@@ -8,6 +8,7 @@ import { readOrder, shouldPollPayment, usesOnlinePayment, type OrderSummary } fr
 import { formatDate, formatPrice } from "@/lib/format";
 import { CopyValue } from "./copy-value";
 import { OnlinePaymentPanel } from "./online-payment";
+import { OrderReviews } from "./order-reviews";
 import { PaymentProofForm } from "./payment-proof-form";
 import { ProductImage } from "./product-image";
 import { BrandLogo } from "./brand-logo";
@@ -301,6 +302,8 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
             )}
             <p className="payment-refresh-message" role="status">{refreshMessage}</p>
           </section>
+
+          {order.reviewable && <OrderReviews orderId={order.id} items={order.items} />}
 
           {awaitingPayment && transferAvailable && (
             <section className="payment-guide" aria-labelledby="payment-guide-title">

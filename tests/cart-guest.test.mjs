@@ -59,7 +59,7 @@ function request(cookie, incoming = {}, action) {
     async arrayBuffer() {
       return new TextEncoder().encode(await this.text()).buffer;
     },
-    headers: new Headers({ host: "kopi-senja.sellosy.test", ...incoming }),
+    headers: new Headers({ host: "luneva-skincare.sellosy.test", ...incoming }),
     cookies: {
       get: (name) =>
         name === "guest_token" && cookie ? { value: cookie } : undefined,
@@ -139,7 +139,7 @@ test("proxy sends guest cookie as X-Guest-Token on count, items and every action
   for (const { url, init } of calls) {
     assert.equal(init.headers.get("X-Guest-Token"), "guest-value");
     assert.equal(init.headers.get("X-Store-Id"), "404");
-    assert.equal(init.headers.get("X-Store-Host"), "kopi-senja.sellosy.test");
+    assert.equal(init.headers.get("X-Store-Host"), "luneva-skincare.sellosy.test");
     assert.equal(url.search, "");
   }
   assert.deepEqual(

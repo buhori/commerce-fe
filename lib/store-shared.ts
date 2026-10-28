@@ -2,6 +2,14 @@ import type { ProductSummary, Store } from "./store-api";
 
 // Pure helpers shared with client components. lib/store-api.ts reads request headers, so it is server-only.
 
+/**
+ * Alamat toko yang boleh tampil di storefront (footer, data SEO); null bila pemiliknya menyembunyikannya.
+ * Invoice tetap memakai store.address apa adanya.
+ */
+export function publicAddress(store: Pick<Store, "address" | "show_address">): string | null {
+  return store.show_address === false ? null : store.address;
+}
+
 export function preorderDays(product: Pick<ProductSummary, "preorder_duration" | "spreorder_duration"> | null | undefined) {
   const days = product?.preorder_duration ?? product?.spreorder_duration ?? 0;
   return Number.isFinite(days) && days > 0 ? days : 0;

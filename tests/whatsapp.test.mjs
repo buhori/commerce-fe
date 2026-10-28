@@ -14,7 +14,7 @@ function loadModule(file, fetch = () => {}) {
     process: { env: { STORE_API_URL: "http://backend.test/api", STORE_ID: "404" } },
     require: (name) => {
       if (name === "react") return { cache: (callback) => callback };
-      if (name === "next/headers") return { headers: async () => new Headers({ host: "kopi-senja.sellosy.test" }) };
+      if (name === "next/headers") return { headers: async () => new Headers({ host: "luneva-skincare.sellosy.test" }) };
       if (name.startsWith("./")) return loadModule(new URL(`${name}.ts`, new URL(file, import.meta.url)).href, fetch);
       return {};
     },
@@ -24,13 +24,13 @@ function loadModule(file, fetch = () => {}) {
 
 const { readWhatsapp, whatsappAvailable, whatsappChatUrl } = loadModule("../lib/whatsapp.ts");
 const plain = (value) => JSON.parse(JSON.stringify(value));
-const input = { number: "6281234567890", storeName: "Kopi Senja", productName: "Kopi Arabika", productUrl: "https://kopisenja.id/products/kopi-arabika" };
+const input = { number: "6281234567890", storeName: "Luneva Skincare", productName: "Kopi Arabika", productUrl: "https://kopisenja.id/products/kopi-arabika" };
 const message = (url) => new URL(url).searchParams.get("text");
 
 test("the chat link goes to wa.me with the number as given and an encoded Indonesian message", () => {
   const url = whatsappChatUrl(input);
   assert.ok(url.startsWith("https://wa.me/6281234567890?text="));
-  assert.equal(message(url), "Halo Kopi Senja, saya ingin bertanya tentang Kopi Arabika.\nhttps://kopisenja.id/products/kopi-arabika");
+  assert.equal(message(url), "Halo Luneva Skincare, saya ingin bertanya tentang Kopi Arabika.\nhttps://kopisenja.id/products/kopi-arabika");
   // Spasi, baris baru, dan URL di dalam pesan ter-encode, jadi tidak memecah query wa.me.
   assert.ok(url.includes("%0Ahttps%3A%2F%2Fkopisenja.id%2Fproducts%2Fkopi-arabika"));
   assert.ok(!/[ \n]/.test(url));
@@ -38,7 +38,7 @@ test("the chat link goes to wa.me with the number as given and an encoded Indone
 
 test("the selected variant is added in parentheses; none or blank leaves it out", () => {
   assert.equal(message(whatsappChatUrl({ ...input, variantLabel: "Biji, 250 g" })),
-    "Halo Kopi Senja, saya ingin bertanya tentang Kopi Arabika (Biji, 250 g).\nhttps://kopisenja.id/products/kopi-arabika");
+    "Halo Luneva Skincare, saya ingin bertanya tentang Kopi Arabika (Biji, 250 g).\nhttps://kopisenja.id/products/kopi-arabika");
   for (const variantLabel of [undefined, null, "", "  "]) {
     assert.equal(message(whatsappChatUrl({ ...input, variantLabel })), message(whatsappChatUrl(input)));
   }
@@ -94,7 +94,7 @@ test("the button opens only when the chosen quantity is more than the limit", ()
 
 test("the chosen quantity is mentioned in the message when it is more than one", () => {
   assert.equal(message(whatsappChatUrl({ ...input, variantLabel: "Biji", quantity: 15 })),
-    "Halo Kopi Senja, saya ingin bertanya tentang Kopi Arabika (Biji) sebanyak 15 barang.\nhttps://kopisenja.id/products/kopi-arabika");
+    "Halo Luneva Skincare, saya ingin bertanya tentang Kopi Arabika (Biji) sebanyak 15 barang.\nhttps://kopisenja.id/products/kopi-arabika");
   for (const quantity of [undefined, null, 1]) {
     assert.equal(message(whatsappChatUrl({ ...input, quantity })), message(whatsappChatUrl(input)));
   }

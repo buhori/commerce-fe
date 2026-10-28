@@ -2474,3 +2474,35 @@ p {
 .compare-price { font-weight: 600; }
 .compare-view-link { display: inline-flex; align-items: center; gap: 6px; color: var(--text); font-size: 0.875rem; font-weight: 600; }
 .compare-view-link svg { width: 16px; height: 16px; }
+
+/* Ulasan produk (components/product-reviews.tsx, stars.tsx): di bawah halaman produk, semua tema. */
+.stars { display: inline-flex; gap: 2px; color: var(--warning); }
+.stars svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
+.stars svg[data-filled] { fill: currentColor; }
+.product-reviews { margin-top: 72px; margin-bottom: 72px; padding-top: 40px; border-top: 1px solid var(--line); scroll-margin-top: 104px; }
+.product-reviews-heading { margin-bottom: 28px; }
+.product-reviews-heading h2 { font-size: 1.75rem; letter-spacing: -0.04em; }
+.product-reviews-empty { color: var(--muted); }
+.product-reviews-body { display: grid; grid-template-columns: minmax(200px, 280px) minmax(0, 1fr); gap: 48px; align-items: start; }
+.product-reviews-summary { display: grid; gap: 6px; justify-items: start; padding: 24px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); }
+.product-reviews-summary > span:not(.stars) { color: var(--muted); font-size: 0.8125rem; }
+.product-reviews-score { font-size: 2.75rem; line-height: 1; letter-spacing: -0.04em; color: var(--text); }
+.product-reviews-summary .stars svg { width: 20px; height: 20px; }
+.product-reviews-bars { display: grid; gap: 6px; width: 100%; margin-top: 12px; }
+.product-reviews-bars > div { display: grid; grid-template-columns: 12px 1fr 28px; gap: 10px; align-items: center; font-size: 0.75rem; color: var(--muted); }
+.product-reviews-bars dd:first-of-type { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.product-reviews-bars dd:first-of-type span { display: block; height: 100%; border-radius: inherit; background: var(--warning); }
+.product-reviews-bars dd:last-child { text-align: right; }
+.product-reviews-list { display: grid; margin-bottom: 20px; }
+.product-reviews-list li { padding: 20px 0; border-bottom: 1px solid var(--line); }
+.product-reviews-list li:first-child { padding-top: 0; }
+.product-review-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: 0.875rem; }
+.product-review-meta time { color: var(--muted); font-size: 0.8125rem; }
+.product-review-variant { display: block; margin-top: 6px; color: var(--muted); font-size: 0.8125rem; }
+.product-reviews-list p { margin-top: 10px; color: var(--text-soft); line-height: 1.6; white-space: pre-line; }
+.product-reviews-error { margin-top: 12px; color: var(--danger); font-size: 0.875rem; }
+@media (max-width: 760px) {
+  .product-reviews { margin-top: 40px; margin-bottom: 48px; padding-top: 28px; }
+  .product-reviews-heading h2 { font-size: 1.5rem; }
+  .product-reviews-body { grid-template-columns: 1fr; gap: 28px; }
+}

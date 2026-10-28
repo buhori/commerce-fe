@@ -66,14 +66,14 @@ test("SEO fields from the API are strings or null and images must be http(s)", (
 });
 
 test("site SEO falls back to the store name and description, and preview or missing stores are noindex", () => {
-  const store = { name: "Kopi Senja", description: "<p>Kopi pilihan</p>", language: "en", logo: "https://cdn.test/logo.png" };
+  const store = { name: "Luneva Skincare", description: "<p>Kopi pilihan</p>", language: "en", logo: "https://cdn.test/logo.png" };
   const site = seo.siteSeo(store, "https://kopi.sellosy.com");
-  assert.equal(site.title, "Kopi Senja");
+  assert.equal(site.title, "Luneva Skincare");
   assert.equal(site.description, "Kopi pilihan");
   assert.equal(site.image, "https://cdn.test/logo.png");
   assert.equal(site.locale, "en_US");
   assert.equal(site.noindex, false);
-  assert.equal(seo.siteSeo({ ...store, seo: { title: "Kopi Senja Bandung", noindex: false } }, "https://x.test").title, "Kopi Senja Bandung");
+  assert.equal(seo.siteSeo({ ...store, seo: { title: "Luneva Skincare Bandung", noindex: false } }, "https://x.test").title, "Luneva Skincare Bandung");
   assert.equal(seo.siteSeo(store, "https://x.test", { preview: true }).noindex, true);
   assert.equal(seo.siteSeo(null, "https://x.test", { missing: true }).noindex, true);
   assert.equal(seo.ogLocale("id"), "id_ID");
@@ -120,7 +120,7 @@ const ld = (overrides = {}, input = {}) => seo.productJsonLd({
   description: "Kopi enak",
   currency: "IDR",
   availability: "ok",
-  seller: "Kopi Senja",
+  seller: "Luneva Skincare",
   ...input,
 });
 
@@ -133,7 +133,7 @@ test("product JSON-LD has a single Offer, maps availability, and omits ratings w
   assert.deepEqual(plain(data.offers), {
     "@type": "Offer", price: 50000, priceCurrency: "IDR", availability: "https://schema.org/InStock",
     itemCondition: "https://schema.org/NewCondition", url: "https://kopi.test/products/kopi-arabika",
-    seller: { "@type": "Organization", name: "Kopi Senja" },
+    seller: { "@type": "Organization", name: "Luneva Skincare" },
   });
   assert.equal("aggregateRating" in data, false);
   assert.equal(ld({}, { availability: "low" }).offers.availability, "https://schema.org/InStock");
@@ -175,6 +175,8 @@ test("breadcrumb, website search and organization JSON-LD", () => {
   assert.equal(org.telephone, "+6281234567890");
   assert.equal(org.description, "Kopi");
   assert.equal(org.address, "Jl. Senja 1, Bandung");
+  // Alamat yang disembunyikan pemilik toko tidak ikut di data terstruktur.
+  assert.equal(seo.organizationJsonLd({ name: "Kopi", address: "Jl. Senja 1, Bandung", show_address: false }, "https://k.test").address, undefined);
   const bare = seo.organizationJsonLd({ name: "Kopi", logo: null, email: "bukan email", phone: "12" }, "https://k.test");
   assert.deepEqual(Object.keys(bare).sort(), ["@context", "@type", "name", "url"]);
   assert.equal(seo.e164("62", "+62 812 3456 7890"), "+6281234567890");

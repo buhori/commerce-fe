@@ -135,12 +135,16 @@ export interface BankAccount {
 }
 
 export interface OrderLine {
+  /** ID barang pesanan (untuk ulasan); null di backend lama. */
+  id: number | null;
   name: string;
   variant: string | null;
   amount: number;
   price: number;
   preorder_duration: number;
   image: string | null;
+  /** Ulasan pembeli untuk barang ini; null bila belum diulas. */
+  review: { rating: number; comment: string | null } | null;
 }
 
 /** Kupon yang sudah diperiksa backend (POST /checkout/coupon) terhadap isi keranjang saat itu. */
@@ -190,6 +194,8 @@ export interface OrderSummary {
   online_payment: OnlinePayment | null;
   /** Untuk event store:purchase_completed: ID pesanan versi plugin dan barangnya; null di backend lama. */
   tracking: OrderTracking | null;
+  /** Barang sudah sampai: pembeli bisa mengulasnya (lihat items[].review). */
+  reviewable: boolean;
 }
 
 export interface OrderTracking {
@@ -555,6 +561,7 @@ export function readOrder(data: unknown): OrderSummary {
     preorder_ready_at: typeof row.preorder_ready_at === "string" ? row.preorder_ready_at : null,
     online_payment: readOnlinePayment(row.online_payment, row.grand_total as number),
     tracking: readOrderTracking(row.tracking),
+    reviewable: row.reviewable === true,
   };
 }
 
@@ -629,6 +636,7 @@ function readOrderLines(value: unknown): OrderLine[] {
   return value.flatMap((row) => {
     if (!row || typeof row !== "object") return [];
     const item = row as {
+      id?: unknown; review?: unknown;
       amount?: unknown; price?: unknown; preorder_duration?: unknown;
       product?: { name?: unknown; images?: { public_url?: unknown; url?: unknown }[] } | null;
       variant?: { label?: unknown } | null;
@@ -637,12 +645,14 @@ function readOrderLines(value: unknown): OrderLine[] {
     const photo = Array.isArray(item.product.images) ? item.product.images[0] : null;
     const image = typeof photo?.public_url === "string" ? photo.public_url : typeof photo?.url === "string" ? photo.url : null;
     return [{
+      id: Number.isSafeInteger(item.id) && (item.id as number) > 0 ? item.id as number : null,
       name: item.product.name,
       variant: typeof item.variant?.label === "string" ? item.variant.label : null,
       amount: item.amount as number,
       price: item.price,
       preorder_duration: typeof item.preorder_duration === "number" ? item.preorder_duration : 0,
       image,
+      review: readItemReview(item.review),
     }];
   });
 }
@@ -678,4 +688,13 @@ export function readOrderId(data: unknown): number {
     throw new Error("Pesanan dibuat, tetapi nomornya belum terbaca. Cek riwayat pesanan Anda.");
   }
   return row.id as number;
+}
+
+/** Ulasan pembeli untuk satu barang pesanan (items[].review di detail pesanan). */
+export function readItemReview(value: unknown): { rating: number; comment: string | null } | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as { rating?: unknown; feedback?: unknown };
+  const rating = Math.round(Number(row.rating));
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) return null;
+  return { rating, comment: typeof row.feedback === "string" && row.feedback.trim() ? row.feedback : null };
 }

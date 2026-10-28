@@ -381,6 +381,8 @@ export { e164 };
 
 export interface OrganizationInput {
   name: string;
+  /** false: pemilik toko menyembunyikan alamatnya, jadi tidak ikut di data terstruktur. */
+  show_address?: boolean;
   logo?: unknown;
   description?: unknown;
   email?: unknown;
@@ -400,7 +402,7 @@ export function organizationJsonLd(store: OrganizationInput, base: string): Json
     description: metaDescription(store.description, 500) || undefined,
     email: email && /^[^\s@]+@[^\s@]+$/.test(email) ? email : undefined,
     telephone: e164(store.phone_country_code, store.phone) ?? undefined,
-    address: text(store.address) ?? undefined,
+    address: store.show_address === false ? undefined : text(store.address) ?? undefined,
   });
 }
 

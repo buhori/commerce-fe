@@ -4,6 +4,7 @@ import { clientIpHeaders, currentStoreHeaders, requestPreviewToken } from "./sto
 import { readHomeSections, readSections, type HomeSection } from "./home-sections";
 import { httpUrl, readSeo, readStoreSeo, readStructuredData, type PageSeo, type StoreSeo } from "./seo";
 import { readSitemap, type SitemapData } from "./sitemap";
+import { EMPTY_REVIEWS, readReviewPage, type ReviewPage } from "./reviews";
 import { readPluginScripts, type PluginScript } from "./store-events";
 import { readStoreStyle, type StoreStyle } from "./store-style";
 import { storeCacheEnabled, storeCacheSeconds, storeCacheTags } from "./storefront-cache";
@@ -49,6 +50,11 @@ export interface Store {
    * Always set after getStore(); <BuiltWith /> already renders nothing then.
    */
   hide_branding: boolean;
+  /**
+   * Pemilik toko memilih menampilkan alamat toko ("Tampilkan alamat toko"). Selalu terisi setelah
+   * getStore(); backend lama tidak mengirimnya, berarti tampil. Baca lewat publicAddress().
+   */
+  show_address: boolean;
   /** Script plugin aktif (mis. Meta Pixel); selalu terisi setelah getStore(), kosong di backend lama. */
   plugin_scripts: PluginScript[];
 }
@@ -247,6 +253,7 @@ export const getStore = cache(async () => {
     maintenance: preview ? { active: false, reason: null } : readStoreMaintenance(store.maintenance),
     style: readStoreStyle(store.style),
     hide_branding: store.hide_branding === true,
+    show_address: store.show_address !== false,
     plugin_scripts: readPluginScripts(store.plugin_scripts),
   };
 });
@@ -265,6 +272,15 @@ function readProductCategories(value: unknown): NonNullable<Product["categories"
  * Detail produk yang tayang. Backend boleh menemukan produk lewat ID ter-encode atau slug beda
  * huruf; `slug` hasilnya adalah slug kanonik dan halaman mengalihkan ke sana bila berbeda.
  */
+/** Halaman pertama ulasan produk untuk halaman produk; gagal dibaca berarti belum ada ulasan. */
+export const getProductReviews = cache(async (productId: number): Promise<ReviewPage> => {
+  try {
+    return readReviewPage(await storeFetch<unknown>(`/products/${productId}/reviews`));
+  } catch {
+    return EMPTY_REVIEWS;
+  }
+});
+
 export const getProduct = cache(async (slug: string): Promise<Product | null> => {
   try {
     const result = await storeFetch<{ data: Product | null | [] }>(`/products/${encodeURIComponent(slug)}`);
