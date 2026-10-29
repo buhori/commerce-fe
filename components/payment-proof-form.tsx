@@ -2,7 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import { readOrder, type OrderSummary } from "@/lib/checkout";
+import { jsonHeaders, readOrder, type OrderSummary } from "@/lib/checkout";
+import { directUpload, DirectUploadUnavailable } from "@/lib/direct-upload";
 import { Icon } from "./icons";
 import { Spinner } from "./spinner";
 
@@ -64,15 +65,25 @@ export function PaymentProofForm({ order, onUploaded }: {
     if (pending) return;
     if (!file) { setMessage({ text: `Pilih file ${proof}.`, error: true }); return; }
     const fields = new FormData(event.currentTarget);
-    const body = new FormData();
-    body.set("proof", file);
-    body.set("sender_name", String(fields.get("sender_name") || "").trim());
-    body.set("sender_account", String(fields.get("sender_account") || "").trim());
+    const sender = { sender_name: String(fields.get("sender_name") || "").trim(), sender_account: String(fields.get("sender_account") || "").trim() };
 
     setPending(true); setMessage(null);
     try {
+      // Langsung ke S3 (DirectUploads); null: toko memakai unggah lewat server, file dikirim seperti biasa.
+      const key = await directUpload(file, { orderId: order.id, purpose: "payment_proof" })
+        .catch((failure: unknown) => { if (failure instanceof DirectUploadUnavailable) return null; throw failure; });
+      let body: BodyInit = JSON.stringify({ proof_upload: key, ...sender });
+      let headers = jsonHeaders();
+      if (key === null) {
+        const form = new FormData();
+        form.set("proof", file);
+        form.set("sender_name", sender.sender_name);
+        form.set("sender_account", sender.sender_account);
+        body = form;
+        headers = uploadHeaders();
+      }
       const response = await fetch(`/api/orders/${order.id}/payment-proof`, {
-        method: "POST", credentials: "same-origin", headers: uploadHeaders(), body,
+        method: "POST", credentials: "same-origin", headers, body,
       });
       const data = await response.json().catch(() => null);
       if (!response.ok) {

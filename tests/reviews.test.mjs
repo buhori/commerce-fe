@@ -95,3 +95,14 @@ test("reviewer names are masked like the backend unless the buyer shows them", (
   assert.equal(reviews.shortName("Agun Buhori"), "Agun B.");
   assert.equal(reviews.shortName("Agun"), "Agun");
 });
+
+test("upload tickets are read strictly: only https URLs, and multipart when the store has no direct upload", () => {
+  const { readUploadTicket } = loadModule("../lib/upload-ticket.ts");
+  assert.deepEqual(plain(readUploadTicket({ data: { mode: "direct", key: "abc", url: "https://bucket.test/tmp-uploads/1/a.jpg?sig", headers: { "Content-Type": "image/jpeg", Bad: 1 } } })), {
+    mode: "direct", key: "abc", url: "https://bucket.test/tmp-uploads/1/a.jpg?sig", headers: { "Content-Type": "image/jpeg" },
+  });
+  assert.deepEqual(plain(readUploadTicket({ data: { mode: "multipart" } })), { mode: "multipart" });
+  for (const broken of [null, {}, { data: { mode: "direct", key: "abc", url: "http://bucket.test/a" } }, { data: { mode: "direct", url: "https://x" } }]) {
+    assert.equal(readUploadTicket(broken), null);
+  }
+});
