@@ -133,6 +133,14 @@ export function readProductPage(result: unknown): ProductPage {
 
 
 /**
+ * Ulasan produk hanya ada di paket Pro ke atas (ProductReviewFeature).
+ * Backend lama tidak mengirim `features`, jadi dianggap tersedia.
+ */
+export function reviewsEnabled(store: Pick<Store, "features"> | null | undefined): boolean {
+  return !store?.features || store.features.includes("product_review");
+}
+
+/**
  * Akun pembeli (login, profil, wishlist) hanya ada bila paket toko menyertakannya.
  * Backend lama tidak mengirim `features`, jadi dianggap tersedia.
  */

@@ -1,3 +1,5 @@
+import type { ReviewMedia } from "./reviews";
+
 export interface Region {
   code: string;
   name: string;
@@ -144,7 +146,14 @@ export interface OrderLine {
   preorder_duration: number;
   image: string | null;
   /** Ulasan pembeli untuk barang ini; null bila belum diulas. */
-  review: { rating: number; comment: string | null } | null;
+  review: ItemReview | null;
+}
+
+/** Ulasan pembeli untuk satu barang pesanan; media hanya di toko Business. */
+export interface ItemReview {
+  rating: number;
+  comment: string | null;
+  media: ReviewMedia[];
 }
 
 /** Kupon yang sudah diperiksa backend (POST /checkout/coupon) terhadap isi keranjang saat itu. */
@@ -194,8 +203,10 @@ export interface OrderSummary {
   online_payment: OnlinePayment | null;
   /** Untuk event store:purchase_completed: ID pesanan versi plugin dan barangnya; null di backend lama. */
   tracking: OrderTracking | null;
-  /** Barang sudah sampai: pembeli bisa mengulasnya (lihat items[].review). */
+  /** Barang sudah sampai dan paket toko menyertakan ulasan: pembeli bisa mengulasnya (lihat items[].review). */
   reviewable: boolean;
+  /** Toko Business: ulasan boleh berisi foto dan video. */
+  review_media: boolean;
 }
 
 export interface OrderTracking {
@@ -562,6 +573,7 @@ export function readOrder(data: unknown): OrderSummary {
     online_payment: readOnlinePayment(row.online_payment, row.grand_total as number),
     tracking: readOrderTracking(row.tracking),
     reviewable: row.reviewable === true,
+    review_media: row.review_media === true,
   };
 }
 
@@ -630,6 +642,30 @@ export function couponErrorMessage(status: number, data: unknown): string {
   return fieldError(data, "code") ?? (typeof message === "string" && message.trim() ? message : fallback);
 }
 
+/** Pesanan untuk halaman ulasan dari link email (GET /orders/{id}/reviews). */
+export interface ReviewOrder {
+  orderId: number;
+  invoiceNumber: string;
+  /** Barang sudah sampai (delivered/done), jadi boleh diulas. */
+  reviewable: boolean;
+  /** Toko Business: pembeli bisa melampirkan foto dan video. */
+  reviewMedia: boolean;
+  items: OrderLine[];
+}
+
+/** null bila jawaban backend tidak berbentuk pesanan; baris barang yang rusak dilewati. */
+export function readReviewOrder(data: unknown): ReviewOrder | null {
+  const row = (data && typeof data === "object" && "data" in data ? data.data : data) as Record<string, unknown> | null;
+  if (!row || typeof row !== "object" || !Number.isSafeInteger(row.order_id) || (row.order_id as number) <= 0) return null;
+  return {
+    orderId: row.order_id as number,
+    invoiceNumber: typeof row.invoice_number === "string" ? row.invoice_number : "",
+    reviewable: row.reviewable === true,
+    reviewMedia: row.review_media === true,
+    items: readOrderLines(row.items),
+  };
+}
+
 // Lines are only for display, so a malformed row is skipped rather than failing the page.
 function readOrderLines(value: unknown): OrderLine[] {
   if (!Array.isArray(value)) return [];
@@ -691,10 +727,21 @@ export function readOrderId(data: unknown): number {
 }
 
 /** Ulasan pembeli untuk satu barang pesanan (items[].review di detail pesanan). */
-export function readItemReview(value: unknown): { rating: number; comment: string | null } | null {
+export function readItemReview(value: unknown): ItemReview | null {
   if (!value || typeof value !== "object") return null;
-  const row = value as { rating?: unknown; feedback?: unknown };
+  const row = value as { rating?: unknown; feedback?: unknown; media?: unknown };
   const rating = Math.round(Number(row.rating));
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) return null;
-  return { rating, comment: typeof row.feedback === "string" && row.feedback.trim() ? row.feedback : null };
+  return { rating, comment: typeof row.feedback === "string" && row.feedback.trim() ? row.feedback : null, media: readReviewMedia(row.media) };
+}
+
+// Salinan readReviewMedia di lib/reviews.ts: modul ini harus tanpa import (dimuat langsung oleh test).
+export function readReviewMedia(value: unknown): ReviewMedia[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((row) => {
+    if (!row || typeof row !== "object") return [];
+    const { type, url, public_url: publicUrl } = row as Record<string, unknown>;
+    const link = typeof url === "string" ? url : typeof publicUrl === "string" ? publicUrl : "";
+    return (type === "image" || type === "video") && /^https?:\/\//.test(link) ? [{ type, url: link }] : [];
+  });
 }

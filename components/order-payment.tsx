@@ -303,7 +303,7 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
             <p className="payment-refresh-message" role="status">{refreshMessage}</p>
           </section>
 
-          {order.reviewable && <OrderReviews orderId={order.id} items={order.items} />}
+          {order.reviewable && <OrderReviews orderId={order.id} items={order.items} media={order.review_media} />}
 
           {awaitingPayment && transferAvailable && (
             <section className="payment-guide" aria-labelledby="payment-guide-title">

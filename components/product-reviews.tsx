@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/format";
 import { readReviewPage, type ReviewPage } from "@/lib/reviews";
+import { ReviewMediaList } from "./review-media";
 import { Stars } from "./stars";
 
 /**
@@ -70,6 +71,7 @@ export function ProductReviews({ productId, initial }: { productId: number; init
                   </div>
                   {review.variant && <span className="product-review-variant">Varian: {review.variant}</span>}
                   {review.comment && <p>{review.comment}</p>}
+                  <ReviewMediaList media={review.media} />
                 </li>
               ))}
             </ul>

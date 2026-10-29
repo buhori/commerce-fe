@@ -9,6 +9,7 @@ import { productView } from "@/lib/product-view";
 import { absoluteUrl, breadcrumbJsonLd, metaDescription, pageMetadata, priceRange, productJsonLd } from "@/lib/seo";
 import { getSiteSeo } from "@/lib/site-seo";
 import { getProduct, getProductReviews, getStore, type Product } from "@/lib/store-api";
+import { reviewsEnabled } from "@/lib/store-shared";
 import { ProductReviews } from "@/components/product-reviews";
 import { getActiveTheme } from "@/themes/active";
 
@@ -53,7 +54,9 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const product = await resolveProduct(params);
-  const [store, theme, site, reviews] = await Promise.all([getStore(), getActiveTheme(), getSiteSeo(), getProductReviews(product.id)]);
+  const [store, theme, site] = await Promise.all([getStore(), getActiveTheme(), getSiteSeo()]);
+  // Paket Free tanpa ulasan: bagian ulasan tidak tampil sama sekali.
+  const reviews = reviewsEnabled(store) ? await getProductReviews(product.id) : null;
   const Page = theme.components.ProductPage ?? ProductDetail;
   const view = productView(product);
   const url = absoluteUrl(site.base, productPath(product));
@@ -84,7 +87,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <StoreHeader name={store.name} logo={store.logo} />
       <Page store={store} product={product} view={view} url={url} />
       {/* Di luar komponen tema, jadi tampil di semua tema. */}
-      <ProductReviews productId={product.id} initial={reviews} />
+      {reviews && <ProductReviews productId={product.id} initial={reviews} />}
       {/* Untuk plugin analytics (mis. Meta Pixel ViewContent); berlaku untuk semua tema. */}
       <StoreEventOnMount name="store:product_viewed" detail={{
         product_id: product.id,

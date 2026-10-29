@@ -218,6 +218,11 @@
 .order-review-thanks { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; color: var(--muted) !important; }
 .order-review-error { color: var(--danger); font-size: 0.8125rem; }
 .order-review-actions { display: flex; gap: 8px; }
+.order-review-files { display: grid; gap: 10px; }
+.order-review-files label { display: grid; gap: 4px; font-size: 0.8125rem; font-weight: 600; }
+.order-review-files small { color: var(--muted); font-weight: 400; }
+.order-review-files input { font-size: 0.8125rem; }
+.order-review-files p { color: var(--muted); font-size: 0.75rem; }
 .star-picker { display: flex; gap: 4px; color: var(--warning); }
 .star-picker button { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 8px; background: none; color: inherit; cursor: pointer; }
 .star-picker button:hover, .star-picker button:focus-visible { background: var(--warning-soft); }

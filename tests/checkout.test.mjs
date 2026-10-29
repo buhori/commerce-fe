@@ -154,7 +154,7 @@ test("order lines carry photos and pre-order data, skipping malformed rows", () 
   assert.equal(order.preorder_ready_at, "2026-10-11");
   assert.equal(order.reviewable, false);
   assert.deepEqual(JSON.parse(JSON.stringify(order.items)), [
-    { id: 81, name: "Tas", variant: "Merah", amount: 2, price: 10000, preorder_duration: 14, image: "http://img/a.webp", review: { rating: 5, comment: "Rapi" } },
+    { id: 81, name: "Tas", variant: "Merah", amount: 2, price: 10000, preorder_duration: 14, image: "http://img/a.webp", review: { rating: 5, comment: "Rapi", media: [] } },
     { id: null, name: "Topi", variant: null, amount: 1, price: 5000, preorder_duration: 0, image: null, review: null },
   ]);
   assert.equal(readOrder({ id: 6, status: "delivered", total: 1, shipping_cost: 0, grand_total: 1, reviewable: true }).reviewable, true);

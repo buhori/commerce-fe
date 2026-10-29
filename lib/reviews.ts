@@ -1,3 +1,9 @@
+/** Foto atau video di ulasan (paket Business). */
+export interface ReviewMedia {
+  type: "image" | "video";
+  url: string;
+}
+
 /** Ulasan produk dari pembeli (GET /products/{id}/reviews), dibaca dengan aman dari jawaban backend. */
 export interface ProductReview {
   id: number;
@@ -8,6 +14,8 @@ export interface ProductReview {
   name: string;
   variant: string | null;
   created_at: string | null;
+  /** Foto dulu, lalu video; kosong di toko tanpa ReviewMediaFeature. */
+  media: ReviewMedia[];
 }
 
 export interface ReviewSummary {
@@ -32,6 +40,17 @@ export const EMPTY_REVIEWS: ReviewPage = {
   lastPage: 1,
 };
 
+/** Foto dan video ulasan; baris rusak atau bukan URL http(s) dibuang. */
+export function readReviewMedia(value: unknown): ReviewMedia[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((row) => {
+    if (!row || typeof row !== "object") return [];
+    const { type, url, public_url: publicUrl } = row as Record<string, unknown>;
+    const link = typeof url === "string" ? url : typeof publicUrl === "string" ? publicUrl : "";
+    return (type === "image" || type === "video") && /^https?:\/\//.test(link) ? [{ type, url: link }] : [];
+  });
+}
+
 const count = (value: unknown) => (Number.isSafeInteger(value) && (value as number) > 0 ? (value as number) : 0);
 
 function readReview(value: unknown): ProductReview[] {
@@ -46,6 +65,7 @@ function readReview(value: unknown): ProductReview[] {
     name: typeof row.name === "string" && row.name.trim() ? row.name : "Pembeli",
     variant: typeof row.variant === "string" && row.variant ? row.variant : null,
     created_at: typeof row.created_at === "string" ? row.created_at : null,
+    media: readReviewMedia(row.media),
   }];
 }
 
