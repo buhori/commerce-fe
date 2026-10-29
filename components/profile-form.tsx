@@ -5,6 +5,7 @@ import { useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Customer } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
+import { maskName, shortName } from "@/lib/reviews";
 import { Button } from "./ui/button";
 import { customerKey } from "@/lib/customer-query";
 
@@ -34,6 +35,7 @@ export function ProfileForm({ customer }: { customer: Customer }) {
           phone: value("phone")?.replace(/[\s()-]/g, "") ?? null,
           gender: value("gender"),
           birth_date: value("birth_date"),
+          show_name_in_reviews: form.get("show_name_in_reviews") === "on",
         }),
       });
       const body = await response.json().catch(() => ({}));
@@ -82,6 +84,15 @@ export function ProfileForm({ customer }: { customer: Customer }) {
           <label><input type="radio" name="gender" value="male" defaultChecked={customer.gender === "male"} /> Laki-laki</label>
           <label><input type="radio" name="gender" value="female" defaultChecked={customer.gender === "female"} /> Perempuan</label>
         </fieldset>
+        <div className="checkout-field-wide profile-review-name">
+          <label>
+            <input type="checkbox" name="show_name_in_reviews" defaultChecked={customer.show_name_in_reviews === true} aria-describedby="profile-review-name-hint" />
+            Tampilkan nama saya di ulasan produk
+          </label>
+          <p className="field-hint" id="profile-review-name-hint">
+            Bila tidak dicentang, nama disamarkan di ulasan, mis. {maskName(customer.name)}. Bila dicentang, tampil sebagai {shortName(customer.name)}.
+          </p>
+        </div>
       </div>
       <div className="profile-form-footer">
         {customer.joined_at && <small>Bergabung sejak {formatDate(new Date(customer.joined_at))}</small>}

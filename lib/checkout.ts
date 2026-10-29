@@ -147,6 +147,8 @@ export interface OrderLine {
   image: string | null;
   /** Ulasan pembeli untuk barang ini; null bila belum diulas. */
   review: ItemReview | null;
+  /** Slug produk untuk tautan ke halaman produknya; null bila produknya sudah dihapus. */
+  slug: string | null;
 }
 
 /** Ulasan pembeli untuk satu barang pesanan; media hanya di toko Business. */
@@ -207,6 +209,9 @@ export interface OrderSummary {
   reviewable: boolean;
   /** Toko Business: ulasan boleh berisi foto dan video. */
   review_media: boolean;
+  /** Foto dan video masing-masing, sesuai Pengaturan Belanja toko. */
+  review_photos: boolean;
+  review_videos: boolean;
 }
 
 export interface OrderTracking {
@@ -574,6 +579,8 @@ export function readOrder(data: unknown): OrderSummary {
     tracking: readOrderTracking(row.tracking),
     reviewable: row.reviewable === true,
     review_media: row.review_media === true,
+    review_photos: row.review_photos === true,
+    review_videos: row.review_videos === true,
   };
 }
 
@@ -648,8 +655,9 @@ export interface ReviewOrder {
   invoiceNumber: string;
   /** Barang sudah sampai (delivered/done), jadi boleh diulas. */
   reviewable: boolean;
-  /** Toko Business: pembeli bisa melampirkan foto dan video. */
-  reviewMedia: boolean;
+  /** Toko Business: pembeli bisa melampirkan foto dan video, sesuai Pengaturan Belanja toko. */
+  reviewPhotos: boolean;
+  reviewVideos: boolean;
   items: OrderLine[];
 }
 
@@ -661,7 +669,8 @@ export function readReviewOrder(data: unknown): ReviewOrder | null {
     orderId: row.order_id as number,
     invoiceNumber: typeof row.invoice_number === "string" ? row.invoice_number : "",
     reviewable: row.reviewable === true,
-    reviewMedia: row.review_media === true,
+    reviewPhotos: row.review_photos === true,
+    reviewVideos: row.review_videos === true,
     items: readOrderLines(row.items),
   };
 }
@@ -674,7 +683,7 @@ function readOrderLines(value: unknown): OrderLine[] {
     const item = row as {
       id?: unknown; review?: unknown;
       amount?: unknown; price?: unknown; preorder_duration?: unknown;
-      product?: { name?: unknown; images?: { public_url?: unknown; url?: unknown }[] } | null;
+      product?: { name?: unknown; slug?: unknown; images?: { public_url?: unknown; url?: unknown }[] } | null;
       variant?: { label?: unknown } | null;
     };
     if (typeof item.product?.name !== "string" || !Number.isSafeInteger(item.amount) || typeof item.price !== "number") return [];
@@ -689,6 +698,7 @@ function readOrderLines(value: unknown): OrderLine[] {
       preorder_duration: typeof item.preorder_duration === "number" ? item.preorder_duration : 0,
       image,
       review: readItemReview(item.review),
+      slug: typeof item.product.slug === "string" && item.product.slug ? item.product.slug : null,
     }];
   });
 }

@@ -13,6 +13,8 @@ export interface Customer {
   gender?: "male" | "female" | null;
   birth_date?: string | null;
   joined_at?: string | null;
+  /** Nama tampil di ulasan produk ("Rina W."); bawaannya disamarkan ("R*** W***"). */
+  show_name_in_reviews?: boolean;
 }
 
 /** Only same-site paths may be used after login, never another origin. */

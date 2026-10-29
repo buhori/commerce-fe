@@ -55,7 +55,7 @@ export default async function ReviewPage({ params, searchParams }: PageProps<"/r
               <ButtonLink href="/">Lihat produk</ButtonLink>
             </div>
           ) : (
-            <OrderReviews orderId={order.orderId} items={order.items} access={access} media={order.reviewMedia} />
+            <OrderReviews orderId={order.orderId} items={order.items} access={access} photos={order.reviewPhotos} video={order.reviewVideos} />
           )}
         </div>
       </main>

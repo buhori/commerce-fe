@@ -67,7 +67,7 @@ test("the review page order reads only a valid order and skips broken item rows"
       invoice_number: "INV/UFA/2026/10/0014",
       reviewable: true,
       items: [
-        { id: 981801156, amount: 1, price: 296845, product: { name: "Serum Pagi", images: [{ public_url: "https://cdn.test/a.webp" }] }, variant: { label: "50 ml" }, review: { rating: 4, feedback: "Bagus" } },
+        { id: 981801156, amount: 1, price: 296845, product: { name: "Serum Pagi", slug: "serum-pagi", images: [{ public_url: "https://cdn.test/a.webp" }] }, variant: { label: "50 ml" }, review: { rating: 4, feedback: "Bagus" } },
         { id: 5, amount: 1, price: 1000, product: null },
       ],
     },
@@ -77,10 +77,21 @@ test("the review page order reads only a valid order and skips broken item rows"
     orderId: 812537934,
     invoiceNumber: "INV/UFA/2026/10/0014",
     reviewable: true,
-    reviewMedia: false,
-    items: [{ id: 981801156, name: "Serum Pagi", variant: "50 ml", amount: 1, price: 296845, preorder_duration: 0, image: "https://cdn.test/a.webp", review: { rating: 4, comment: "Bagus", media: [] } }],
+    reviewPhotos: false,
+    reviewVideos: false,
+    items: [{ id: 981801156, name: "Serum Pagi", variant: "50 ml", amount: 1, price: 296845, preorder_duration: 0, image: "https://cdn.test/a.webp", review: { rating: 4, comment: "Bagus", media: [] }, slug: "serum-pagi" }],
   });
   assert.equal(readReviewOrder({ data: { order_id: "x" } }), null);
   assert.equal(readReviewOrder(null), null);
   assert.equal(plain(readReviewOrder({ data: { order_id: 7 } })).reviewable, false);
+  assert.equal(plain(readReviewOrder({ data: { order_id: 7, review_photos: true } })).reviewPhotos, true);
+});
+
+test("reviewer names are masked like the backend unless the buyer shows them", () => {
+  assert.equal(reviews.maskName("Agun Buhori"), "A*** B*****");
+  assert.equal(reviews.maskName("  Siti   Nur  Aisyah "), "S*** N** A*****");
+  assert.equal(reviews.maskName("Ñandú"), "Ñ****");
+  assert.equal(reviews.maskName(" "), "Pembeli");
+  assert.equal(reviews.shortName("Agun Buhori"), "Agun B.");
+  assert.equal(reviews.shortName("Agun"), "Agun");
 });

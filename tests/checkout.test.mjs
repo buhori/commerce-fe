@@ -146,7 +146,7 @@ test("order lines carry photos and pre-order data, skipping malformed rows", () 
   const order = readOrder({ data: {
     id: 4, status: "pending", total: 20000, shipping_cost: 0, grand_total: 20000, preorder_ready_at: "2026-10-11",
     items: [
-      { id: 81, amount: 2, price: 10000, preorder_duration: 14, product: { name: "Tas", images: [{ public_url: "http://img/a.webp" }] }, variant: { label: "Merah" }, review: { rating: 5, feedback: "Rapi" } },
+      { id: 81, amount: 2, price: 10000, preorder_duration: 14, product: { name: "Tas", slug: "tas-kanvas", images: [{ public_url: "http://img/a.webp" }] }, variant: { label: "Merah" }, review: { rating: 5, feedback: "Rapi" } },
       { amount: 1, price: 5000, product: { name: "Topi", images: [] }, variant: null },
       { amount: 1, price: 5000, product: null },
     ],
@@ -154,8 +154,8 @@ test("order lines carry photos and pre-order data, skipping malformed rows", () 
   assert.equal(order.preorder_ready_at, "2026-10-11");
   assert.equal(order.reviewable, false);
   assert.deepEqual(JSON.parse(JSON.stringify(order.items)), [
-    { id: 81, name: "Tas", variant: "Merah", amount: 2, price: 10000, preorder_duration: 14, image: "http://img/a.webp", review: { rating: 5, comment: "Rapi", media: [] } },
-    { id: null, name: "Topi", variant: null, amount: 1, price: 5000, preorder_duration: 0, image: null, review: null },
+    { id: 81, name: "Tas", variant: "Merah", amount: 2, price: 10000, preorder_duration: 14, image: "http://img/a.webp", review: { rating: 5, comment: "Rapi", media: [] }, slug: "tas-kanvas" },
+    { id: null, name: "Topi", variant: null, amount: 1, price: 5000, preorder_duration: 0, image: null, review: null, slug: null },
   ]);
   assert.equal(readOrder({ id: 6, status: "delivered", total: 1, shipping_cost: 0, grand_total: 1, reviewable: true }).reviewable, true);
   const plain = readOrder({ id: 5, status: "pending", total: 1, shipping_cost: 0, grand_total: 1 });

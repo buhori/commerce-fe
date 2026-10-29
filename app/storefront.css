@@ -68,6 +68,8 @@
 .profile-gender { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 0; padding: 0; border: 0; }
 .profile-gender legend { width: 100%; margin-bottom: 8px; padding: 0; font-size: 0.8125rem; font-weight: 600; }
 .profile-gender label { display: flex; align-items: center; gap: 8px; font-weight: 400; cursor: pointer; }
+.profile-review-name { display: grid; gap: 4px; }
+.profile-review-name label { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; cursor: pointer; }
 .profile-card .profile-gender input { flex: none; width: 18px; height: 18px; min-height: 0; margin: 0; padding: 0; border: 0; appearance: auto; accent-color: var(--primary); }
 .profile-form-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 20px; border-top: 1px solid var(--line); }
 .profile-form-footer small { color: var(--muted); }

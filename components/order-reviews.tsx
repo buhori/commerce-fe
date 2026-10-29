@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { jsonHeaders, type ItemReview, type OrderLine } from "@/lib/checkout";
 import { readReviewMedia } from "@/lib/reviews";
+import { Icon } from "./icons";
 import { ProductImage } from "./product-image";
 import { ReviewMediaList } from "./review-media";
 import { StarIcon, Stars } from "./stars";
@@ -19,12 +21,15 @@ const VIDEO_TYPES = "video/mp4,video/webm,video/quicktime";
 /** Link bertanda tangan dari email permintaan ulasan, diteruskan saat mengirim ulasan. */
 type ReviewAccess = { expires: string; signature: string };
 
+/** Lampiran yang diterima toko (paket Business, sesuai Pengaturan Belanja toko). */
+type Attachments = { photos: boolean; video: boolean };
+
 /**
  * Ulasan pembeli untuk tiap barang di pesanan yang sudah diterima (POST /orders/{id}/items/{itemId}/review).
- * `access` diisi di halaman ulasan dari email, supaya bisa mengulas dari perangkat lain. `media`: toko
- * Business, pembeli boleh melampirkan foto dan satu video.
+ * `access` diisi di halaman ulasan dari email, supaya bisa mengulas dari perangkat lain. `photos`/`video`:
+ * pembeli boleh melampirkan foto dan satu video.
  */
-export function OrderReviews({ orderId, items, access, media = false }: { orderId: number; items: OrderLine[]; access?: ReviewAccess; media?: boolean }) {
+export function OrderReviews({ orderId, items, access, photos = false, video = false }: { orderId: number; items: OrderLine[]; access?: ReviewAccess; photos?: boolean; video?: boolean }) {
   const reviewable = items.filter((item): item is OrderLine & { id: number } => item.id !== null);
   if (reviewable.length === 0) return null;
 
@@ -33,13 +38,13 @@ export function OrderReviews({ orderId, items, access, media = false }: { orderI
       <h2 id="order-reviews-title">Beri ulasan</h2>
       <p className="order-reviews-lead">Pesanan sudah diterima. Ceritakan pengalamanmu agar pembeli lain terbantu.</p>
       <ul>
-        {reviewable.map((item) => <ItemReview key={item.id} orderId={orderId} item={item} access={access} media={media} />)}
+        {reviewable.map((item) => <ItemReview key={item.id} orderId={orderId} item={item} access={access} attachments={{ photos, video }} />)}
       </ul>
     </section>
   );
 }
 
-function ItemReview({ orderId, item, access, media }: { orderId: number; item: OrderLine & { id: number }; access?: ReviewAccess; media: boolean }) {
+function ItemReview({ orderId, item, access, attachments }: { orderId: number; item: OrderLine & { id: number }; access?: ReviewAccess; attachments: Attachments }) {
   const [saved, setSaved] = useState<ItemReview | null>(item.review);
   const [photos, setPhotos] = useState<File[]>([]);
   const [video, setVideo] = useState<File | null>(null);
@@ -99,10 +104,10 @@ function ItemReview({ orderId, item, access, media }: { orderId: number; item: O
 
   return (
     <li className="order-review">
-      <div className="order-review-product">
+      <ProductLink slug={item.slug}>
         <span className="payment-product-art" aria-hidden="true"><ProductImage key={item.image} src={item.image} name="" /></span>
         <div><strong>{item.name}</strong>{item.variant && <span>{item.variant}</span>}</div>
-      </div>
+      </ProductLink>
 
       {saved && !editing ? (
         <div className="order-review-saved">
@@ -137,18 +142,16 @@ function ItemReview({ orderId, item, access, media }: { orderId: number; item: O
             placeholder="Bagaimana kualitas barangnya? (opsional)"
             onChange={(event) => setComment(event.target.value)}
           />
-          {media && (
-            <div className="order-review-files">
-              <label>
-                <span>Foto <small>(maks. {MAX_PHOTOS}, {PHOTO_MAX_MB} MB per foto)</small></span>
-                <input type="file" accept={PHOTO_TYPES} multiple onChange={(event) => setPhotos(Array.from(event.target.files ?? []).slice(0, MAX_PHOTOS))} />
-              </label>
-              <label>
-                <span>Video <small>(maks. {VIDEO_MAX_MB} MB)</small></span>
-                <input type="file" accept={VIDEO_TYPES} onChange={(event) => setVideo(event.target.files?.[0] ?? null)} />
-              </label>
-              {saved && saved.media.length > 0 && <p>Foto atau video baru mengganti yang sebelumnya.</p>}
-            </div>
+          {(attachments.photos || attachments.video) && (
+            <ReviewAttachments
+              allowed={attachments}
+              photos={photos}
+              video={video}
+              replacing={(saved?.media.length ?? 0) > 0}
+              onPhotos={setPhotos}
+              onVideo={setVideo}
+              onError={setError}
+            />
           )}
           {error && <p className="order-review-error" role="alert">{error}</p>}
           <div className="order-review-actions">
@@ -159,4 +162,104 @@ function ItemReview({ orderId, item, access, media }: { orderId: number; item: O
       )}
     </li>
   );
+}
+
+/** Nama dan foto barang membuka halaman produknya; barang yang produknya sudah dihapus tidak berupa tautan. */
+function ProductLink({ slug, children }: { slug: string | null; children: React.ReactNode }) {
+  return slug
+    ? <Link className="order-review-product" href={`/products/${encodeURIComponent(slug)}`}>{children}</Link>
+    : <div className="order-review-product">{children}</div>;
+}
+
+const tooBig = (file: File, megabytes: number) => file.size > megabytes * 1024 * 1024;
+
+/**
+ * Foto (sampai MAX_PHOTOS) dan satu video untuk ulasan: pratinjau, hapus per file, dan tombol tambah.
+ * File yang salah format atau terlalu besar ditolak saat dipilih, sebelum dikirim.
+ */
+function ReviewAttachments({ allowed, photos, video, replacing, onPhotos, onVideo, onError }: {
+  allowed: Attachments;
+  photos: File[];
+  video: File | null;
+  replacing: boolean;
+  onPhotos: (photos: File[]) => void;
+  onVideo: (video: File | null) => void;
+  onError: (message: string | null) => void;
+}) {
+  function addPhotos(files: FileList | null) {
+    const picked = Array.from(files ?? []);
+    if (picked.some((file) => !PHOTO_TYPES.split(",").includes(file.type))) return onError("Foto harus berformat JPG, PNG, WebP, atau GIF.");
+    if (picked.some((file) => tooBig(file, PHOTO_MAX_MB))) return onError(`Ukuran setiap foto paling besar ${PHOTO_MAX_MB} MB.`);
+    if (photos.length + picked.length > MAX_PHOTOS) onError(`Paling banyak ${MAX_PHOTOS} foto; foto lainnya tidak ditambahkan.`);
+    else onError(null);
+    onPhotos([...photos, ...picked].slice(0, MAX_PHOTOS));
+  }
+
+  function pickVideo(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    if (!VIDEO_TYPES.split(",").includes(file.type)) return onError("Video harus berformat MP4, WebM, atau MOV.");
+    if (tooBig(file, VIDEO_MAX_MB)) return onError(`Ukuran video paling besar ${VIDEO_MAX_MB} MB.`);
+    onError(null);
+    onVideo(file);
+  }
+
+  return (
+    <div className="review-attachments">
+      <ul className="review-attachments-grid">
+        {photos.map((photo, index) => (
+          <li key={`${photo.name}-${photo.lastModified}-${index}`}>
+            <FilePreview file={photo} />
+            <button type="button" className="review-attachment-remove" aria-label={`Hapus foto ${index + 1}`} onClick={() => onPhotos(photos.filter((_, other) => other !== index))}>
+              <Icon name="close" />
+            </button>
+          </li>
+        ))}
+        {video && (
+          <li className="review-attachment-video">
+            <FilePreview file={video} />
+            <button type="button" className="review-attachment-remove" aria-label="Hapus video" onClick={() => onVideo(null)}>
+              <Icon name="close" />
+            </button>
+          </li>
+        )}
+        {allowed.photos && photos.length < MAX_PHOTOS && (
+          <li>
+            <label className="review-attachment-add">
+              <Icon name="upload" />
+              <span>Foto</span>
+              <small>{photos.length}/{MAX_PHOTOS}</small>
+              {/* Nilai dikosongkan setelah dipilih, supaya foto yang sama bisa dipilih lagi setelah dihapus. */}
+              <input type="file" accept={PHOTO_TYPES} multiple className="sr-only" onChange={(event) => { addPhotos(event.target.files); event.target.value = ""; }} />
+            </label>
+          </li>
+        )}
+        {allowed.video && !video && (
+          <li>
+            <label className="review-attachment-add">
+              <Icon name="upload" />
+              <span>Video</span>
+              <small>0/1</small>
+              <input type="file" accept={VIDEO_TYPES} className="sr-only" onChange={(event) => { pickVideo(event.target.files); event.target.value = ""; }} />
+            </label>
+          </li>
+        )}
+      </ul>
+      <p className="review-attachments-hint">
+        {[allowed.photos && `Foto maks. ${PHOTO_MAX_MB} MB`, allowed.video && `video maks. ${VIDEO_MAX_MB} MB (MP4, WebM, MOV)`].filter(Boolean).join(", ")}.
+        {replacing && " Lampiran baru mengganti yang sebelumnya."}
+      </p>
+    </div>
+  );
+}
+
+/** Pratinjau file yang dipilih, dari object URL yang dilepas lagi saat file diganti atau dihapus. */
+function FilePreview({ file }: { file: File }) {
+  const url = useMemo(() => URL.createObjectURL(file), [file]);
+  useEffect(() => () => URL.revokeObjectURL(url), [url]);
+
+  return file.type.startsWith("video/")
+    ? <video src={url} muted playsInline preload="metadata" />
+    // eslint-disable-next-line @next/next/no-img-element -- object URL lokal, bukan gambar dari server
+    : <img src={url} alt="" />;
 }

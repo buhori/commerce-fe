@@ -88,3 +88,18 @@ export function readReviewPage(data: unknown): ReviewPage {
     lastPage: Math.max(page, count(body.meta?.last_page) || 1),
   };
 }
+
+const words = (name: string) => name.trim().split(/\s+/).filter(Boolean);
+
+/** Nama pengulas yang disamarkan, sama dengan Feedback::publicName di backend: huruf pertama tiap kata, sisanya bintang. */
+export function maskName(name: string): string {
+  const parts = words(name);
+  return parts.length ? parts.map((word) => [...word][0] + "*".repeat(Math.max(0, [...word].length - 1))).join(" ") : "Pembeli";
+}
+
+/** Nama depan dan inisial nama belakang, mis. "Rina W.". */
+export function shortName(name: string): string {
+  const parts = words(name);
+  if (parts.length < 2) return parts[0] ?? "Pembeli";
+  return `${parts[0]} ${[...parts[parts.length - 1]][0].toUpperCase()}.`;
+}

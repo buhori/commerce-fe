@@ -1,5 +1,6 @@
 {
   "enabledPlugins": {
-    "claude-seo@agricidaniel-claude-seo": true
+    "claude-seo@agricidaniel-claude-seo": true,
+    "sentry@anthropic-plugin-directory": true
   }
 }
