@@ -16,21 +16,38 @@ const BOTTOM_BARS = [".purchase-dock", ".theme-preview-bar"];
 
 /**
  * Jarak dari bawah layar ke tepi atas bar lain yang menempel di bawah (dock beli di ponsel, bar
- * pratinjau tema). Diukur, bukan ditulis di CSS, karena tinggi dock berubah sesuai isinya.
+ * pratinjau tema). Diukur, bukan ditulis di CSS, karena tinggi dock berubah sesuai isinya. Dipakai
+ * juga tombol bantuan (HelpButton).
  */
-function useBottomOffset(active: boolean, pathname: string) {
+export function useBottomOffset(active: boolean, pathname: string) {
   const [offset, setOffset] = useState(0);
   useEffect(() => {
     if (!active) return;
-    const bars = BOTTOM_BARS.flatMap((selector) => [...document.querySelectorAll<HTMLElement>(selector)]);
+    let bars: HTMLElement[] = [];
     const update = () => setOffset(Math.max(0, ...bars
       .filter((bar) => getComputedStyle(bar).position === "fixed")
       .map((bar) => window.innerHeight - bar.getBoundingClientRect().top)));
     const observer = new ResizeObserver(update);
-    bars.forEach((bar) => observer.observe(bar));
+    const collect = () => {
+      const next = BOTTOM_BARS.flatMap((selector) => [...document.querySelectorAll<HTMLElement>(selector)]);
+      if (next.length === bars.length && next.every((bar, index) => bar === bars[index])) return;
+      observer.disconnect();
+      bars = next;
+      bars.forEach((bar) => observer.observe(bar));
+      update();
+    };
+    // Halaman yang dialirkan (loading.tsx) memasang dok beli sesudah layout; kumpulkan ulang saat DOM berubah.
+    let frame = 0;
+    const mutations = new MutationObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(collect);
+    });
+    mutations.observe(document.body, { childList: true, subtree: true });
     window.addEventListener("resize", update);
-    update();
+    collect();
     return () => {
+      cancelAnimationFrame(frame);
+      mutations.disconnect();
       observer.disconnect();
       window.removeEventListener("resize", update);
     };

@@ -2480,7 +2480,11 @@ p {
 .review-media li { width: 96px; height: 96px; overflow: hidden; border-radius: var(--radius); background: var(--surface); }
 .review-media li:has(video) { width: 172px; }
 .review-media img, .review-media video { display: block; width: 100%; height: 100%; object-fit: cover; }
-.review-media a { display: block; height: 100%; }
+.review-media-open { position: relative; display: block; width: 100%; height: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.review-media-open video { pointer-events: none; }
+.review-media-play { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 1.25rem; background: rgb(0 0 0 / 0.25); }
+.review-media-stage { display: grid; place-items: center; }
+.review-media-stage img, .review-media-stage video { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: var(--radius); }
 
 /* Ulasan produk (components/product-reviews.tsx, stars.tsx): di bawah halaman produk, semua tema. */
 .stars { display: inline-flex; gap: 2px; color: var(--warning); }
@@ -2513,3 +2517,167 @@ p {
   .product-reviews-heading h2 { font-size: 1.5rem; }
   .product-reviews-body { grid-template-columns: 1fr; gap: 28px; }
 }
+
+/* ------------------------------------------------------------ Help button */
+/* Tombol bantuan melayang di kanan bawah (HelpButton): di atas dok beli ponsel dan bilah bandingkan. */
+.help-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom) + var(--help-fab-offset, 0px));
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+body:has(.compare-tray) .help-fab {
+  bottom: calc(88px + env(safe-area-inset-bottom) + var(--help-fab-offset, 0px));
+}
+.help-fab-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: var(--shadow-pop);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.help-fab-button svg { width: 26px; height: 26px; }
+.help-fab-button:hover { transform: translateY(-1px); }
+.help-fab-button:focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 35%, transparent); outline-offset: 2px; }
+.help-fab-menu {
+  display: grid;
+  width: min(300px, calc(100vw - 32px));
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--page);
+  box-shadow: var(--shadow-pop);
+}
+.help-fab-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.help-fab-item:hover, .help-fab-item:focus-visible { background: var(--surface); outline: none; }
+.help-fab-item strong { display: block; font-size: 0.9375rem; font-weight: 600; }
+.help-fab-item small { display: block; color: var(--muted); font-size: 0.8125rem; }
+.help-fab-item-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.help-fab-item-whatsapp { background: #ecfdf5; color: #047857; }
+
+.help-dialog {
+  /* Reset global (margin: 0) membuang margin otomatis <dialog> yang menengahkannya. */
+  margin: auto;
+  width: min(440px, calc(100vw - 24px));
+  max-height: calc(100dvh - 48px);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--page);
+  color: var(--text);
+  box-shadow: var(--shadow-pop);
+}
+.help-dialog::backdrop { background: rgb(24 24 27 / 0.45); }
+.help-dialog-header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 12px 20px;
+  background: var(--page);
+}
+.help-dialog-header h2 { margin: 0; font-family: var(--font-heading); font-size: 1.125rem; font-weight: 700; }
+.help-dialog-form, .help-track { display: grid; gap: 14px; padding: 0 20px 20px; }
+.help-dialog-form .checkout-field { display: grid; gap: 6px; }
+.help-dialog-form label { font-size: 0.875rem; font-weight: 600; }
+.help-dialog-error { margin: 0; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--danger-soft); color: var(--danger); font-size: 0.875rem; }
+/* Hasil pelacakan: status (berwarna sesuai nada), tahapan, rincian, pengiriman, barang. */
+.help-track { --tone: var(--primary); --tone-soft: var(--primary-soft); }
+.help-track [data-tone="warning"] { --tone: var(--warning); --tone-soft: var(--warning-soft); }
+.help-track [data-tone="info"] { --tone: #1d4ed8; --tone-soft: #eff6ff; }
+.help-track [data-tone="primary"] { --tone: var(--primary); --tone-soft: color-mix(in srgb, var(--primary) 12%, var(--page)); }
+.help-track [data-tone="success"] { --tone: #047857; --tone-soft: #ecfdf5; }
+.help-track [data-tone="danger"] { --tone: var(--danger); --tone-soft: var(--danger-soft); }
+.help-track small { display: block; color: var(--muted); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em; }
+.help-track-summary { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: var(--radius); background: var(--tone-soft); color: var(--tone); }
+.help-track-summary small { color: inherit; opacity: 0.8; }
+.help-track-summary strong { display: block; font-size: 1.125rem; font-weight: 700; }
+.help-track-summary-icon { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 999px; background: var(--tone); color: #fff; }
+.help-track-summary-icon svg { width: 22px; height: 22px; }
+
+.help-track-steps { display: grid; grid-template-columns: repeat(4, 1fr); margin: 0; padding: 0; list-style: none; }
+.help-track-steps li { position: relative; display: grid; justify-items: center; gap: 6px; color: var(--muted); font-size: 0.75rem; font-weight: 600; text-align: center; }
+/* Garis penghubung dari titik sebelumnya ke titik ini. */
+.help-track-steps li + li::before { content: ""; position: absolute; top: 11px; right: 50%; width: 100%; height: 2px; background: var(--line); }
+.help-track-steps li[data-state="done"] + li::before, .help-track-steps li[data-state="done"] + li[data-state="current"]::before { background: var(--primary); }
+.help-track-step-dot { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: 2px solid var(--line-strong); border-radius: 999px; background: var(--page); color: var(--on-primary); }
+.help-track-step-dot svg { width: 14px; height: 14px; stroke-width: 2.5; }
+.help-track-steps li[data-state="done"] .help-track-step-dot { border-color: var(--primary); background: var(--primary); }
+.help-track-steps li[data-state="current"] { color: var(--text); }
+.help-track-steps li[data-state="current"] .help-track-step-dot { border-color: var(--primary); background: var(--primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 18%, transparent); }
+
+.help-track-meta { display: grid; gap: 8px; margin: 0; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--canvas); font-size: 0.875rem; }
+.help-track-meta div { display: flex; justify-content: space-between; gap: 12px; }
+.help-track-meta dt { color: var(--muted); }
+.help-track-meta dd { margin: 0; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+
+.help-track-card { display: grid; gap: 14px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); }
+.help-track-card-head { display: flex; align-items: center; gap: 12px; }
+.help-track-courier { flex: 1; min-width: 0; }
+.help-track-courier strong { display: block; font-weight: 700; }
+.help-track-courier-logo { width: 44px; height: 30px; flex-shrink: 0; object-fit: contain; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.help-track-pill { display: inline-block; margin-top: 6px; padding: 4px 10px; border-radius: 999px; background: var(--tone-soft); color: var(--tone); font-size: 0.75rem; font-weight: 700; }
+.help-track-awb { display: grid; gap: 6px; padding: 12px 14px; border: 1px dashed var(--line-strong); border-radius: var(--radius-sm); background: var(--canvas); }
+.help-track-awb .copy-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+/* Resi utuh satu baris; bila tidak muat, tombol Salin yang turun. */
+.help-track-awb .copy-value { white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1rem; letter-spacing: 0.02em; }
+.help-track-awb .copy-button { flex-shrink: 0; }
+.help-track-empty { display: flex; align-items: center; gap: 8px; margin: 0; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--warning-soft); color: var(--warning); font-size: 0.8125rem; }
+.help-track-empty svg { flex-shrink: 0; width: 18px; height: 18px; }
+.help-track-link { width: 100%; justify-content: center; }
+.help-track-link svg { width: 16px; height: 16px; }
+
+.help-track-history-wrap { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.help-track-history { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; font-size: 0.8125rem; }
+.help-track-history li { position: relative; display: grid; gap: 2px; padding: 0 0 14px 24px; color: var(--muted); }
+.help-track-history li:last-child { padding-bottom: 0; }
+/* Titik dan garis penghubung ke kejadian berikutnya. */
+.help-track-history li::before { content: ""; position: absolute; top: 4px; left: 3px; width: 10px; height: 10px; border-radius: 999px; background: var(--line-strong); }
+.help-track-history li:not(:last-child)::after { content: ""; position: absolute; top: 16px; bottom: 0; left: 7px; width: 2px; background: var(--line); }
+.help-track-history li[data-latest]::before { left: 1px; width: 14px; height: 14px; top: 2px; background: var(--primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 16%, transparent); }
+.help-track-history strong { color: var(--text-softer); font-weight: 600; }
+.help-track-history li[data-latest] strong { color: var(--text); font-weight: 700; }
+.help-track-history time { font-size: 0.75rem; }
+
+.help-track-card-title { margin-bottom: -4px; }
+.help-track-items { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; font-size: 0.875rem; }
+.help-track-items li { display: flex; justify-content: space-between; gap: 12px; }
+.help-track-items li span:last-child { flex-shrink: 0; color: var(--muted); font-weight: 600; }
+.help-track-reset { justify-self: center; gap: 8px; }
+.help-track-reset svg { width: 18px; height: 18px; }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { jsonHeaders, type ItemReview, type OrderLine } from "@/lib/checkout";
+import { directUpload, DirectUploadUnavailable } from "@/lib/direct-upload";
 import { readReviewMedia } from "@/lib/reviews";
 import { Icon } from "./icons";
 import { ProductImage } from "./product-image";
@@ -54,6 +55,8 @@ function ItemReview({ orderId, item, access, attachments }: { orderId: number; i
   const [comment, setComment] = useState(item.review?.comment ?? "");
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  // Persen lampiran yang sudah sampai di S3 saat mengirim; null bila tidak sedang mengunggah.
+  const [progress, setProgress] = useState<number | null>(null);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -74,9 +77,18 @@ function ItemReview({ orderId, item, access, attachments }: { orderId: number; i
     try {
       const query = access ? `?${new URLSearchParams(access)}` : "";
       const headers = jsonHeaders();
-      let body: BodyInit = JSON.stringify({ rating, comment: comment.trim() || null });
-      // Dengan lampiran: multipart, Content-Type (beserta boundary) diisi browser.
-      if (photos.length > 0 || video) {
+      const files = [...photos, ...(video ? [video] : [])];
+      // Lampiran diunggah langsung ke S3 dulu (DirectUploads); ulasannya hanya membawa key-nya.
+      const keys = await uploadAll(files, (file, onProgress) => directUpload(file, {
+        orderId, purpose: file.type.startsWith("video/") ? "review_video" : "review_photo", itemId: item.id, access, onProgress,
+      }), setProgress);
+      let body: BodyInit = JSON.stringify({
+        rating,
+        comment: comment.trim() || null,
+        ...(keys ? { photo_uploads: keys.slice(0, photos.length), video_upload: video ? keys[photos.length] : null } : {}),
+      });
+      // Toko tanpa unggah langsung (keys null): file dikirim lewat server, Content-Type diisi browser.
+      if (!keys && files.length > 0) {
         const form = new FormData();
         form.set("rating", String(rating));
         if (comment.trim()) form.set("comment", comment.trim());
@@ -95,10 +107,11 @@ function ItemReview({ orderId, item, access, attachments }: { orderId: number; i
       setPhotos([]);
       setVideo(null);
       setEditing(false);
-    } catch {
-      setError("Ulasan belum terkirim. Periksa koneksi lalu coba lagi.");
+    } catch (failure) {
+      setError(failure instanceof Error && failure.message ? failure.message : "Ulasan belum terkirim. Periksa koneksi lalu coba lagi.");
     } finally {
       setSending(false);
+      setProgress(null);
     }
   }
 
@@ -155,13 +168,39 @@ function ItemReview({ orderId, item, access, attachments }: { orderId: number; i
           )}
           {error && <p className="order-review-error" role="alert">{error}</p>}
           <div className="order-review-actions">
-            <Button type="submit" disabled={sending}>{sending ? "Mengirim…" : "Kirim ulasan"}</Button>
+            <Button type="submit" disabled={sending}>{progress !== null ? `Mengunggah… ${progress}%` : sending ? "Mengirim…" : "Kirim ulasan"}</Button>
             {saved && <Button variant="text" onClick={() => { setEditing(false); setError(null); }}>Batal</Button>}
           </div>
         </form>
       )}
     </li>
   );
+}
+
+/**
+ * Unggah file satu per satu lewat `upload`, dengan persen gabungan semua file. Key tiap file, berurutan;
+ * null bila toko memakai unggah lewat server (berlaku untuk semua file, jadi berhenti di file pertama).
+ */
+async function uploadAll(files: File[], upload: (file: File, onProgress: (loaded: number) => void) => Promise<string | null>, onPercent: (percent: number | null) => void): Promise<string[] | null> {
+  if (files.length === 0) return [];
+  const total = files.reduce((sum, file) => sum + file.size, 0) || 1;
+  const keys: string[] = [];
+  let done = 0;
+  onPercent(0);
+  for (const file of files) {
+    let key: string | null;
+    try {
+      key = await upload(file, (loaded) => onPercent(Math.min(100, Math.round(((done + loaded) / total) * 100))));
+    } catch (failure) {
+      // S3 tidak bisa dijangkau dari browser ini: semua file dikirim lewat server saja.
+      if (failure instanceof DirectUploadUnavailable) return null;
+      throw failure;
+    }
+    if (key === null) return null;
+    keys.push(key);
+    done += file.size;
+  }
+  return keys;
 }
 
 /** Nama dan foto barang membuka halaman produknya; barang yang produknya sudah dihapus tidak berupa tautan. */
