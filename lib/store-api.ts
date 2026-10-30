@@ -55,6 +55,11 @@ export interface Store {
    * getStore(); backend lama tidak mengirimnya, berarti tampil. Baca lewat publicAddress().
    */
   show_address: boolean;
+  /**
+   * "Hubungi toko" di tombol bantuan: nomor WhatsApp tujuan (digit dengan kode negara) bila pemilik
+   * menyalakannya; null berarti tanpa pilihan itu. Selalu terisi setelah getStore().
+   */
+  contact_whatsapp: string | null;
   /** Script plugin aktif (mis. Meta Pixel); selalu terisi setelah getStore(), kosong di backend lama. */
   plugin_scripts: PluginScript[];
 }
@@ -254,6 +259,7 @@ export const getStore = cache(async () => {
     style: readStoreStyle(store.style),
     hide_branding: store.hide_branding === true,
     show_address: store.show_address !== false,
+    contact_whatsapp: typeof store.contact_whatsapp === "string" && /^\d{8,15}$/.test(store.contact_whatsapp) ? store.contact_whatsapp : null,
     plugin_scripts: readPluginScripts(store.plugin_scripts),
   };
 });

@@ -1,6 +1,6 @@
 import type { ReactNode, SVGProps } from "react";
 
-export type IconName = "bag" | "arrow" | "search" | "box" | "close" | "mail" | "pin" | "copy" | "check" | "phone" | "expand" | "truck" | "user" | "bell" | "heart" | "logout" | "clock" | "bank" | "refresh" | "info" | "upload" | "menu" | "tag" | "bolt" | "alert" | "qr" | "download" | "tool" | "whatsapp" | "share" | "compare";
+export type IconName = "bag" | "arrow" | "search" | "box" | "close" | "mail" | "pin" | "copy" | "check" | "phone" | "expand" | "truck" | "user" | "bell" | "heart" | "logout" | "clock" | "bank" | "refresh" | "info" | "upload" | "menu" | "tag" | "bolt" | "alert" | "qr" | "download" | "tool" | "whatsapp" | "share" | "compare" | "help";
 const paths: Record<IconName, ReactNode> = {
   clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
   tag: <><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9-9-9Z" /><circle cx="7.5" cy="7.5" r="1.5" /></>,
@@ -65,6 +65,8 @@ const paths: Record<IconName, ReactNode> = {
   // Tiga titik bersambung, ikon "bagikan" yang umum di Android dan web.
   share: <><circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" /><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4" /></>,
   // Dua kolom berdampingan: membandingkan produk.
+  // Tanda tanya dalam lingkaran: tombol bantuan.
+  help: <><circle cx="12" cy="12" r="9" /><path d="M9.6 9.3a2.5 2.5 0 1 1 3.6 2.4c-.7.4-1.2.9-1.2 1.7v.4M12 17h.01" /></>,
   compare: <><rect x="3" y="4" width="7" height="16" rx="1.5" /><rect x="14" y="4" width="7" height="16" rx="1.5" /><path d="M5.5 8h2M5.5 11h2M16.5 8h2M16.5 11h2" /></>,
 };
 export function Icon({

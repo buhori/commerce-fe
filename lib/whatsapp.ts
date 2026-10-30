@@ -50,6 +50,11 @@ export function whatsappAvailable(quantityAbove: number | null | undefined, quan
   return !quantityAbove || quantity > quantityAbove;
 }
 
+/** "Hubungi toko" di tombol bantuan: chat ke nomor toko dengan sapaan pembuka. */
+export function storeContactUrl(number: string, storeName: string): string {
+  return `https://wa.me/${encodeURIComponent(number)}?text=${encodeURIComponent(`Halo ${storeName}, saya ingin bertanya.`)}`;
+}
+
 /** Tautan wa.me dengan pesan pembuka berisi nama toko, produk, varian dan jumlah terpilih, dan URL produk. */
 export function whatsappChatUrl({ number, storeName, productName, variantLabel, productUrl, quantity }: WhatsappChatInput): string {
   const variant = variantLabel?.trim() ? ` (${variantLabel.trim()})` : "";

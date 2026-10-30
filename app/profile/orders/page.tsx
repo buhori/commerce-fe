@@ -6,6 +6,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { readOrderDiscount } from "@/lib/checkout";
 import { getOrders } from "@/lib/customer-api";
 import { formatDate, formatPrice } from "@/lib/format";
+import { orderStatus } from "@/lib/order-status";
 import { getStore } from "@/lib/store-api";
 
 const tabs = [
@@ -16,20 +17,6 @@ const tabs = [
   { key: "delivered,done", label: "Selesai" },
   { key: "cancelled,rejected,returned,refunded", label: "Dibatalkan" },
 ];
-
-// Mirrors App\Enums\OrderStatus on the backend.
-const statuses: Record<string, { label: string; tone: string }> = {
-  pending: { label: "Menunggu pembayaran", tone: "warning" },
-  paid: { label: "Dibayar", tone: "info" },
-  processed: { label: "Diproses", tone: "info" },
-  delivering: { label: "Dikirim", tone: "primary" },
-  delivered: { label: "Diterima", tone: "success" },
-  done: { label: "Selesai", tone: "success" },
-  cancelled: { label: "Dibatalkan", tone: "danger" },
-  rejected: { label: "Ditolak", tone: "danger" },
-  returned: { label: "Dikembalikan", tone: "danger" },
-  refunded: { label: "Dana dikembalikan", tone: "danger" },
-};
 
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string; page?: string }> }) {
   const params = await searchParams;
@@ -77,7 +64,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       ) : (
         <ul className="order-list">
           {orders.data.map((order) => {
-            const state = statuses[order.status] ?? { label: order.status, tone: "info" };
+            const state = orderStatus(order.status);
             const first = order.items[0];
             const more = order.items_count - 1;
             const coupon = readOrderDiscount(order);

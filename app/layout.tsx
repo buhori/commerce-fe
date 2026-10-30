@@ -3,6 +3,7 @@ import "./globals.css";
 import { CartProvider } from "@/components/cart-provider";
 import { CartToast } from "@/components/cart-toast";
 import { CompareTray } from "@/components/compare-tray";
+import { HelpButton } from "@/components/help-button";
 import { PluginScripts } from "@/components/plugin-scripts";
 import { QueryProvider } from "@/components/query-provider";
 import { PreviewBridge } from "@/components/preview-bridge";
@@ -28,9 +29,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   // API membalas 404 bila subdomain/domain tidak terdaftar sebagai toko mana pun.
-  const [missing, lang, style, scripts] = await getStore().then(
-    (store) => [false, htmlLang(store.language), store.style ?? null, store.plugin_scripts] as const,
-    (error: unknown) => [error instanceof StoreApiError && error.status === 404, htmlLang(null), null as StoreStyle | null, [] as PluginScript[]] as const,
+  const [missing, lang, style, scripts, help] = await getStore().then(
+    (store) => [false, htmlLang(store.language), store.style ?? null, store.plugin_scripts, { storeName: store.name, contactWhatsapp: store.contact_whatsapp }] as const,
+    (error: unknown) => [error instanceof StoreApiError && error.status === 404, htmlLang(null), null as StoreStyle | null, [] as PluginScript[], null] as const,
   );
   const [theme, preview] = await Promise.all([getActiveTheme(), getPreviewState()]);
   // Warna/font pilihan toko ikut dirender server (tanpa kedipan tema bawaan); kosong = tema apa adanya.
@@ -51,7 +52,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <p>Alamat ini belum dipakai toko mana pun. Periksa lagi ejaan alamatnya.</p>
           </main>
         ) : (
-          <QueryProvider><CartProvider>{children}<CompareTray /><CartToast /></CartProvider></QueryProvider>
+          <QueryProvider><CartProvider>{children}<CompareTray /><CartToast />{help && !preview?.embedded && <HelpButton {...help} />}</CartProvider></QueryProvider>
         )}
         {!missing && !preview?.embedded && <PluginScripts scripts={scripts} />}
         {preview && !preview.embedded && <ThemePreviewBar themeName={preview.theme?.name ?? null} draft={preview.draft} />}
