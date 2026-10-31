@@ -93,6 +93,8 @@
 .payment-result h3 { font-size: 1.125rem; }
 .payment-result p { color: var(--muted); font-size: .8125rem; max-width: 320px; }
 .payment-guide { padding: 28px 4px 0; }
+.payment-shipment { display: grid; gap: 12px; margin-top: 24px; scroll-margin-top: 96px; }
+.payment-shipment h2 { font-size: .9375rem; }
 .payment-guide h2 { font-size: .9375rem; }
 .payment-guide ol { display: grid; gap: 20px; padding: 0; margin: 22px 0 0; list-style: none; }
 .payment-guide li { display: flex; align-items: flex-start; gap: 12px; }

@@ -3,14 +3,13 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState, type CSSProperties, type FormEvent, type RefObject } from "react";
 import { formatDateTime } from "@/lib/format";
-import { ORDER_STEPS, orderStatus, orderStep, shipmentStatusLabel, shipmentStatusTone } from "@/lib/order-status";
+import { ORDER_STEPS, orderStatus, orderStep } from "@/lib/order-status";
 import { readTrackedOrder, trackingInputError, type TrackedOrder } from "@/lib/order-tracking";
 import { storeContactUrl } from "@/lib/whatsapp";
-import { BrandLogo } from "./brand-logo";
 import { useBottomOffset } from "./compare-tray";
-import { CopyValue } from "./copy-value";
 import { Icon, type IconName } from "./icons";
-import { Button, buttonClasses } from "./ui/button";
+import { ShipmentTracking } from "./shipment-tracking";
+import { Button } from "./ui/button";
 
 /** Halaman tempat tombol bantuan hanya mengganggu (formulir checkout, login) atau tidak berguna (pratinjau). */
 const HIDDEN = ["/checkout", "/login", "/auth", "/preview"];
@@ -164,48 +163,7 @@ function TrackedOrderDetail({ order, onReset }: { order: TrackedOrder; onReset: 
         {order.createdAt && <div><dt>Tanggal pesan</dt><dd>{formatDateTime(new Date(order.createdAt))}</dd></div>}
       </dl>
 
-      {shipment && (
-        <section className="help-track-card" aria-labelledby="help-track-shipment-title">
-          <div className="help-track-card-head">
-            <BrandLogo src={shipment.courierLogo} className="help-track-courier-logo" />
-            <div className="help-track-courier">
-              <small id="help-track-shipment-title">Pengiriman</small>
-              <strong>{shipment.courier ?? "Kurir"}</strong>
-              {shipment.status && <span className="help-track-pill" data-tone={shipmentStatusTone(shipment.status)}>{shipmentStatusLabel(shipment.status)}</span>}
-            </div>
-          </div>
-
-          {shipment.trackingNumber ? (
-            <div className="help-track-awb">
-              <small>Nomor resi</small>
-              <CopyValue value={shipment.trackingNumber} label="Salin nomor resi"><strong>{shipment.trackingNumber}</strong></CopyValue>
-            </div>
-          ) : (
-            <p className="help-track-empty"><Icon name="clock" />Nomor resi muncul di sini setelah paket diserahkan ke kurir.</p>
-          )}
-
-          {shipment.trackingUrl && (
-            <a className={buttonClasses({ variant: "secondary", className: "help-track-link" })} href={shipment.trackingUrl} target="_blank" rel="noopener noreferrer">
-              Lacak di situs kurir<Icon name="arrow" />
-            </a>
-          )}
-
-          {shipment.history.length > 0 && (
-            <div className="help-track-history-wrap">
-              <small>Riwayat pengiriman</small>
-              <ol className="help-track-history">
-                {shipment.history.map((event, index) => (
-                  <li key={index} data-latest={index === 0 || undefined}>
-                    <strong>{shipmentStatusLabel(event.status)}</strong>
-                    {event.note && event.note !== shipmentStatusLabel(event.status) && <span>{event.note}</span>}
-                    {event.at && <time dateTime={event.at}>{formatDateTime(new Date(event.at))}</time>}
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
-        </section>
-      )}
+      {shipment && <ShipmentTracking shipment={shipment} id="help-track-shipment" />}
 
       {order.items.length > 0 && (
         <section className="help-track-card" aria-labelledby="help-track-items-title">

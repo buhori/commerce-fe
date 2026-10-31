@@ -65,12 +65,13 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         <ul className="order-list">
           {orders.data.map((order) => {
             const state = orderStatus(order.status);
+            const tracking = typeof order.tracking_number === "string" && order.tracking_number ? order.tracking_number : null;
             const first = order.items[0];
             const more = order.items_count - 1;
             const coupon = readOrderDiscount(order);
             return (
               <li key={order.id}>
-                <Link className="order-row" href={`/payment/${order.id}`}>
+                <Link className="order-row" href={tracking ? `/payment/${order.id}#lacak-paket` : `/payment/${order.id}`}>
                   <div className="order-row-head">
                     <span>Pesanan #{order.id} · {formatDate(new Date(order.created_at))}</span>
                     <span className="order-status" data-tone={state.tone}>{state.label}</span>
@@ -84,6 +85,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                       <small>{first ? `${first.amount} barang` : ""}{more > 0 ? ` · +${more} produk lain` : ""}</small>
                       {order.preorder_ready_at && <small>Pre-order, siap dikirim ±{formatDate(new Date(order.preorder_ready_at))}</small>}
                       {coupon.discount_amount > 0 && <small>Kupon{coupon.coupon_code && ` ${coupon.coupon_code}`} −{formatPrice(coupon.discount_amount, currency)}</small>}
+                      {tracking && <small className="order-row-tracking"><Icon name="truck" />{order.courier ? `${order.courier} · ` : ""}Resi {tracking}<span>Lacak paket</span></small>}
                     </div>
                     <div className="order-row-total">
                       <small>Total</small>

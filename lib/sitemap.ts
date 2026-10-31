@@ -7,6 +7,8 @@ export interface SitemapData {
   products: { slug: string; updated_at: string | null; image: string | null }[];
   categories: { slug: string; updated_at: string | null }[];
   pages: { slug: string; updated_at: string | null }[];
+  /** Artikel blog terbit; kosong untuk toko tanpa blog (dan backend lama). */
+  posts: { slug: string; updated_at: string | null }[];
 }
 
 /** Batas protokol sitemap per berkas. */
@@ -35,6 +37,7 @@ export function readSitemap(value: unknown): SitemapData {
       return value ? [{ slug: value, updated_at: date(row.updated_at) }] : [];
     }),
     pages: rows(source.pages).flatMap((row) => (isPageSlug(row.slug) ? [{ slug: row.slug, updated_at: date(row.updated_at) }] : [])),
+    posts: rows(source.posts).flatMap((row) => (isPageSlug(row.slug) ? [{ slug: row.slug, updated_at: date(row.updated_at) }] : [])),
   };
 }
 
@@ -60,6 +63,12 @@ export function sitemapEntries(base: string, data: SitemapData | null): Metadata
   }
   for (const page of data.pages) {
     entries.push({ url: absoluteUrl(base, `/${page.slug}`), ...at(page.updated_at), changeFrequency: "monthly", priority: 0.4 });
+  }
+  if (data.posts.length > 0) {
+    entries.push({ url: absoluteUrl(base, "/blog"), ...at(data.posts[0].updated_at), changeFrequency: "weekly", priority: 0.5 });
+  }
+  for (const post of data.posts) {
+    entries.push({ url: absoluteUrl(base, `/blog/${post.slug}`), ...at(post.updated_at), changeFrequency: "monthly", priority: 0.5 });
   }
   return entries.slice(0, MAX_URLS);
 }

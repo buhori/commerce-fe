@@ -202,3 +202,7 @@
   .storefront-shell .footer-main { padding-block: 28px; gap: 28px; }
   .storefront-shell :is(.page-heading h1, .info-page-header h1) { font-size: 1.125rem; }
 }
+/* Resi di daftar Pesanan saya; barisnya membuka halaman pesanan di bagian Lacak paket. */
+.order-row-tracking { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--text) !important; font-weight: 600; }
+.order-row-tracking svg { width: 15px; height: 15px; flex-shrink: 0; }
+.order-row-tracking span { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }

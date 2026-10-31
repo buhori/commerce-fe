@@ -2618,7 +2618,12 @@ body:has(.compare-tray) .help-fab {
 .help-dialog-form label { font-size: 0.875rem; font-weight: 600; }
 .help-dialog-error { margin: 0; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--danger-soft); color: var(--danger); font-size: 0.875rem; }
 /* Hasil pelacakan: status (berwarna sesuai nada), tahapan, rincian, pengiriman, barang. */
-.help-track { --tone: var(--primary); --tone-soft: var(--primary-soft); }
+.help-track, .shipment-track { --tone: var(--primary); --tone-soft: var(--primary-soft); }
+.shipment-track small { display: block; color: var(--muted); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em; }
+.shipment-track [data-tone="warning"] { --tone: var(--warning); --tone-soft: var(--warning-soft); }
+.shipment-track [data-tone="info"] { --tone: #1d4ed8; --tone-soft: #eff6ff; }
+.shipment-track [data-tone="success"] { --tone: #047857; --tone-soft: #ecfdf5; }
+.shipment-track [data-tone="danger"] { --tone: var(--danger); --tone-soft: var(--danger-soft); }
 .help-track [data-tone="warning"] { --tone: var(--warning); --tone-soft: var(--warning-soft); }
 .help-track [data-tone="info"] { --tone: #1d4ed8; --tone-soft: #eff6ff; }
 .help-track [data-tone="primary"] { --tone: var(--primary); --tone-soft: color-mix(in srgb, var(--primary) 12%, var(--page)); }
@@ -2681,3 +2686,55 @@ body:has(.compare-tray) .help-fab {
 .help-track-items li span:last-child { flex-shrink: 0; color: var(--muted); font-weight: 600; }
 .help-track-reset { justify-self: center; gap: 8px; }
 .help-track-reset svg { width: 18px; height: 18px; }
+
+/* ------------------------------------------------------------------ Blog */
+/* Blog toko (paket Business): daftar /blog dan artikel /blog/[slug]. */
+.blog-page { padding-top: 24px; padding-bottom: 72px; }
+.blog-hero { display: grid; gap: 10px; max-width: 640px; padding: 24px 0 36px; }
+.blog-eyebrow { color: var(--muted); font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.blog-hero h1 { font-family: var(--font-heading); font-size: 2.5rem; letter-spacing: -0.035em; line-height: 1.1; }
+.blog-hero p:last-child { color: var(--muted); font-size: 1.0625rem; }
+.blog-meta { display: inline-flex; flex-wrap: wrap; gap: 6px 14px; color: var(--muted); font-size: 0.8125rem; }
+.blog-meta > * + *::before { content: "·"; margin-right: 14px; }
+
+.blog-card { display: grid; height: 100%; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--page); color: var(--text); transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s; }
+.blog-card:hover { border-color: var(--line-strong); transform: translateY(-2px); box-shadow: var(--shadow-pop); }
+.blog-card-cover { position: relative; display: flex; align-items: center; justify-content: center; aspect-ratio: 16 / 9; overflow: hidden; background: var(--surface); color: var(--muted); }
+/* Absolut: ukuran asli foto tidak ikut menentukan tinggi kartu. */
+.blog-card-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+.blog-card:hover .blog-card-cover img { transform: scale(1.03); }
+.blog-card-cover svg { width: 32px; height: 32px; }
+.blog-card-body { display: flex; flex-direction: column; gap: 8px; padding: 18px 20px 20px; }
+.blog-card-title { font-family: var(--font-heading); font-size: 1.125rem; font-weight: 700; letter-spacing: -0.015em; line-height: 1.3; }
+.blog-card-excerpt { display: -webkit-box; overflow: hidden; color: var(--muted); font-size: 0.9375rem; line-height: 1.6; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.blog-card-more { display: inline-flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 6px; font-size: 0.875rem; font-weight: 600; }
+.blog-card-more svg { width: 16px; height: 16px; transition: transform 0.15s; }
+.blog-card:hover .blog-card-more svg { transform: translateX(3px); }
+.blog-card-featured { margin-bottom: 28px; }
+@media (min-width: 768px) {
+  .blog-card-featured { grid-template-columns: 1.4fr 1fr; }
+  .blog-card-featured .blog-card-cover { aspect-ratio: auto; min-height: 360px; }
+  .blog-card-featured .blog-card-body { justify-content: center; gap: 12px; padding: 36px; }
+  .blog-card-featured .blog-card-title { font-size: 1.75rem; }
+  .blog-card-featured .blog-card-excerpt { font-size: 1rem; -webkit-line-clamp: 4; }
+}
+.blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; margin: 0; padding: 0; list-style: none; }
+.blog-page-count { align-self: center; color: var(--muted); font-size: 0.875rem; }
+
+.blog-article { max-width: 760px; }
+.blog-article-header { display: grid; gap: 14px; margin-bottom: 28px; }
+.blog-article-header h1 { font-family: var(--font-heading); font-size: 2.5rem; letter-spacing: -0.035em; line-height: 1.12; }
+.blog-article-lead { color: var(--text-softer); font-size: 1.1875rem; line-height: 1.6; }
+.blog-article-cover { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; margin-bottom: 36px; border-radius: var(--radius-lg); object-fit: cover; background: var(--surface); }
+.blog-article-content { font-size: 1.0625rem; }
+.blog-article-content img { max-width: 100%; height: auto; border-radius: var(--radius); }
+.blog-article-content h2 { font-size: 1.5rem; }
+.blog-article-content h3 { font-size: 1.1875rem; }
+.blog-article-footer { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 48px; padding-top: 28px; border-top: 1px solid var(--line); }
+.blog-related { margin-top: 72px; }
+.blog-related h2 { margin-bottom: 20px; font-family: var(--font-heading); font-size: 1.5rem; letter-spacing: -0.02em; }
+@media (max-width: 640px) {
+  .blog-hero h1, .blog-article-header h1 { font-size: 1.875rem; }
+  .blog-article-lead { font-size: 1.0625rem; }
+  .blog-grid { grid-template-columns: 1fr; }
+}

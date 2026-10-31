@@ -192,6 +192,8 @@ export interface OrderSummary {
   shipping_method: string | null;
   /** Logo kurir pesanan; null bila backend belum punya logonya. */
   shipping_logo: string | null;
+  /** Kurir, resi, dan status dari kurir untuk "Lacak paket"; null tanpa pengiriman atau backend lama. */
+  shipment: TrackedShipment | null;
   // The file itself stays with the store; the buyer only learns that it arrived.
   proof_uploaded: boolean;
   sender_name: string | null;
@@ -571,6 +573,7 @@ export function readOrder(data: unknown): OrderSummary {
       ? shippingOptionLabel({ courier_name: shipping.method.name, service: typeof shipping.service === "string" && shipping.service ? shipping.service : null })
       : null,
     shipping_logo: readHttpUrl(shipping?.method?.logo_url),
+    shipment: readTrackedShipment(row.shipment),
     proof_uploaded: payment?.has_proof === true,
     sender_name: typeof payment?.sender_name === "string" ? payment.sender_name : null,
     items: readOrderLines(row.items),
@@ -754,4 +757,40 @@ export function readReviewMedia(value: unknown): ReviewMedia[] {
     const link = typeof url === "string" ? url : typeof publicUrl === "string" ? publicUrl : "";
     return (type === "image" || type === "video") && /^https?:\/\//.test(link) ? [{ type, url: link }] : [];
   });
+}
+
+export interface TrackedShipmentEvent {
+  status: string;
+  note: string | null;
+  at: string | null;
+}
+
+/** Pengiriman pesanan untuk pembeli (App\Models\Shipping::forBuyer): detail pesanan dan "Lacak pesanan saya". */
+export interface TrackedShipment {
+  courier: string | null;
+  courierLogo: string | null;
+  trackingNumber: string | null;
+  trackingUrl: string | null;
+  /** Status dari kurir; null untuk resi yang dicatat manual. */
+  status: string | null;
+  history: TrackedShipmentEvent[];
+}
+
+/** Blok `shipment` (kurir, resi, status dan riwayat dari kurir); null bila tidak ada atau rusak. */
+export function readTrackedShipment(value: unknown): TrackedShipment | null {
+  const shipment = value as Record<string, unknown> | null | undefined;
+  if (!shipment || typeof shipment !== "object" || Array.isArray(shipment)) return null;
+  const text = (raw: unknown) => (typeof raw === "string" && raw.trim() ? raw.trim() : null);
+  return {
+    courier: text(shipment.courier),
+    courierLogo: readHttpUrl(shipment.courier_logo),
+    trackingNumber: text(shipment.tracking_number),
+    trackingUrl: readHttpUrl(shipment.tracking_url),
+    status: text(shipment.status),
+    history: (Array.isArray(shipment.history) ? shipment.history : []).flatMap((event) => {
+      const row = event as Record<string, unknown> | null;
+      const status = text(row?.status);
+      return status ? [{ status, note: text(row?.note), at: text(row?.at) }] : [];
+    }),
+  };
 }

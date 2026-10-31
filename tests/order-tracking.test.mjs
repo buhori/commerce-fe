@@ -8,7 +8,7 @@ function loadModule(file) {
   const exports = {};
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL(file, import.meta.url), "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
-  }).outputText, { exports, require: () => ({}) });
+  }).outputText, { exports, URL, require: (name) => (name.startsWith("./") ? loadModule(new URL(`${name}.ts`, new URL(file, import.meta.url)).href) : {}) });
   return exports;
 }
 
@@ -92,3 +92,25 @@ test("courier statuses get a colour by how far the parcel got", () => {
   assert.equal(shipmentStatusTone("delivered"), "success");
   assert.equal(shipmentStatusTone("returned"), "danger");
 });
+
+test("an order detail carries the same shipment block for signed-in buyers", () => {
+  const { readOrder } = loadModuleWithImports("../lib/checkout.ts");
+  const order = readOrder({ data: {
+    id: 12, status: "delivering", total: 20000, shipping_cost: 9000, grand_total: 29000, items: [],
+    shipment: { courier: "JNE REG", courier_logo: null, tracking_number: "JO0330429056", tracking_url: null, status: null, history: [] },
+  } });
+  assert.deepEqual(plain(order.shipment), { courier: "JNE REG", courierLogo: null, trackingNumber: "JO0330429056", trackingUrl: null, status: null, history: [] });
+  assert.equal(readOrder({ data: { id: 12, status: "paid", total: 1, shipping_cost: 0, grand_total: 1, items: [] } }).shipment, null);
+});
+
+function loadModuleWithImports(file) {
+  const url = new URL(file, import.meta.url);
+  const exports = {};
+  vm.runInNewContext(ts.transpileModule(readFileSync(url, "utf8"), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+  }).outputText, {
+    exports, URL, URLSearchParams,
+    require: (name) => (name.startsWith("./") ? loadModuleWithImports(new URL(`${name}.ts`, url).href) : {}),
+  });
+  return exports;
+}

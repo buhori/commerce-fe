@@ -13,6 +13,7 @@ import { PaymentProofForm } from "./payment-proof-form";
 import { ProductImage } from "./product-image";
 import { BrandLogo } from "./brand-logo";
 import { Icon } from "./icons";
+import { ShipmentTracking } from "./shipment-tracking";
 import { Spinner } from "./spinner";
 
 const POLL_INTERVAL = 5000;
@@ -89,6 +90,13 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
     });
     return () => controller.abort();
   }, [orderId, attempt, router]);
+
+  // Dari daftar Pesanan saya (/payment/{id}#lacak-paket): bagian Lacak paket baru ada setelah pesanan
+  // dimuat, jadi digulir ke sana sekali di sini.
+  const hasShipment = state.status === "ready" && state.order.shipment !== null;
+  useEffect(() => {
+    if (hasShipment && window.location.hash === "#lacak-paket") document.getElementById("lacak-paket")?.scrollIntoView({ block: "start" });
+  }, [hasShipment]);
 
   // Tagihan online menunggu konfirmasi gateway: tanya gateway tiap 5 detik selama tab terlihat (tanpa
   // menunggu webhook), langsung periksa lagi saat pembeli kembali ke tab (mis. dari aplikasi e-wallet),
@@ -302,6 +310,14 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
             )}
             <p className="payment-refresh-message" role="status">{refreshMessage}</p>
           </section>
+
+          {/* Lacak paket: kurir, resi, dan status dari kurir; dari daftar Pesanan saya lewat #lacak-paket. */}
+          {confirmed && order.shipment && (
+            <section className="payment-shipment" id="lacak-paket" aria-labelledby="payment-shipment-title">
+              <h2 id="payment-shipment-title">Lacak paket</h2>
+              <ShipmentTracking shipment={order.shipment} id="order-shipment" />
+            </section>
+          )}
 
           {order.reviewable && <OrderReviews orderId={order.id} items={order.items} photos={order.review_photos} video={order.review_videos} />}
 

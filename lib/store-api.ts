@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { headers } from "next/headers";
+import { readBlogPage, readBlogPost, type BlogPage, type BlogPost } from "./blog";
 import { clientIpHeaders, currentStoreHeaders, requestPreviewToken } from "./store-host";
 import { readHomeSections, readSections, type HomeSection } from "./home-sections";
 import { httpUrl, readSeo, readStoreSeo, readStructuredData, type PageSeo, type StoreSeo } from "./seo";
@@ -414,6 +415,27 @@ export const getCategories = cache(async (): Promise<Category[]> => {
 });
 
 /** Isi sitemap toko: slug produk, kategori, dan halaman yang tayang. */
+/** Daftar blog per halaman; null bila toko tanpa blog (paket di bawah Business). */
+export async function getBlogPosts(page = 1): Promise<BlogPage | null> {
+  try {
+    return readBlogPage(await storeFetch<unknown>(`/blog?page=${page}`));
+  } catch (error) {
+    if (error instanceof StoreApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+
+/** Satu artikel; null bila tidak ada, belum terbit, atau toko tanpa blog. */
+export const getBlogPost = cache(async (slug: string): Promise<BlogPost | null> => {
+  if (!isPageSlug(slug)) return null;
+  try {
+    return readBlogPost(await storeFetch<unknown>(`/blog/${slug}`));
+  } catch (error) {
+    if (error instanceof StoreApiError && error.status === 404) return null;
+    throw error;
+  }
+});
+
 export async function getSitemap(): Promise<SitemapData> {
   return readSitemap(await storeFetch<unknown>("/sitemap"));
 }

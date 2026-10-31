@@ -39,6 +39,9 @@ export interface OrderListItem {
   discount_amount?: unknown;
   items_count: number;
   items: { name: string | null; image: string | null; amount: number }[];
+  /** Kurir dan nomor resi; belum tentu dikirim backend lama. */
+  courier?: string | null;
+  tracking_number?: string | null;
 }
 
 export interface OrderList {
