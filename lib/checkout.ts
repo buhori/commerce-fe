@@ -194,6 +194,8 @@ export interface OrderSummary {
   shipping_logo: string | null;
   /** Kurir, resi, dan status dari kurir untuk "Lacak paket"; null tanpa pengiriman atau backend lama. */
   shipment: TrackedShipment | null;
+  /** Batas bayar pesanan yang masih menunggu (ISO 8601); lewat dari ini toko membatalkannya otomatis. */
+  payment_expires_at: string | null;
   // The file itself stays with the store; the buyer only learns that it arrived.
   proof_uploaded: boolean;
   sender_name: string | null;
@@ -574,6 +576,7 @@ export function readOrder(data: unknown): OrderSummary {
       : null,
     shipping_logo: readHttpUrl(shipping?.method?.logo_url),
     shipment: readTrackedShipment(row.shipment),
+    payment_expires_at: typeof row.payment_expires_at === "string" && !Number.isNaN(Date.parse(row.payment_expires_at)) ? row.payment_expires_at : null,
     proof_uploaded: payment?.has_proof === true,
     sender_name: typeof payment?.sender_name === "string" ? payment.sender_name : null,
     items: readOrderLines(row.items),

@@ -7,29 +7,11 @@ import {
   jsonHeaders, paymentChangeErrorMessage, readOrder,
   type BankChoice, type OnlinePayment, type OnlinePaymentDisplay, type OrderSummary, type PaymentMethod,
 } from "@/lib/checkout";
-import { formatDateTime, formatPrice } from "@/lib/format";
+import { formatPrice } from "@/lib/format";
 import { CopyValue } from "./copy-value";
 import { PaymentChoices } from "./delivery-options";
 import { Icon } from "./icons";
 import { Spinner } from "./spinner";
-
-// Satu jam bersama untuk semua sisa waktu di halaman: satu interval, berdetak tiap detik.
-let now: number | null = null;
-let clock: ReturnType<typeof setInterval> | undefined;
-const clockListeners = new Set<() => void>();
-
-function subscribeClock(listener: () => void) {
-  clockListeners.add(listener);
-  const tick = () => { now = Date.now(); clockListeners.forEach((notify) => notify()); };
-  if (!clock) clock = setInterval(tick, 1000);
-  tick();
-  return () => {
-    clockListeners.delete(listener);
-    if (!clockListeners.size && clock) { clearInterval(clock); clock = undefined; }
-  };
-}
-
-const useNow = () => useSyncExternalStore(subscribeClock, () => now, () => null);
 
 // Ponsel/tablet (layar sentuh tanpa kursor): tautan aplikasi e-wallet didahulukan.
 const touchQuery = "(hover: none) and (pointer: coarse)";
@@ -39,27 +21,6 @@ function subscribeTouch(listener: () => void) {
   return () => query.removeEventListener("change", listener);
 }
 const useTouchDevice = () => useSyncExternalStore(subscribeTouch, () => window.matchMedia(touchQuery).matches, () => false);
-
-const pad = (value: number) => String(value).padStart(2, "0");
-
-function PaymentDeadline({ expiresAt }: { expiresAt: string | null }) {
-  const current = useNow();
-  if (!expiresAt) return null;
-  const end = Date.parse(expiresAt);
-  const remaining = current === null ? null : Math.max(0, Math.floor((end - current) / 1000));
-  if (remaining === 0) {
-    return <p className="payment-deadline" data-expired="true"><Icon name="clock" />Batas waktu pembayaran sudah lewat. Status diperbarui sebentar lagi.</p>;
-  }
-  const clockText = remaining === null ? "--:--:--"
-    : `${Math.floor(remaining / 86400) > 0 ? `${Math.floor(remaining / 86400)} hari ` : ""}${pad(Math.floor(remaining / 3600) % 24)}:${pad(Math.floor(remaining / 60) % 60)}:${pad(remaining % 60)}`;
-  return (
-    <p className="payment-deadline">
-      <Icon name="clock" />
-      <span>Bayar sebelum <strong>{formatDateTime(new Date(end))}</strong></span>
-      <span className="payment-deadline-timer" role="timer" aria-label="Sisa waktu pembayaran">{clockText}</span>
-    </p>
-  );
-}
 
 function SectionHeading({ id, icon, title, payment }: { id: string; icon: "bank" | "qr" | "arrow" | "phone" | "clock"; title: string; payment: OnlinePayment }) {
   return (
@@ -107,7 +68,6 @@ function DisplayAction({ payment, display, currency }: { payment: OnlinePayment;
           </CopyValue>
         </div>
       </div>
-      <PaymentDeadline expiresAt={payment.expires_at} />
       <ol className="payment-qris-steps">
         {steps.map((step, index) => <li key={index}>{step}</li>)}
       </ol>
@@ -139,7 +99,6 @@ function QrAction({ payment, qr, amount, currency, orderId }: { payment: OnlineP
           role="img" aria-label={`Kode QRIS untuk membayar ${formatPrice(amount, currency)}`} />
       </div>
       <p className="payment-online-qr-amount"><span>Total</span><strong>{formatPrice(amount, currency)}</strong></p>
-      <PaymentDeadline expiresAt={payment.expires_at} />
       <ol className="payment-qris-steps">
         <li>Buka aplikasi e-wallet atau m-banking yang mendukung QRIS.</li>
         <li>Scan kode di atas. Jika membayar dari ponsel yang sama, unduh QR lalu pilih dari galeri di aplikasi.</li>
@@ -177,7 +136,6 @@ function RedirectAction({ payment, url }: { payment: OnlinePayment; url: string 
         Pembayaran {payment.method_label} diselesaikan di halaman {payment.provider ?? "penyedia pembayaran"}.
         Setelah membayar, kembali ke halaman ini. Status pesanan diperbarui otomatis.
       </p>
-      <PaymentDeadline expiresAt={payment.expires_at} />
       <div className="payment-online-actions">
         <ButtonLink reloadDocument href={url} rel="noopener">Bayar sekarang<Icon name="arrow" /></ButtonLink>
       </div>
@@ -200,7 +158,6 @@ function DeeplinkAction({ payment, mobileUrl, desktopUrl }: { payment: OnlinePay
             : `Lanjutkan ke halaman ${payment.provider ?? "pembayaran"} untuk membayar dengan ${payment.method_label}. Status pesanan diperbarui otomatis.`
           : `Buka halaman ini di ponsel yang terpasang aplikasi ${payment.method_label} untuk melanjutkan pembayaran.`}
       </p>
-      <PaymentDeadline expiresAt={payment.expires_at} />
       {primary && (
         <div className="payment-online-actions">
           <ButtonLink reloadDocument href={primary} rel="noopener">{opensApp ? `Buka ${payment.method_label}` : "Bayar sekarang"}<Icon name="arrow" /></ButtonLink>
@@ -333,7 +290,6 @@ export function OnlinePaymentPanel({ order, payment, currency, onOrderChange }: 
             <Notice tone="waiting" title="Menunggu konfirmasi pembayaran…">
               {`${payment.method_label}${payment.provider ? ` lewat ${payment.provider}` : ""}. Halaman ini diperbarui otomatis.`}
             </Notice>
-            <PaymentDeadline expiresAt={payment.expires_at} />
           </div>
         )}
       <div className="payment-bank payment-online payment-change-toggle">

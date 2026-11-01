@@ -8,6 +8,7 @@ import { readOrder, shouldPollPayment, usesOnlinePayment, type OrderSummary } fr
 import { formatDate, formatPrice } from "@/lib/format";
 import { CopyValue } from "./copy-value";
 import { OnlinePaymentPanel } from "./online-payment";
+import { PendingPaymentStatus } from "./payment-countdown";
 import { OrderReviews } from "./order-reviews";
 import { PaymentProofForm } from "./payment-proof-form";
 import { ProductImage } from "./product-image";
@@ -178,6 +179,12 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
   const qris = order.payment_method === "qris";
   const online = usesOnlinePayment(order) ? order.online_payment : null;
   const itemCount = order.items.reduce((count, item) => count + item.amount, 0);
+  // Batas bayar: yang paling awal antara tagihan gateway yang masih berjalan dan batas pesanan
+  // (lewat dari itu toko membatalkan pesanan). Tagihan yang sedang diperiksa toko tidak perlu dibayar lagi.
+  const paymentDeadline = online && ["needs_review", "paid"].includes(online.status) ? null
+    : [online?.status === "pending" ? online.expires_at : null, order.payment_expires_at]
+      .filter((value): value is string => value !== null && !Number.isNaN(Date.parse(value)))
+      .sort((a, b) => Date.parse(a) - Date.parse(b))[0] ?? null;
 
   function refreshStatus() {
     setRefreshing(true);
@@ -210,13 +217,17 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
       <div className="payment-layout">
         <div className="payment-main">
           <section className="payment-card" aria-labelledby="payment-status-title">
-            <div className="payment-status" data-tone={awaitingPayment ? "pending" : stopped ? "stopped" : confirmed ? "success" : "neutral"}>
-              <span className="payment-status-icon"><Icon name={awaitingPayment ? "clock" : stopped ? "info" : confirmed ? "check" : "box"} width={24} height={24} /></span>
-              <div>
-                <h2 id="payment-status-title">{statusLabels[order.status] ?? order.status}</h2>
-                <p>{awaitingPayment ? "Pesanan diproses setelah pembayaran diterima." : stopped ? "Tidak perlu melakukan pembayaran untuk pesanan ini." : "Status pesanan diperbarui oleh toko."}</p>
+            {awaitingPayment ? (
+              <PendingPaymentStatus id="payment-status-title" title={statusLabels.pending} deadline={paymentDeadline} />
+            ) : (
+              <div className="payment-status" data-tone={stopped ? "stopped" : confirmed ? "success" : "neutral"}>
+                <span className="payment-status-icon"><Icon name={stopped ? "info" : confirmed ? "check" : "box"} width={24} height={24} /></span>
+                <div>
+                  <h2 id="payment-status-title">{statusLabels[order.status] ?? order.status}</h2>
+                  <p>{stopped ? "Tidak perlu melakukan pembayaran untuk pesanan ini." : "Status pesanan diperbarui oleh toko."}</p>
+                </div>
               </div>
-            </div>
+            )}
 
             {awaitingPayment && (
               <>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { jsonHeaders, readOrder, type OrderSummary } from "@/lib/checkout";
 import { directUpload, DirectUploadUnavailable } from "@/lib/direct-upload";
+import { imageReadable, UNREADABLE_IMAGE } from "@/lib/image-check";
 import { Icon } from "./icons";
 import { Spinner } from "./spinner";
 
@@ -49,12 +50,13 @@ export function PaymentProofForm({ order, onUploaded }: {
     setPreview(chosen?.type.startsWith("image/") ? URL.createObjectURL(chosen) : null);
   }
 
-  function choose(event: ChangeEvent<HTMLInputElement>) {
-    const chosen = event.target.files?.[0] ?? null;
+  async function choose(event: ChangeEvent<HTMLInputElement>) {
+    const input = event.target;
+    const chosen = input.files?.[0] ?? null;
     setMessage(null);
-    const problem = chosen && checkFile(chosen, proof);
+    const problem = chosen && (checkFile(chosen, proof) ?? (await imageReadable(chosen) ? null : UNREADABLE_IMAGE));
     if (problem) {
-      event.target.value = "";
+      input.value = "";
       setMessage({ text: problem, error: true });
     }
     pick(problem ? null : chosen);

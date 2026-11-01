@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { jsonHeaders, type ItemReview, type OrderLine } from "@/lib/checkout";
 import { directUpload, DirectUploadUnavailable } from "@/lib/direct-upload";
+import { imageReadable, UNREADABLE_IMAGE } from "@/lib/image-check";
 import { readReviewMedia } from "@/lib/reviews";
 import { Icon } from "./icons";
 import { ProductImage } from "./product-image";
@@ -225,10 +226,11 @@ function ReviewAttachments({ allowed, photos, video, replacing, onPhotos, onVide
   onVideo: (video: File | null) => void;
   onError: (message: string | null) => void;
 }) {
-  function addPhotos(files: FileList | null) {
+  async function addPhotos(files: FileList | null) {
     const picked = Array.from(files ?? []);
     if (picked.some((file) => !PHOTO_TYPES.split(",").includes(file.type))) return onError("Foto harus berformat JPG, PNG, WebP, atau GIF.");
     if (picked.some((file) => tooBig(file, PHOTO_MAX_MB))) return onError(`Ukuran setiap foto paling besar ${PHOTO_MAX_MB} MB.`);
+    if ((await Promise.all(picked.map(imageReadable))).includes(false)) return onError(UNREADABLE_IMAGE);
     if (photos.length + picked.length > MAX_PHOTOS) onError(`Paling banyak ${MAX_PHOTOS} foto; foto lainnya tidak ditambahkan.`);
     else onError(null);
     onPhotos([...photos, ...picked].slice(0, MAX_PHOTOS));

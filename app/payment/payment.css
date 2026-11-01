@@ -33,6 +33,20 @@
 .payment-status[data-tone="success"] .payment-status-icon { background: var(--success); color: #fff; }
 .payment-status h2 { font-size: .9375rem; line-height: 1.4; }
 .payment-status h2::first-letter { text-transform: uppercase; }
+/* Hitung mundur batas bayar (components/payment-countdown.tsx); merah saat tinggal kurang dari sejam. */
+.payment-status-text { flex: 1 1 220px; min-width: 0; }
+.payment-status-text strong { color: var(--text); font-weight: 600; }
+.payment-status:has(.payment-countdown) { flex-wrap: wrap; }
+.payment-countdown { display: grid; justify-items: end; gap: 6px; margin-left: auto; }
+.payment-countdown-caption { font-size: .6875rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #80551a; }
+.payment-countdown-clock { display: flex; gap: 6px; }
+.payment-countdown-clock > span { display: grid; justify-items: center; min-width: 58px; padding: 8px 6px 6px; border: 1px solid #f1dcae; border-radius: 10px; background: var(--page); }
+.payment-countdown-clock strong { font-size: 1.625rem; font-weight: 700; line-height: 1.1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: #80551a; }
+.payment-countdown-clock small { margin-top: 2px; font-size: .625rem; color: var(--muted); }
+.payment-status[data-urgent] { background: var(--danger-soft); }
+.payment-status[data-urgent] .payment-status-icon { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, var(--page)); }
+.payment-status[data-urgent] :is(.payment-countdown-caption, .payment-countdown-clock strong) { color: var(--danger); }
+.payment-status[data-urgent] .payment-countdown-clock > span { border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
 .payment-status p { font-size: .75rem; color: var(--muted); margin-top: 4px; }
 .payment-amount { padding: 28px; }
 .payment-label { display: block; color: var(--muted); font-size: .75rem; margin-bottom: 8px; }
@@ -158,6 +172,9 @@
   .payment-status h2 { font-size: .8125rem; }
   .payment-status p { font-size: .6875rem; }
   .payment-status-icon { flex-basis: 36px; height: 36px; }
+  .payment-countdown { justify-items: stretch; flex-basis: 100%; margin-left: 0; }
+  .payment-countdown-clock > span { flex: 1; }
+  .payment-countdown-clock strong { font-size: 1.375rem; }
   .payment-amount, .payment-summary { padding: 20px 18px; }
   .payment-bank { margin-inline: 18px; padding-block: 20px; }
   .payment-account-number { font-size: 1.1875rem; }
@@ -186,11 +203,6 @@
 .payment-online-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .payment-online-actions > .button-primary { min-height: 48px; }
 @media (max-width: 480px) { .payment-online-actions > .button-primary { width: 100%; } }
-.payment-deadline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 10px 14px; border-radius: 8px; background: #fffbf2; color: #80551a; font-size: .75rem; line-height: 1.6; }
-.payment-deadline svg { flex-shrink: 0; width: 16px; height: 16px; }
-.payment-deadline strong { font-weight: 600; }
-.payment-deadline-timer { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
-.payment-deadline[data-expired="true"] { background: var(--surface); color: var(--muted); }
 .payment-online-notice { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; font-size: .8125rem; }
 .payment-online-notice > svg { flex-shrink: 0; width: 20px; height: 20px; margin-top: 1px; color: var(--primary); }
 .payment-online-notice p { margin-top: 4px; color: var(--muted); font-size: .75rem; line-height: 1.7; overflow-wrap: anywhere; }
@@ -205,7 +217,7 @@
 .payment-change-toggle > .button-text { justify-self: start; color: var(--muted); }
 
 /* Ulasan barang di pesanan yang sudah diterima (components/order-reviews.tsx). */
-.order-reviews { padding: 24px; }
+.order-reviews { margin-top: 24px; padding: 24px; }
 .order-reviews h2 { font-size: 1.125rem; }
 .order-reviews-lead { margin-top: 6px; color: var(--muted); font-size: 0.875rem; }
 .order-reviews > ul { display: grid; gap: 0; margin-top: 16px; }
