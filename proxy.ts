@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { REQUEST_PATH_HEADER } from "./lib/canonical-host";
 import { catalogUrl, readCatalogFilter } from "./lib/catalog-url";
 import { isThemeId, PREVIEW_HEADER, PREVIEW_RESPONSE_HEADERS, THEME_PREVIEW_COOKIE } from "./themes/registry";
 
@@ -10,6 +11,9 @@ const PREVIEW_TOKEN = /^[A-Za-z0-9_-]{20,400}\.[A-Za-z0-9_-]{43}$/;
  *   dari situs lain tidak bisa menyimpan cookie); backend yang memeriksa token itu.
  * - `?theme=<id>`: pratinjau tema untuk developer (THEME_PREVIEW=true) disimpan ke cookie, lalu
  *   diarahkan ke URL yang sama tanpa parameter; `?theme=store` kembali ke tema dari panel.
+ * - Path dan query setiap halaman diteruskan ke layout (REQUEST_PATH_HEADER), yang mengalihkan
+ *   subdomain platform ke domain toko sendiri (lib/canonical-host.ts). Pengalihannya di layout,
+ *   bukan di sini, karena butuh data toko dan fetch di proxy tidak di-cache.
  */
 export function proxy(request: NextRequest) {
   // Pencarian dan urutan dulu tinggal di "/"; katalog sekarang di /products. 308 (permanen,
@@ -19,18 +23,22 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(catalogUrl(readCatalogFilter(search)), request.url), 308);
   }
 
+  // Selalu ditimpa: nilai dari pengunjung tidak dipakai.
+  const forwarded = new Headers(request.headers);
+  forwarded.set(REQUEST_PATH_HEADER, `${request.nextUrl.pathname}${request.nextUrl.search}`);
+  forwarded.delete(PREVIEW_HEADER);
+
   const preview = request.nextUrl.searchParams.get("preview");
   if (preview !== null) {
-    const forwarded = new Headers(request.headers);
-    forwarded.delete(PREVIEW_HEADER);
     if (PREVIEW_TOKEN.test(preview)) forwarded.set(PREVIEW_HEADER, preview);
     const response = NextResponse.next({ request: { headers: forwarded } });
     for (const [name, value] of Object.entries(PREVIEW_RESPONSE_HEADERS)) response.headers.set(name, value);
     return response;
   }
 
-
-  if (process.env.THEME_PREVIEW !== "true" || !request.nextUrl.searchParams.has("theme")) return NextResponse.next();
+  if (process.env.THEME_PREVIEW !== "true" || !request.nextUrl.searchParams.has("theme")) {
+    return NextResponse.next({ request: { headers: forwarded } });
+  }
 
   const url = request.nextUrl.clone();
   const theme = url.searchParams.get("theme");
@@ -45,11 +53,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    { source: "/((?!_next|api|auth|favicon.ico).*)", has: [{ type: "query", key: "theme" }] },
-    { source: "/((?!_next|api|auth|favicon.ico).*)", has: [{ type: "query", key: "preview" }] },
-    { source: "/", has: [{ type: "query", key: "q" }] },
-    { source: "/", has: [{ type: "query", key: "sort" }] },
-    { source: "/", has: [{ type: "query", key: "filter" }] },
-  ],
+  // Semua halaman (untuk REQUEST_PATH_HEADER); aset Next, route API, dan login tidak.
+  matcher: ["/((?!_next|api|auth|favicon.ico).*)"],
 };

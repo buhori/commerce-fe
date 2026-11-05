@@ -28,6 +28,8 @@ export interface Invoice {
   shipping_method: string | null;
   tracking_number: string | null;
   unique_code: number;
+  /** Biaya admin payment gateway yang dibayar pembeli; sudah termasuk di grand_total. Kosong di backend lama. */
+  payment_fee?: number;
   grand_total: number;
   payment_method: string | null;
   bank_account: { bank: string; logo_url?: string | null; name: string; number: string } | null;

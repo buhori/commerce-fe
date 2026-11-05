@@ -9,7 +9,7 @@ import { cartItemsOptions, preorderItemsOptions } from "@/lib/cart-queries";
 import { useRouter } from "next/navigation";
 import { getCartUnitPrice, getCartVariantId } from "@/lib/cart";
 import { StoreEventOnMount } from "./plugin-scripts";
-import { checkoutErrorMessage, couponErrorMessage, fieldError, isManualPayment, jsonHeaders, readCoupon, readOrderId, shippingOptionLabel, type AddressDetails, type AppliedCoupon, type BankChoice, type PaymentMethod, type ShippingOption } from "@/lib/checkout";
+import { checkoutErrorMessage, couponErrorMessage, fieldError, gatewayFeeAmount, gatewayFeeRate, isManualPayment, jsonHeaders, readCoupon, readOrderId, shippingOptionLabel, type AddressDetails, type AppliedCoupon, type BankChoice, type PaymentMethod, type ShippingOption } from "@/lib/checkout";
 import { addDays, formatDate, formatPrice } from "@/lib/format";
 import { preorderDays } from "@/lib/store-shared";
 import { ProductImage } from "./product-image";
@@ -151,6 +151,8 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
   const total = items.reduce((sum, item, index) => sum + (prices[index] ?? 0) * item.amount, 0);
   // Backend tidak memotong melebihi subtotal barang; ongkos kirim tidak ikut dipotong.
   const couponDiscount = activeCoupon ? Math.min(activeCoupon.discount, total) : 0;
+  // Biaya admin payment gateway yang dibebankan ke pembeli (metode online); dihitung ulang dan disimpan di server.
+  const paymentFee = shipping && payment?.fee?.charged_to_customer ? gatewayFeeAmount(total - couponDiscount + shipping.cost, payment.fee) : 0;
   const longestPreorder = Math.max(0, ...items.map((item) => preorderDays(item.product)));
 
   return (
@@ -292,8 +294,11 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
           <div className="checkout-coupon-discount"><span>Kupon {activeCoupon.code}</span><strong>−{formatPrice(couponDiscount, currency)}</strong></div>
         )}
         <div><span>Ongkos kirim{shipping ? ` (${shippingOptionLabel(shipping)})` : ""}</span><strong>{shipping ? formatPrice(shipping.cost, currency) : "Belum dipilih"}</strong></div>
+        {shipping && totalKnown && paymentFee > 0 && payment?.fee && (
+          <div className="checkout-payment-fee"><span>Biaya layanan pembayaran ({payment.name} {gatewayFeeRate(payment.fee)})</span><strong>{formatPrice(paymentFee, currency)}</strong></div>
+        )}
         {shipping && totalKnown
-          ? <div className="cart-total"><span>Total belanja</span><strong>{formatPrice(total - couponDiscount + shipping.cost, currency)}</strong></div>
+          ? <div className="cart-total"><span>Total belanja</span><strong>{formatPrice(total - couponDiscount + shipping.cost + paymentFee, currency)}</strong></div>
           : <p>Belum termasuk ongkos kirim.</p>}
         {selected && (
           <section className="checkout-selected" aria-label="Alamat dipilih">

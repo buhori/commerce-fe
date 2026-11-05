@@ -1,8 +1,9 @@
 import type { ReviewMedia } from "./reviews";
 
-export interface Region {
+/** Kelurahan/desa dari pencarian checkout, mis. "Sarijadi, Sukasari, Kota Bandung, Jawa Barat 40151". */
+export interface RegionMatch {
   code: string;
-  name: string;
+  label: string;
 }
 
 export interface AddressDetails {
@@ -106,6 +107,37 @@ export interface PaymentMethod {
   group: string | null;
   /** Nama penyedia, mis. "Xendit Payment"; null untuk metode toko. */
   provider: string | null;
+  /** Perkiraan biaya admin payment gateway metode online; null bila tanpa biaya (metode toko, atau belum diketahui). */
+  fee: GatewayFee | null;
+}
+
+/** Biaya admin payment gateway satu metode online (Pengaturan toko → Belanja di backend). */
+export interface GatewayFee {
+  percent: number;
+  flat: number;
+  /** true: ditambahkan ke tagihan pembeli; false: ditanggung toko, tidak tampil di checkout. */
+  charged_to_customer: boolean;
+}
+
+/** Biaya untuk nominal belanja (barang − kupon + ongkir); rumusnya sama dengan GatewayFee::amount di backend. */
+export function gatewayFeeAmount(base: number, fee: GatewayFee | null): number {
+  if (!fee || base <= 0) return 0;
+  return Math.round((base * fee.percent) / 100) + fee.flat;
+}
+
+/** "0,7%", "Rp4.000", atau "2,9% + Rp2.000" untuk label biaya di ringkasan checkout. */
+export function gatewayFeeRate(fee: GatewayFee): string {
+  const percent = fee.percent > 0 ? `${fee.percent.toLocaleString("id-ID", { maximumFractionDigits: 2 })}%` : null;
+  const flat = fee.flat > 0 ? `Rp${fee.flat.toLocaleString("id-ID")}` : null;
+  return [percent, flat].filter(Boolean).join(" + ");
+}
+
+function readGatewayFee(value: unknown): GatewayFee | null {
+  if (!value || typeof value !== "object") return null;
+  const fee = value as Record<string, unknown>;
+  const percent = typeof fee.percent === "number" && Number.isFinite(fee.percent) && fee.percent >= 0 ? fee.percent : 0;
+  const flat = typeof fee.flat === "number" && Number.isSafeInteger(fee.flat) && fee.flat >= 0 ? fee.flat : 0;
+  return percent > 0 || flat > 0 ? { percent, flat, charged_to_customer: fee.charged_to_customer === true } : null;
 }
 
 /** Satu bagian di daftar metode pembayaran; label null bila hanya ada metode toko. */
@@ -182,6 +214,8 @@ export interface OrderSummary {
   discount_amount: number;
   // Added to the transfer amount so a manual payment can be matched to one order.
   unique_payment_code: number | null;
+  /** Biaya admin payment gateway yang dibayar pembeli; sudah termasuk di grand_total, 0 bila tidak ada. */
+  payment_fee: number;
   grand_total: number;
   payment_method: string | null;
   // Display name managed by the store backend, so new methods need no frontend change.
@@ -263,12 +297,8 @@ export interface OnlinePayment {
 }
 
 
-export const regionLevels = [
-  { label: "Provinsi", length: 2 },
-  { label: "Kabupaten / Kota", length: 5 },
-  { label: "Kecamatan", length: 8 },
-  { label: "Kelurahan / Desa", length: 13 },
-] as const;
+/** Pencarian wilayah dimulai setelah sekian huruf; lebih pendek terlalu banyak hasilnya. */
+export const REGION_SEARCH_MIN_LENGTH = 3;
 
 // Backend list endpoints answer either with a bare array or a { data } wrapper.
 function readRows(data: unknown): unknown[] | null {
@@ -276,20 +306,15 @@ function readRows(data: unknown): unknown[] | null {
   return Array.isArray(rows) ? rows : null;
 }
 
-export function readRegions(data: unknown, level: number, parent?: string): Region[] {
+/** Hasil /regions/search: hanya kelurahan/desa (kode 13 karakter) yang berlabel. */
+export function readRegionMatches(data: unknown): RegionMatch[] {
   const rows = readRows(data);
   if (!rows) throw new Error("Data wilayah belum dapat dibaca.");
-  return rows.filter((row): row is Region => {
-    const region = row as Partial<Region>;
-    return Boolean(row) && typeof region.code === "string" && typeof region.name === "string" &&
-      /^\d{2}(?:\.\d{2}(?:\.\d{2}(?:\.\d{4})?)?)?$/.test(region.code) &&
-      region.code.length === regionLevels[level]?.length &&
-      (!parent || region.code.startsWith(`${parent}.`));
+  return rows.filter((row): row is RegionMatch => {
+    const region = row as Partial<RegionMatch>;
+    return Boolean(row) && typeof region.code === "string" && /^\d{2}\.\d{2}\.\d{2}\.\d{4}$/.test(region.code) &&
+      typeof region.label === "string" && region.label.trim() !== "";
   });
-}
-
-export function resetRegionChildren(regions: (Region | null)[], level: number, selected: Region | null) {
-  return regions.map((region, index) => index < level ? region : index === level ? selected : null);
 }
 
 export function isShippingAddress(value: unknown): value is ShippingAddress {
@@ -355,6 +380,7 @@ export function readPaymentMethods(data: unknown): PaymentMethod[] {
       online,
       group: online ? readText(row.group) : null,
       provider: online ? readText(row.provider) : null,
+      fee: online ? readGatewayFee((row as { fee?: unknown }).fee) : null,
     };
   });
 }
@@ -566,6 +592,7 @@ export function readOrder(data: unknown): OrderSummary {
     shipping_cost: row.shipping_cost as number,
     ...readOrderDiscount(row),
     unique_payment_code: typeof row.unique_payment_code === "number" ? row.unique_payment_code : null,
+    payment_fee: typeof row.payment_fee === "number" && Number.isSafeInteger(row.payment_fee) && row.payment_fee > 0 ? row.payment_fee : 0,
     grand_total: row.grand_total as number,
     payment_method: typeof payment?.method?.code === "string" ? payment.method.code : null,
     payment_method_name: typeof payment?.method?.name === "string" ? payment.method.name : null,

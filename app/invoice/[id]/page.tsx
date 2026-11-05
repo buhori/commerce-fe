@@ -130,6 +130,7 @@ export default async function InvoicePage({ params, searchParams }: PageProps<"/
           {invoice.discount > 0 && invoice.discount_amount === 0 && <div><dt>Diskon ({invoice.discount_percent}%)</dt><dd>−{money(invoice.discount)}</dd></div>}
           <div><dt>Ongkos kirim</dt><dd>{money(invoice.shipping_cost)}</dd></div>
           {invoice.unique_code > 0 && <div><dt>Kode unik transfer</dt><dd>{money(invoice.unique_code)}</dd></div>}
+          {(invoice.payment_fee ?? 0) > 0 && <div><dt>Biaya layanan pembayaran</dt><dd>{money(invoice.payment_fee ?? 0)}</dd></div>}
           <div className="invoice-grand-total"><dt>Total</dt><dd>{money(invoice.grand_total)}</dd></div>
         </dl>
 

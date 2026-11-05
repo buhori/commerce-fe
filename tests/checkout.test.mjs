@@ -8,7 +8,7 @@ const exports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL("../lib/checkout.ts", import.meta.url), "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS },
 }).outputText, { exports });
-const { readRegions, resetRegionChildren, readAddresses, readShippingQuote, shippingOptionKey, shippingOptionLabel, etdRange, shippingHighlights, readPaymentMethods, readBankAccounts, readBankChoices, readOrder } = exports;
+const { readRegionMatches, readAddresses, readShippingQuote, shippingOptionKey, shippingOptionLabel, etdRange, shippingHighlights, readPaymentMethods, readBankAccounts, readBankChoices, readOrder, gatewayFeeAmount, gatewayFeeRate } = exports;
 
 test("delivery estimates are read as day ranges", () => {
   assert.deepEqual([...etdRange("1-2 hari")], [1, 2]);
@@ -31,26 +31,17 @@ test("shipping highlights mark the cheapest, the fastest, and slow services", ()
   assert.deepEqual({ ...flat.get("1:S1") }, { cheapest: false, fastest: false, slow: false });
 });
 
-test("region responses accept arrays/wrappers and only direct children of the selected parent", () => {
-  assert.equal(readRegions([{ code: "11", name: "Aceh" }, { code: "11.02", name: "Kabupaten" }], 0).length, 1);
-  const rows = readRegions({ data: [{ code: "11.02", name: "Kabupaten" }, { code: "12.02", name: "Wrong province" }, { code: "11.02.01", name: "Too deep" }] }, 1, "11");
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0].code, "11.02");
-  assert.equal(readRegions([{ code: "11.02.01", name: "Kecamatan" }], 2, "11.02")[0].code, "11.02.01");
-  assert.equal(readRegions([{ code: "11.02.01.0001", name: "Desa" }], 3, "11.02.01")[0].code, "11.02.01.0001");
-  assert.throws(() => readRegions({ message: "failed" }, 0));
-});
-
-test("changing a parent clears all descendant selections", () => {
-  const regions = [{ code: "11" }, { code: "11.02" }, { code: "11.02.01" }, { code: "11.02.01.0001" }];
-  const province = resetRegionChildren(regions, 0, { code: "12" });
-  assert.equal(province[0].code, "12");
-  assert.ok(province.slice(1).every((entry) => entry === null));
-  const district = resetRegionChildren(regions, 2, { code: "11.02.02" });
-  assert.equal(district[0], regions[0]);
-  assert.equal(district[1], regions[1]);
-  assert.equal(district[2].code, "11.02.02");
-  assert.equal(district[3], null);
+test("region search results keep only labelled kelurahan codes", () => {
+  const sarijadi = { code: "32.73.01.1001", label: "Sarijadi, Sukasari, Kota Bandung, Jawa Barat 40151" };
+  assert.deepEqual(readRegionMatches({ data: [sarijadi] }), [sarijadi]);
+  assert.deepEqual(readRegionMatches([
+    sarijadi,
+    { code: "32.73.01", label: "Sukasari" },
+    { code: "32.73.01.1002", label: "" },
+    { code: "32.73.01.1003" },
+    null,
+  ]), [sarijadi]);
+  assert.throws(() => readRegionMatches({ message: "failed" }));
 });
 
 test("address lists validate saved identifiers instead of treating arbitrary responses as saved addresses", () => {
@@ -94,6 +85,33 @@ test("payment methods are keyed by code, so an unnamed or code-less row is rejec
   assert.throws(() => readPaymentMethods({ message: "failed" }));
   assert.throws(() => readPaymentMethods([{ name: "Tanpa kode" }]));
   assert.throws(() => readPaymentMethods([{ code: "qris" }]));
+});
+
+test("online methods carry the payment gateway fee, charged to the buyer or the store", () => {
+  const [qris, va, store, unknown] = readPaymentMethods([
+    { code: "payment-singapay:qris", name: "QRIS", online: true, group: "qr", fee: { percent: 0.7, flat: 0, charged_to_customer: true } },
+    { code: "payment-singapay:va", name: "Virtual Account", online: true, group: "bank_transfer", fee: { percent: 0, flat: 4000, charged_to_customer: false } },
+    { code: "bank_transfer", name: "Transfer Bank", fee: { percent: 5, flat: 0, charged_to_customer: true } },
+    { code: "payment-xendit:all", name: "Bayar online", online: true, group: "other", fee: null },
+  ]);
+  assert.deepEqual({ ...qris.fee }, { percent: 0.7, flat: 0, charged_to_customer: true });
+  assert.equal(va.fee.charged_to_customer, false);
+  // Metode toko tidak pernah berbiaya, apa pun isi respons.
+  assert.equal(store.fee, null);
+  assert.equal(unknown.fee, null);
+  // Barang + ongkir Rp100.000 dengan QRIS 0,7% → biaya Rp700 (total Rp100.700); VA tarif tetap.
+  assert.equal(gatewayFeeAmount(100000, qris.fee), 700);
+  assert.equal(gatewayFeeAmount(100000, va.fee), 4000);
+  assert.equal(gatewayFeeAmount(100000, null), 0);
+  assert.equal(gatewayFeeAmount(0, qris.fee), 0);
+  assert.equal(gatewayFeeRate(qris.fee), "0,7%");
+  assert.equal(gatewayFeeRate({ percent: 2.9, flat: 2000, charged_to_customer: true }), "2,9% + Rp2.000");
+});
+
+test("an order reads its payment fee, zero when there is none", () => {
+  const base = { id: 7, total: 90000, shipping_cost: 10000, grand_total: 100700, items: [] };
+  assert.equal(readOrder({ data: { ...base, payment_fee: 700 } }).payment_fee, 700);
+  assert.equal(readOrder({ data: { ...base, grand_total: 100000 } }).payment_fee, 0);
 });
 
 test("checkout bank choices keep only the bank and logo, never the account number", () => {

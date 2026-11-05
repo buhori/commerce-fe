@@ -13,6 +13,7 @@ import { htmlLang, rootMetadata } from "@/lib/seo";
 import { pluginConfigScript, type PluginScript } from "@/lib/store-events";
 import { getSiteSeo } from "@/lib/site-seo";
 import { getStore, StoreApiError } from "@/lib/store-api";
+import { redirectToStoreDomain } from "@/lib/store-domain";
 import { htmlFontClassName } from "@/lib/store-fonts";
 import { storeStyleCss, type StoreStyle } from "@/lib/store-style";
 import { getActiveTheme } from "@/themes/active";
@@ -28,6 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
+  await redirectToStoreDomain();
   // API membalas 404 bila subdomain/domain tidak terdaftar sebagai toko mana pun.
   const [missing, lang, style, scripts, help] = await getStore().then(
     (store) => [false, htmlLang(store.language), store.style ?? null, store.plugin_scripts, { storeName: store.name, contactWhatsapp: store.contact_whatsapp }] as const,

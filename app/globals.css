@@ -1321,6 +1321,16 @@ p {
   color: var(--muted);
   font-size: 0.875rem;
 }
+.region-retry {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
 .saved-addresses {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));

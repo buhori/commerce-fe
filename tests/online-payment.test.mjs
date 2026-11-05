@@ -34,10 +34,10 @@ test("payment methods keep plugin metadata and only http(s) provider logos", () 
     { code: "payment-xendit:va_bca", name: "BCA Virtual Account", icon: "https://cdn.example.com/bca.png", group: "bank_transfer", provider: "Xendit Payment", online: true },
     { code: "payment-xendit:ovo", name: "OVO", icon: "javascript:alert(1)", group: "ewallet", provider: "Xendit Payment", online: true },
   ]);
-  assert.deepEqual(plain(rows[0]), { code: "bank_transfer", name: "Transfer Bank", icon: "bank", online: false, group: null, provider: null });
+  assert.deepEqual(plain(rows[0]), { code: "bank_transfer", name: "Transfer Bank", icon: "bank", online: false, group: null, provider: null, fee: null });
   assert.deepEqual(plain(rows[1]), {
     code: "payment-xendit:va_bca", name: "BCA Virtual Account", icon: "https://cdn.example.com/bca.png",
-    online: true, group: "bank_transfer", provider: "Xendit Payment",
+    online: true, group: "bank_transfer", provider: "Xendit Payment", fee: null,
   });
   assert.equal(rows[2].icon, null);
   // `online` must be exactly true; anything else stays a store method.
