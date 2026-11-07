@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { CUSTOMER_COOKIE, secureCookie } from "./auth";
+import { ORDER_ACCESS_COOKIE, ORDER_ACCESS_HEADER, orderAccessHeader } from "./order-access";
 import { clientIpHeaders, requestHost, storeHeaders } from "./store-host";
 
 /** Batas tunggu bawaan; endpoint yang memanggil payment gateway memakai GATEWAY_TIMEOUT_MS. */
@@ -22,6 +23,9 @@ export async function apiProxy(request: NextRequest, path: string, { timeoutMs =
   if (cookie) headers.set("Cookie", cookie);
   const guestToken = request.cookies.get("guest_token")?.value;
   if (guestToken) headers.set("X-Guest-Token", guestToken);
+  // Pesanan yang dibuka lewat link bayar WhatsApp di browser ini (lib/order-access.ts).
+  const orderAccess = orderAccessHeader(request.cookies.get(ORDER_ACCESS_COOKIE)?.value);
+  if (orderAccess) headers.set(ORDER_ACCESS_HEADER, orderAccess);
   const contentType = request.headers.get("content-type");
   if (contentType) headers.set("Content-Type", contentType);
   for (const name of ["Authorization", "X-XSRF-TOKEN"]) {

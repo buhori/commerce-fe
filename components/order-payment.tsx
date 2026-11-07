@@ -4,9 +4,10 @@ import { PurchaseCompletedEvent } from "./plugin-scripts";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { readOrder, shouldPollPayment, usesOnlinePayment, type OrderSummary } from "@/lib/checkout";
+import { paymentCompleted, readOrder, shouldPollPayment, usesOnlinePayment, type OrderSummary } from "@/lib/checkout";
 import { formatDate, formatPrice } from "@/lib/format";
 import { CopyValue } from "./copy-value";
+import { FraudPosterDialog } from "./fraud-poster";
 import { OnlinePaymentPanel } from "./online-payment";
 import { PendingPaymentStatus } from "./payment-countdown";
 import { OrderReviews } from "./order-reviews";
@@ -196,6 +197,10 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
     <div className="payment-content">
       {confirmed && order.tracking && (
         <PurchaseCompletedEvent detail={{ order_id: order.tracking.order_id, total: order.grand_total, currency, items: order.tracking.items }} />
+      )}
+      {/* Poster anti penipuan toko, sekali per pesanan begitu pembayaran berhasil (juga saat status berubah di halaman ini). */}
+      {order.fraud_poster && paymentCompleted(order) && (
+        <FraudPosterDialog orderId={order.id} poster={order.fraud_poster} storeName={storeName} />
       )}
       <header className="payment-heading">
         <div>

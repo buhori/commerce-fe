@@ -26,7 +26,7 @@ function load(file, fetch) {
       env: { STORE_API_URL: "http://backend.test/api", STORE_ID: "404" },
     },
     require: (name) =>
-      name === "./store-host" || name === "./store-id" || name === "./auth"
+      name === "./store-host" || name === "./store-id" || name === "./auth" || name === "./order-access"
         ? load(`../lib/${name.slice(2)}.ts`, fetch)
         : name === "next/headers"
           ? { headers: async () => new Headers() }
@@ -114,6 +114,20 @@ test("count failure does not prevent add and count can be retried", async () => 
   );
   failed = false;
   assert.equal((await api.getCartCount()).count, 1);
+});
+
+test("proxy forwards orders opened from a WhatsApp payment link, never a header sent by the visitor", async () => {
+  const sent = [];
+  const { apiProxy } = load("../lib/api-proxy.ts", async (_, init) => {
+    sent.push(init.headers.get("X-Order-Access"));
+    return json({});
+  });
+  const token = "a".repeat(32);
+  const withAccess = request("guest-value", { "X-Order-Access": "1.forged" });
+  withAccess.cookies = { get: (name) => (name === "order_access" ? { value: `1455775318.${token}` } : undefined) };
+  await apiProxy(withAccess, "/orders/1455775318");
+  await apiProxy(request("guest-value", { "X-Order-Access": "1.forged" }), "/orders/1455775318");
+  assert.deepEqual(sent, [`1455775318.${token}`, null]);
 });
 
 test("proxy sends guest cookie as X-Guest-Token on count, items and every action", async () => {

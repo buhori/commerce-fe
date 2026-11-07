@@ -252,3 +252,16 @@ a.order-review-product:hover strong { text-decoration: underline; }
 .star-picker button:hover, .star-picker button:focus-visible { background: var(--warning-soft); }
 .star-picker svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
 .star-picker svg[data-filled] { fill: currentColor; }
+
+/* Poster anti penipuan toko (FraudPosterDialog), di atas dialog bawaan help-dialog. */
+.fraud-poster-dialog { width: min(480px, calc(100vw - 24px)); }
+.fraud-poster-body { display: grid; gap: 14px; padding: 0 20px 20px; }
+.fraud-poster-body img {
+  display: block;
+  width: 100%;
+  max-height: calc(100dvh - 220px);
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.fraud-poster-confirm { width: 100%; }

@@ -250,6 +250,8 @@ export interface OrderSummary {
   /** Foto dan video masing-masing, sesuai Pengaturan Belanja toko. */
   review_photos: boolean;
   review_videos: boolean;
+  /** Poster anti penipuan dari Pengaturan Belanja, ditampilkan sekali setelah pembayaran berhasil; null bila tidak ada. */
+  fraud_poster: string | null;
 }
 
 export interface OrderTracking {
@@ -554,6 +556,16 @@ export function usesOnlinePayment(order: Pick<OrderSummary, "online_payment" | "
 }
 
 /** Status diperiksa berkala selama gateway belum mengonfirmasi tagihan pesanan yang masih menunggu. */
+/**
+ * Pembeli sudah berhasil membayar: pesanan dikonfirmasi, tagihan payment gateway lunas, atau bukti transfer/QRIS
+ * sudah terkirim (tinggal diperiksa toko).
+ */
+export function paymentCompleted(order: Pick<OrderSummary, "status" | "online_payment" | "proof_uploaded">): boolean {
+  return ["paid", "processed", "delivering", "delivered", "done"].includes(order.status)
+    || order.online_payment?.status === "paid"
+    || (order.status === "pending" && order.proof_uploaded);
+}
+
 export function shouldPollPayment(order: Pick<OrderSummary, "status" | "online_payment" | "payment_method">): boolean {
   return order.status === "pending" && usesOnlinePayment(order) && order.online_payment?.status === "pending";
 }
@@ -605,6 +617,7 @@ export function readOrder(data: unknown): OrderSummary {
     shipment: readTrackedShipment(row.shipment),
     payment_expires_at: typeof row.payment_expires_at === "string" && !Number.isNaN(Date.parse(row.payment_expires_at)) ? row.payment_expires_at : null,
     proof_uploaded: payment?.has_proof === true,
+    fraud_poster: readHttpUrl(row.fraud_poster),
     sender_name: typeof payment?.sender_name === "string" ? payment.sender_name : null,
     items: readOrderLines(row.items),
     preorder_ready_at: typeof row.preorder_ready_at === "string" ? row.preorder_ready_at : null,
