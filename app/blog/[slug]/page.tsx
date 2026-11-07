@@ -11,6 +11,7 @@ import { formatDate } from "@/lib/format";
 import { absoluteUrl, breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
 import { getSiteSeo } from "@/lib/site-seo";
 import { getBlogPost, getStore } from "@/lib/store-api";
+import { getActiveTheme } from "@/themes/active";
 
 type BlogPostProps = { params: Promise<{ slug: string }> };
 
@@ -34,10 +35,11 @@ export async function generateMetadata({ params }: BlogPostProps): Promise<Metad
 /** Satu artikel blog: sampul, judul, tanggal, isi dari editor (disanitasi backend), dan artikel lain. */
 export default async function BlogPostPage({ params }: BlogPostProps) {
   const { slug } = await params;
-  const [post, store, site] = await Promise.all([getBlogPost(slug), getStore(), getSiteSeo()]);
+  const [post, store, site, theme] = await Promise.all([getBlogPost(slug), getStore(), getSiteSeo(), getActiveTheme()]);
   if (!post) notFound();
   const url = absoluteUrl(site.base, `/blog/${post.slug}`);
 
+  const { ArticlePage: ThemeArticlePage } = theme.components;
   return (
     <>
       <JsonLd data={[
@@ -49,7 +51,7 @@ export default async function BlogPostPage({ params }: BlogPostProps) {
         post.structured_data ?? blogPostingJsonLd(post, url, store.name),
       ]} />
       <StoreHeader name={store.name} logo={store.logo} />
-      <main className="page blog-page">
+      {ThemeArticlePage ? <ThemeArticlePage store={store} post={post} url={url} /> : <main className="page blog-page">
         <article className="container blog-article">
           <nav className="product-breadcrumb" aria-label="Breadcrumb">
             <Link href="/">Beranda</Link>
@@ -85,7 +87,7 @@ export default async function BlogPostPage({ params }: BlogPostProps) {
             </ul>
           </section>
         )}
-      </main>
+      </main>}
       <SiteFooter store={store} />
     </>
   );

@@ -4,15 +4,18 @@ import type {
   BannerSettings, CategoryGridSettings, ColumnsSettings, CountdownSettings, CtaSettings, FaqSettings, FeaturesSettings, GallerySettings, HeroSettings,
   ImageSettings, ProductListSettings, TestimonialsSettings, TextSettings, VideoSettings,
 } from "@/lib/home-sections";
+import type { BlogPage, BlogPost } from "@/lib/blog";
 import type { ProductView } from "@/lib/product-view";
 import type { Category, NavigationLink, PageLink, Product, ProductSummary, Store, StorePage } from "@/lib/store-api";
 import type { ProductQuery } from "@/lib/store-shared";
+import type { ThemeContract } from "./schema";
 
 export type { Availability, ProductView, Spec } from "@/lib/product-view";
 export type { Category, Discount, NavigationLink, PageLink, Product, ProductSummary, ProductVariant, Store, StorePage } from "@/lib/store-api";
 export type { PriceView, Priced } from "@/lib/price";
 export type { WhatsappChat, WhatsappChatInput, WhatsappProductChat } from "@/lib/whatsapp";
 export type { CatalogFilter, CatalogSort } from "@/lib/catalog-url";
+export type { BlogPage, BlogPost, BlogSummary } from "@/lib/blog";
 // store.style: warna/font pilihan toko. Sudah diterapkan lewat token CSS; tema cukup memakai token itu.
 export type { StoreFontKey, StoreStyle } from "@/lib/store-style";
 export type {
@@ -83,6 +86,58 @@ export interface InfoPageProps {
   page: StorePage;
 }
 
+/** "/cart". Isinya dimuat di browser lewat useCartLines(); checkout tetap halaman /checkout platform. */
+export interface CartPageProps {
+  store: Store;
+}
+
+/** "/blog" (paket dengan blog). `blog.page` dimulai dari 1; tautan halaman: "/blog?page=n". */
+export interface BlogPageProps {
+  store: Store;
+  blog: BlogPage;
+}
+
+/** "/blog/{slug}". `post.content` sudah disanitasi backend: render lewat <RichText html={post.content} />. */
+export interface ArticlePageProps {
+  store: Store;
+  post: BlogPost;
+  /** URL kanonik artikel, mis. untuk tombol bagikan. */
+  url: string;
+}
+
+/**
+ * "/compare?p=<id>,<id>". `products` sudah dimuat (yang dihapus dilewati). Daftar pilihan pembeli disimpan di
+ * browser (useCompare); bila `ids` kosong, pasang <CompareRestore /> supaya daftar itu dibuka ulang.
+ */
+export interface ComparePageProps {
+  store: Store;
+  products: Product[];
+  ids: number[];
+}
+
+/** "/wishlist". Isinya dimuat di browser lewat useWishlistProducts(); null berarti tamu (arahkan ke /login). */
+export interface WishlistPageProps {
+  store: Store;
+}
+
+/**
+ * "/login". Masuk lewat penyedia yang aktif di toko (tautan biasa ke /auth/{provider}?next=…), bukan kata sandi.
+ * `accounts` false: toko tanpa akun pembeli, tampilkan ajakan lanjut belanja sebagai tamu.
+ */
+export interface LoginPageProps {
+  store: Store;
+  next: string;
+  providers: ("google" | "apple")[];
+  accounts: boolean;
+  /** Pesan galat untuk pembeli (mis. login dibatalkan); null bila tidak ada. */
+  error: string | null;
+}
+
+/** Halaman yang tidak ditemukan. */
+export interface NotFoundPageProps {
+  store: Store;
+}
+
 /**
  * Widget dari builder di panel (beranda dan halaman builder). Setiap widget menerima pengaturannya
  * (sudah diperiksa) dan data yang sudah dimuat platform. Satu widget = satu <section> selebar halaman.
@@ -149,6 +204,13 @@ export interface ThemeComponents {
   CatalogPage?: ComponentType<CatalogPageProps>;
   ProductPage?: ComponentType<ProductPageProps>;
   InfoPage?: ComponentType<InfoPageProps>;
+  CartPage?: ComponentType<CartPageProps>;
+  BlogPage?: ComponentType<BlogPageProps>;
+  ArticlePage?: ComponentType<ArticlePageProps>;
+  ComparePage?: ComponentType<ComparePageProps>;
+  WishlistPage?: ComponentType<WishlistPageProps>;
+  LoginPage?: ComponentType<LoginPageProps>;
+  NotFoundPage?: ComponentType<NotFoundPageProps>;
 }
 
 export interface ThemeDefinition {
@@ -159,6 +221,12 @@ export interface ThemeDefinition {
   /** Added to <html>, e.g. next/font variable classes the theme's CSS uses. */
   className?: string;
   components?: ThemeComponents;
+  /**
+   * Tema berkontrak (sdk/THEME-CONTRACT.md): section, preset, dan template milik tema. Platform merender
+   * template yang disediakan preset (beranda, produk, katalog, halaman, header, footer) dari susunan di panel;
+   * `components` yang sama tetap menang bila diisi.
+   */
+  contract?: ThemeContract;
 }
 
 export function defineTheme<T extends ThemeDefinition>(theme: T): T {

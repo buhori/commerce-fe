@@ -4,6 +4,9 @@ export const themes = {
   boutique: { name: "Boutique", description: "Krem hangat, aksen terakota, judul serif, tombol pil." },
   // Tema dengan komponen sendiri (themes/editorial) dibuat dengan SDK @sellosy/theme.
   editorial: { name: "Editorial", description: "Majalah mode: logo di tengah, judul serif, foto besar." },
+  // Tema berkontrak (sdk/THEME-CONTRACT.md); contoh untuk pengembang, baris temanya di backend berstatus draf.
+  contoh: { name: "Contoh Kontrak", description: "Tema contoh untuk pengembang: bukti alur kontrak tema." },
+  ambaz: { name: "Ambaz", description: "Toko modern multiguna: slider besar, kartu produk dengan aksi cepat, banner promosi." },
 } as const;
 
 export type ThemeId = keyof typeof themes;

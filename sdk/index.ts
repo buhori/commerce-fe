@@ -4,6 +4,8 @@
  */
 
 export * from "./types";
+// Kontrak tema v1 (sdk/THEME-CONTRACT.md): skema section, manifest, dan normalisasi setting.
+export * from "./schema";
 
 // Bagian fungsional: logika keranjang, akun, dan pembayaran tetap milik platform.
 export { ProductCartActions as AddToCart, useAddToCart } from "@/components/product-cart-actions";
@@ -14,9 +16,11 @@ export { SortSelect } from "@/components/sort-select";
 export { WishlistButton, useWishlist } from "@/components/wishlist-button";
 // Bandingkan produk (daftar di browser, bilahnya dipasang platform) dan bagikan tautan produk.
 export { CompareButton, useCompare } from "@/components/compare-button";
+// Halaman /compare tanpa ?p=: membuka ulang daftar bandingkan yang tersimpan di browser.
+export { CompareRestore } from "@/components/compare-tray";
 export { ShareButton } from "@/components/share-button";
 export { CategoryTabs } from "@/components/category-tabs";
-export { ProductGrid, useCartCount, useCustomer, useProductFeed } from "./client";
+export { ProductGrid, useCartCount, useCartLines, useCustomer, useProduct, useProductFeed, useProducts, useWishlistActions, useWishlistCount, useWishlistProducts, type CartLine } from "./client";
 
 // Tampilan yang sudah menangani kasus sulit (gambar gagal dimuat, carousel, galeri zoom).
 export { BannerSlider } from "@/components/banner-slider";
@@ -41,6 +45,8 @@ export { displayPhone, e164 } from "@/lib/phone";
 export { publicAddress } from "@/lib/store-shared";
 // Aturan harga diskon yang sama dengan tampilan bawaan; jangan membandingkan price dan final_price sendiri.
 export { discountEndDate, priceView } from "@/lib/price";
+// Galeri, stok, ketersediaan, dan spesifikasi produk seperti di halaman produk (untuk halaman bandingkan tema).
+export { productView } from "@/lib/product-view";
 // Tautan wa.me dengan pesan tentang produk; useAddToCart({ whatsapp }) sudah membuatnya dengan varian terpilih.
 export { whatsappAvailable, whatsappChatUrl } from "@/lib/whatsapp";
 export { catalogSorts, catalogUrl } from "@/lib/catalog-url";

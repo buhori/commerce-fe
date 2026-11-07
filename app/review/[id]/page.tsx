@@ -5,7 +5,7 @@ import { OrderReviews } from "@/components/order-reviews";
 import { SiteFooter } from "@/components/site-footer";
 import { StoreHeader } from "@/components/store-header";
 import { ButtonLink } from "@/components/ui/button";
-import { readInvoiceAccess } from "@/lib/invoice";
+import { pageAccess } from "@/lib/invoice";
 import { getReviewOrder } from "@/lib/review-order";
 import { getStore } from "@/lib/store-api";
 import { reviewsEnabled } from "@/lib/store-shared";
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
  */
 export default async function ReviewPage({ params, searchParams }: PageProps<"/review/[id]">) {
   const [store, { id }, query] = await Promise.all([getStore(), params, searchParams]);
-  const access = readInvoiceAccess(query);
+  const access = await pageAccess(query);
   if (!access) redirect(`/payment/${id}`);
   const order = reviewsEnabled(store) ? await getReviewOrder(id, access) : null;
 

@@ -4,11 +4,11 @@ import { BrandLogo } from "@/components/brand-logo";
 import { ButtonLink } from "@/components/ui/button";
 import { PrintButton } from "@/components/print-button";
 import { formatDate, formatPrice } from "@/lib/format";
-import { getInvoice, readInvoiceAccess, type Invoice } from "@/lib/invoice";
+import { getInvoice, pageAccess, type Invoice } from "@/lib/invoice";
 import "../invoice.css";
 
 export async function generateMetadata({ params, searchParams }: PageProps<"/invoice/[id]">): Promise<Metadata> {
-  const access = readInvoiceAccess(await searchParams);
+  const access = await pageAccess(await searchParams);
   const invoice = await getInvoice((await params).id, access?.expires, access?.signature);
   return {
     title: invoice ? `Invoice ${invoice.number}` : "Invoice",
@@ -35,7 +35,7 @@ const day = (iso: string | null) => (iso ? formatDate(new Date(`${iso.slice(0, 1
  */
 export default async function InvoicePage({ params, searchParams }: PageProps<"/invoice/[id]">) {
   const { id } = await params;
-  const access = readInvoiceAccess(await searchParams);
+  const access = await pageAccess(await searchParams);
   const invoice = await getInvoice(id, access?.expires, access?.signature);
   // Link lama dengan nomor pesanan asli (masa transisi): pakai alamat dengan nomor tersamar.
   if (invoice && String(invoice.order_id) !== id && !access) redirect(`/invoice/${invoice.order_id}`);

@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { readSignedAccess, readSignedAccessCookie, SIGNED_ACCESS_COOKIE } from "./signed-access";
 import { cache } from "react";
 import { CUSTOMER_COOKIE } from "./auth";
 import { readOrderDiscount } from "./checkout";
@@ -42,9 +43,15 @@ export type InvoiceAccess = { expires: string; signature: string };
 
 /** expires dan signature dari query string, bila keduanya ada dan berbentuk wajar. */
 export function readInvoiceAccess(query: Record<string, string | string[] | undefined>): InvoiceAccess | null {
-  const expires = typeof query.expires === "string" ? query.expires : "";
-  const signature = typeof query.signature === "string" ? query.signature : "";
-  return /^\d{1,12}$/.test(expires) && /^[a-f0-9]{64}$/.test(signature) ? { expires, signature } : null;
+  return readSignedAccess(query.expires, query.signature);
+}
+
+/**
+ * Tanda tangan untuk halaman /invoice/{id} atau /review/{id}: dari cookie yang diisi proxy.ts (URL-nya sudah
+ * dibersihkan), atau dari query string bila proxy tidak berjalan.
+ */
+export async function pageAccess(query: Record<string, string | string[] | undefined>): Promise<InvoiceAccess | null> {
+  return readInvoiceAccess(query) ?? readSignedAccessCookie((await cookies()).get(SIGNED_ACCESS_COOKIE)?.value);
 }
 
 /**

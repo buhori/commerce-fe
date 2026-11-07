@@ -13,6 +13,7 @@ import { productView } from "@/lib/product-view";
 import { pageMetadata } from "@/lib/seo";
 import { getSiteSeo } from "@/lib/site-seo";
 import { getProduct, getStore, type Product } from "@/lib/store-api";
+import { getActiveTheme } from "@/themes/active";
 
 export async function generateMetadata(): Promise<Metadata> {
   // Kombinasi produk tak terbatas dan isinya ada di halaman produk: tidak diindeks.
@@ -24,13 +25,24 @@ const productPath = (product: Product) => `/products/${encodeURIComponent(produc
 /** Bandingkan produk pilihan pembeli: /compare?p=<id>,<id> (lihat lib/compare.ts). */
 export default async function ComparePage({ searchParams }: PageProps<"/compare">) {
   const ids = readCompareIds((await searchParams).p);
-  const [store, found] = await Promise.all([
+  const [store, theme, found] = await Promise.all([
     getStore(),
+    getActiveTheme(),
     // Produk yang sudah dihapus atau tidak dipublikasikan dilewati saja.
     Promise.all(ids.map((id) => getProduct(String(id)).catch(() => null))),
   ]);
   const products = found.filter((product): product is Product => product !== null);
   const currency = store.currency || "IDR";
+  const { ComparePage: ThemeComparePage } = theme.components;
+  if (ThemeComparePage) {
+    return (
+      <>
+        <StoreHeader name={store.name} logo={store.logo} />
+        <ThemeComparePage store={store} products={products} ids={ids} />
+        <SiteFooter store={store} />
+      </>
+    );
+  }
 
   return (
     <>

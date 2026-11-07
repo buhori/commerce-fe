@@ -28,6 +28,14 @@ export async function StoreNav() {
                 {item.children.map((child, childIndex) => (
                   <li key={`${childIndex}-${child.label}`}>
                     <NavAnchor link={child} className="store-nav-sub-link" />
+                    {/* Tingkat ketiga (kolom mega menu di tema yang mendukung): daftar menjorok di sini. */}
+                    {child.children.length > 0 && (
+                      <ul className="store-nav-sub-nested">
+                        {child.children.map((grandchild, grandchildIndex) => (
+                          <li key={`${grandchildIndex}-${grandchild.label}`}><NavAnchor link={grandchild} className="store-nav-sub-link" /></li>
+                        ))}
+                      </ul>
+                    )}
                   </li>
                 ))}
               </ul>

@@ -11,6 +11,7 @@ const SCROLL_KEY = "sellosy-preview-scroll";
  *
  * Pesan ke builder: { source: "sellosy-preview", type: "select", index }.
  * Pesan dari builder (hanya dari jendela induk): { source: "sellosy-builder", type: "focus", index, scroll }.
+ * Section tema berkontrak (`data-theme-section`, sdk/THEME-CONTRACT.md) memakai ID-nya di `id`, bukan `index`.
  */
 export function PreviewBridge() {
   useEffect(() => {
@@ -35,9 +36,9 @@ export function PreviewBridge() {
 
     const style = document.createElement("style");
     style.textContent = `
-      [data-section-index] { position: relative; cursor: pointer; }
-      [data-section-index]:hover { outline: 2px dashed rgb(69 37 201 / 0.55); outline-offset: -2px; }
-      [data-section-index][data-selected] { outline: 2px solid #4525c9; outline-offset: -2px; }
+      [data-section-index], [data-theme-section] { position: relative; cursor: pointer; }
+      [data-section-index]:hover, [data-theme-section]:hover { outline: 2px dashed rgb(69 37 201 / 0.55); outline-offset: -2px; }
+      [data-section-index][data-selected], [data-theme-section][data-selected] { outline: 2px solid #4525c9; outline-offset: -2px; }
     `;
     document.head.append(style);
 
@@ -45,8 +46,10 @@ export function PreviewBridge() {
       const target = event.target instanceof Element ? event.target : null;
       // Pratinjau hanya untuk halaman yang sedang disunting: tautan tidak berpindah halaman.
       if (target?.closest("a")) event.preventDefault();
-      const section = target?.closest<HTMLElement>("[data-section-index]");
-      if (section) {
+      const section = target?.closest<HTMLElement>("[data-section-index], [data-theme-section]");
+      if (section?.dataset.themeSection) {
+        window.parent.postMessage({ source: "sellosy-preview", type: "select", id: section.dataset.themeSection }, "*");
+      } else if (section) {
         window.parent.postMessage({ source: "sellosy-preview", type: "select", index: Number(section.dataset.sectionIndex) }, "*");
       }
     };
@@ -56,7 +59,10 @@ export function PreviewBridge() {
       if (event.source !== window.parent || event.data?.source !== "sellosy-builder" || event.data.type !== "focus") return;
       document.querySelectorAll("[data-selected]").forEach((element) => element.removeAttribute("data-selected"));
       const index = Number.isInteger(event.data.index) ? event.data.index : null;
-      const section = index === null ? null : document.querySelector<HTMLElement>(`[data-section-index="${index}"]`);
+      const id = typeof event.data.id === "string" ? event.data.id : null;
+      const section = id !== null
+        ? document.querySelector<HTMLElement>(`[data-theme-section="${CSS.escape(id)}"]`)
+        : index === null ? null : document.querySelector<HTMLElement>(`[data-section-index="${index}"]`);
       if (!section) return;
       section.setAttribute("data-selected", "");
       if (event.data.scroll) section.scrollIntoView({ behavior: "smooth", block: "start" });

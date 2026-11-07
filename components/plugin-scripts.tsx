@@ -3,26 +3,29 @@
 import Script from "next/script";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { signedPage } from "@/lib/signed-access";
 import { emitStoreEvent, firstPurchaseView, scriptRunsOn, storePageType, type PluginScript, type StoreEventMap, type StoreEventName } from "@/lib/store-events";
 
 /**
  * Script plugin storefront (mis. Meta Pixel) dan event store:page_viewed. Platform yang merender tagnya;
  * plugin hanya memberi URL file dan konfigurasi (window.__plugins, ditulis layout lewat pluginConfigScript).
  * Script dimuat saat pembeli pertama kali membuka halaman yang cocok dengan `pages`-nya, lalu tetap aktif
- * selama navigasi di dalam toko.
+ * selama navigasi di dalam toko. Halaman invoice dan ulasan dari link email (lib/signed-access.ts) berisi data
+ * pribadi pembeli: tidak memuat script plugin dan tidak mengirim store:page_viewed.
  */
 export function PluginScripts({ scripts }: { scripts: PluginScript[] }) {
   const pathname = usePathname();
   const page = storePageType(pathname);
+  const privatePage = signedPage(pathname) !== null;
   const id = (script: PluginScript) => `${script.plugin}:${script.key}`;
-  const matching = scripts.filter((script) => scriptRunsOn(script, page)).map(id);
+  const matching = privatePage ? [] : scripts.filter((script) => scriptRunsOn(script, page)).map(id);
   const [loaded, setLoaded] = useState<string[]>(matching);
   // Halaman baru yang cocok dengan script lain: tambahkan (yang sudah dimuat tidak dilepas).
   const missing = matching.filter((key) => !loaded.includes(key));
   if (missing.length) setLoaded([...loaded, ...missing]);
 
   useEffect(() => {
-    emitStoreEvent("store:page_viewed", { page_type: storePageType(pathname), url: window.location.href });
+    if (signedPage(pathname) === null) emitStoreEvent("store:page_viewed", { page_type: storePageType(pathname), url: window.location.href });
   }, [pathname]);
 
   return scripts

@@ -33,7 +33,16 @@ export function StoreNavMobile({ items }: { items: NavigationLink[] }) {
                   {/* Induk yang punya tujuan sendiri tetap bisa dibuka dari dalam grupnya. */}
                   {item.href && <li><MobileAnchor link={{ ...item, label: `Semua ${item.label}` }} /></li>}
                   {item.children.map((child, childIndex) => (
-                    <li key={`${childIndex}-${child.label}`}><MobileAnchor link={child} /></li>
+                    <li key={`${childIndex}-${child.label}`}>
+                      <MobileAnchor link={child} />
+                      {child.children.length > 0 && (
+                        <ul className="store-nav-mobile-nested">
+                          {child.children.map((grandchild, grandchildIndex) => (
+                            <li key={`${grandchildIndex}-${grandchild.label}`}><MobileAnchor link={grandchild} /></li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
                   ))}
                 </ul>
               </details>

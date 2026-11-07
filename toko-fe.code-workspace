@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "../../laravel/example-plugin"
+		},
+		{
+			"path": "../../../Desktop/BDS/themeforest-UxWLMXpT-ambaz-multipurpose-ecommerce-nextjs-template"
 		}
 	],
 	"settings": {}

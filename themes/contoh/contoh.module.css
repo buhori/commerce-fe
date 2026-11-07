@@ -1,0 +1,38 @@
+.hero {
+  position: relative;
+  display: grid;
+  min-height: clamp(320px, 50vw, 560px);
+  align-items: end;
+  overflow: hidden;
+  background: var(--surface);
+}
+.heroImage { object-fit: cover; }
+.heroText {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  padding-block: 48px;
+  color: #fff;
+  text-shadow: 0 1px 12px rgb(0 0 0 / 0.35);
+}
+.heroText h2 { margin: 0; font-family: var(--font-heading); font-size: clamp(2rem, 5vw, 3.25rem); line-height: 1.1; }
+.heroText p { margin: 0; }
+.heroText > * { max-width: 640px; }
+.eyebrow { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.products, .text { padding-block: 56px; }
+.products h2, .text h2 { margin: 0 0 20px; font-family: var(--font-heading); }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 900px) {
+  .grid { grid-template-columns: repeat(var(--columns, 4), minmax(0, 1fr)); }
+}
+.card { display: grid; gap: 8px; color: var(--text); text-decoration: none; }
+.cardImage { position: relative; display: block; aspect-ratio: 1; overflow: hidden; border-radius: var(--radius-md, 12px); background: var(--surface); }
+.cardName { font-weight: 600; }

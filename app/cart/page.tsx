@@ -5,11 +5,22 @@ import { CartItems } from "@/components/cart-items";
 import { StoreHeader } from "@/components/store-header";
 import { SiteFooter } from "@/components/site-footer";
 import { getStore } from "@/lib/store-api";
+import { getActiveTheme } from "@/themes/active";
 
 export const metadata: Metadata = { title: "Keranjang Belanja", robots: { index: false, follow: true } };
 
 export default async function CartPage() {
-  const store = await getStore();
+  const [store, theme] = await Promise.all([getStore(), getActiveTheme()]);
+  const { CartPage: ThemeCartPage } = theme.components;
+  if (ThemeCartPage) {
+    return (
+      <>
+        <StoreHeader name={store.name} logo={store.logo} />
+        <ThemeCartPage store={store} />
+        <SiteFooter store={store} />
+      </>
+    );
+  }
   return (
     <>
       <StoreHeader name={store.name} logo={store.logo} />

@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { headers } from "next/headers";
 import { readBlogPage, readBlogPost, type BlogPage, type BlogPost } from "./blog";
+import { readThemeLayout, type ThemeLayout } from "./theme-layout";
 import { clientIpHeaders, currentStoreHeaders, requestPreviewToken } from "./store-host";
 import { readHomeSections, readSections, type HomeSection } from "./home-sections";
 import { httpUrl, readSeo, readStoreSeo, readStructuredData, type PageSeo, type StoreSeo } from "./seo";
@@ -220,6 +221,14 @@ export const getPreview = cache(async (token: string | null | undefined): Promis
  * published layout (the built-in home is used). With a preview token the backend picks the
  * previewed theme's layout, and its draft for a draft preview.
  */
+/**
+ * Susunan template tema berkontrak (sdk/THEME-CONTRACT.md); null bila tema tidak berkontrak atau tidak punya
+ * template itu. Token pratinjau draf mengirim drafnya (tanpa cache).
+ */
+export const getThemeLayout = cache(async (template: string, previewToken: string | null): Promise<ThemeLayout | null> => {
+  return readThemeLayout(await storeFetch<unknown>(`/theme/${encodeURIComponent(template)}`, previewToken ? { "X-Preview-Token": previewToken } : undefined));
+});
+
 export const getHomeSections = cache(async (previewToken: string | null): Promise<HomeSection[] | null> => {
   return readHomeSections(await storeFetch<unknown>("/home", previewToken ? { "X-Preview-Token": previewToken } : undefined));
 });
@@ -450,7 +459,10 @@ export interface NavigationLink {
   /** Path toko ("/c/kopi") atau URL lengkap; null untuk induk dropdown yang tidak bisa diklik. */
   href: string | null;
   new_tab: boolean;
+  /** Sub-menu. Sub-menu tingkat kedua boleh punya sub-menu sendiri (mis. kolom mega menu), tingkat ketiga tidak. */
   children: NavigationLink[];
+  /** Untuk tautan kategori: gambar kategori dan jumlah produk terbitnya (menu berkartu); null untuk tautan lain. */
+  category: { image: string | null; products: number } | null;
 }
 
 /** Hanya tautan internal ("/…") atau http(s); selain itu (mis. javascript:) dibuang. */
@@ -464,15 +476,19 @@ function readNavigation(value: unknown, depth = 0): NavigationLink[] {
   return value.flatMap((entry) => {
     const item = entry as Partial<Record<keyof NavigationLink, unknown>> | null;
     if (!item || typeof item.label !== "string" || item.label.trim() === "") return [];
-    const children = depth === 0 ? readNavigation(item.children, 1) : [];
+    const children = depth < 2 ? readNavigation(item.children, depth + 1) : [];
     const href = safeHref(item.href);
     // Tanpa tujuan dan tanpa isi dropdown, tidak ada yang bisa dibuka pembeli.
     if (!href && children.length === 0) return [];
-    return [{ label: item.label, href, new_tab: item.new_tab === true, children }];
+    const info = item.category as { image?: unknown; products?: unknown } | null | undefined;
+    const category = info && typeof info === "object"
+      ? { image: typeof info.image === "string" && /^https?:\/\//i.test(info.image) ? info.image : null, products: Number.isSafeInteger(info.products) ? Math.max(0, info.products as number) : 0 }
+      : null;
+    return [{ label: item.label, href, new_tab: item.new_tab === true, children, category }];
   });
 }
 
-/** Menu navigasi toko, sudah diurutkan dari panel; satu tingkat sub-menu. */
+/** Menu navigasi toko, sudah diurutkan dari panel; sampai dua tingkat sub-menu. */
 export const getNavigation = cache(async (): Promise<NavigationLink[]> => {
   const result = await storeFetch<{ data?: unknown }>("/navigations");
   return readNavigation(result?.data);

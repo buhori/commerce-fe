@@ -10,6 +10,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { absoluteUrl, breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
 import { getSiteSeo } from "@/lib/site-seo";
 import { getBlogPosts, getStore } from "@/lib/store-api";
+import { getActiveTheme } from "@/themes/active";
 
 type BlogIndexProps = { searchParams: Promise<{ page?: string }> };
 
@@ -28,18 +29,30 @@ export async function generateMetadata({ searchParams }: BlogIndexProps): Promis
 /** Daftar artikel blog toko (paket Business); toko tanpa blog dijawab 404. */
 export default async function BlogIndexPage({ searchParams }: BlogIndexProps) {
   const { page } = await searchParams;
-  const [blog, store, site] = await Promise.all([getBlogPosts(pageNumber(page)), getStore(), getSiteSeo()]);
+  const [blog, store, site, theme] = await Promise.all([getBlogPosts(pageNumber(page)), getStore(), getSiteSeo(), getActiveTheme()]);
   if (!blog) notFound();
+  const { BlogPage: ThemeBlogPage } = theme.components;
+  const breadcrumb = breadcrumbJsonLd([
+    { name: "Beranda", url: absoluteUrl(site.base, "/") },
+    { name: "Blog", url: absoluteUrl(site.base, "/blog") },
+  ]);
+  if (ThemeBlogPage) {
+    return (
+      <>
+        <JsonLd data={breadcrumb} />
+        <StoreHeader name={store.name} logo={store.logo} />
+        <ThemeBlogPage store={store} blog={blog} />
+        <SiteFooter store={store} />
+      </>
+    );
+  }
   const [featured, ...rest] = blog.page === 1 ? blog.posts : [];
   const posts = blog.page === 1 ? rest : blog.posts;
   const href = (target: number) => (target > 1 ? `/blog?page=${target}` : "/blog");
 
   return (
     <>
-      <JsonLd data={breadcrumbJsonLd([
-        { name: "Beranda", url: absoluteUrl(site.base, "/") },
-        { name: "Blog", url: absoluteUrl(site.base, "/blog") },
-      ])} />
+      <JsonLd data={breadcrumb} />
       <StoreHeader name={store.name} logo={store.logo} />
       <main className="page blog-page">
         <div className="container">

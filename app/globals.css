@@ -4,6 +4,7 @@
 @import "../themes/minimal/styles.css";
 @import "../themes/boutique/styles.css";
 @import "../themes/editorial/styles.css";
+@import "../themes/ambaz/styles.css";
 @import "./home.css";
 @import "./storefront.css";
 @import "./buttons.css";
@@ -2079,6 +2080,12 @@ p {
 .store-nav-sub-link:hover {
   background: var(--surface);
   color: var(--primary);
+}
+.store-nav-sub-nested,
+.store-nav-mobile-nested {
+  margin: 0;
+  padding: 0 0 4px 12px;
+  list-style: none;
 }
 
 /* Layar kecil: bar "Menu" yang membuka daftar vertikal; sub-menu sebagai akordeon. */

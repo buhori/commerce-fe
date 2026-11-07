@@ -40,6 +40,21 @@ Bagian yang tidak dibuat tema memakai tampilan bawaan, jadi tema boleh dimulai d
 
 Contoh lengkap yang mengganti semua bagian ada di [`themes/editorial`](../themes/editorial).
 
+## Tema berkontrak (section sendiri, diatur di customizer)
+
+Tema yang punya section khas sendiri (bukan hanya mengganti tampilan widget bawaan) memakai **kontrak tema**:
+skema section dan preset di `themes/<id>/manifest.ts`, komponennya di `index.tsx` lewat `defineSection()`.
+Spesifikasinya di [`THEME-CONTRACT.md`](./THEME-CONTRACT.md); contoh lengkap kecil di [`themes/contoh`](../themes/contoh).
+
+1. Tulis skema dan preset di `themes/<id>/manifest.ts` (modul murni, tanpa React).
+2. Pasangkan dengan komponen: `contract: { ...manifest, sections: [defineSection(skema, Komponen)] }` di
+   `defineTheme`. Props komponen (`settings`, `data`, `blocks`, `page`) diturunkan otomatis dari skemanya.
+3. Buat manifest: `pnpm theme:manifest <id> --out ../toko/documents/themes/<id>.json`, lalu di backend
+   `php artisan themes:sync`.
+
+Template yang disediakan preset (beranda, produk, katalog, halaman, header, footer) dirender platform dari
+susunan di panel; yang tidak disediakan memakai tampilan bawaan.
+
 ## Pratinjau saat mengembangkan
 
 Isi `THEME_PREVIEW=true` di `.env.local`, jalankan `pnpm dev`, lalu buka:

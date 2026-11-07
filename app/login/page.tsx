@@ -7,6 +7,7 @@ import { CUSTOMER_COOKIE, safeNext } from "@/lib/auth";
 import { getCustomer } from "@/lib/customer-api";
 import { getStore } from "@/lib/store-api";
 import { accountsEnabled } from "@/lib/store-shared";
+import { getActiveTheme } from "@/themes/active";
 
 export const metadata: Metadata = { title: "Masuk", robots: { index: false, follow: true } };
 
@@ -25,10 +26,21 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   // Checked against the API, not the cookie alone: an expired token must not loop back here.
   if ((await cookies()).has(CUSTOMER_COOKIE) && await getCustomer().catch(() => null)) redirect(next);
 
-  const store = await getStore();
+  const [store, theme] = await Promise.all([getStore(), getActiveTheme()]);
   const message = error ? errors[error] ?? errors.google : null;
   // Buttons follow the backend: Apple appears by itself once its keys are set.
   const providers = store.login_providers ?? ["google"];
+  const { LoginPage: ThemeLoginPage } = theme.components;
+  if (ThemeLoginPage) {
+    return (
+      <>
+        <StoreHeader name={store.name} logo={store.logo} />
+        <ThemeLoginPage store={store} next={next} accounts={accountsEnabled(store)} error={message}
+          providers={providers.filter((provider): provider is "google" | "apple" => provider === "google" || provider === "apple")} />
+        <SiteFooter store={store} />
+      </>
+    );
+  }
 
   return (
     <>

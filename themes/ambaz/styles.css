@@ -1,0 +1,101 @@
+/*
+ * Ambaz (tema berkontrak, sdk/THEME-CONTRACT.md) — token dan dasar dari globals.css Ambaz. Ambaz memakai
+ * html { font-size: 62.5% } (1rem = 10px); di sini nilainya ditulis dalam px supaya ukuran rem halaman platform
+ * (keranjang, checkout, akun) tidak ikut mengecil. Reset dasar Ambaz (spesifisitas satu kelas, jadi kelas Ambaz yang dimuat sesudahnya tetap menang) hanya berlaku di dalam section tema (dan .ambaz-scope: laci/panel
+ * section yang dipasang di luar elemen section-nya).
+ */
+:root[data-theme="ambaz"] {
+  --color-primary: #f15b41;
+  --color-primary-hover: #d94a32;
+  --color-secondary: #ffd700;
+  --color-dark: #000000;
+  --color-white: #ffffff;
+  --color-body: #666666;
+  --color-heading: #222222;
+  --color-border: #e5e5e5;
+  --color-border-dark: #cccccc;
+  --color-bg-light: #f7f7f7;
+  --color-sale: #f15b41;
+  --font-sans: var(--font-albert-sans), "Albert Sans", system-ui, -apple-system, sans-serif;
+  --font-heading: var(--font-sans);
+  --container-max: 1530px;
+
+  /* Token platform mengikuti Ambaz, supaya halaman platform menyatu dengan section tema. */
+  --primary: #000000;
+  --primary-hover: #f15b41;
+  --text: #222222;
+  --muted: #666666;
+  --line: #e5e5e5;
+  --font-body: var(--font-sans);
+}
+
+:root[data-theme="ambaz"] body {
+  font-family: var(--font-sans);
+}
+
+:where([data-theme="ambaz"]) :is([data-theme-section], .ambaz-scope),
+:where([data-theme="ambaz"]) :is([data-theme-section], .ambaz-scope) *,
+:where([data-theme="ambaz"]) :is([data-theme-section], .ambaz-scope) *::before,
+:where([data-theme="ambaz"]) :is([data-theme-section], .ambaz-scope) *::after {
+  box-sizing: border-box;
+}
+
+:where([data-theme="ambaz"]) :is([data-theme-section], .ambaz-scope) {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-body);
+}
+
+:where([data-theme="ambaz"]) :is([data-theme-section], .ambaz-scope) :where(h1, h2, h3, h4, h5, h6, p, ul, ol, figure, blockquote) {
+  margin: 0;
+  padding: 0;
+}
+
+:where([data-theme="ambaz"]) :is([data-theme-section], .ambaz-scope) :where(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--font-heading);
+  color: var(--color-heading);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+:where([data-theme="ambaz"]) :is([data-theme-section], .ambaz-scope) :where(ul, ol) { list-style: none; }
+:where([data-theme="ambaz"]) :is([data-theme-section], .ambaz-scope) :where(a) { color: inherit; text-decoration: none; }
+:where([data-theme="ambaz"]) :is([data-theme-section], .ambaz-scope) :where(button) { cursor: pointer; border: none; background: none; font: inherit; color: inherit; }
+:where([data-theme="ambaz"]) :is([data-theme-section], .ambaz-scope) :where(img) { max-width: 100%; height: auto; display: block; }
+:where([data-theme="ambaz"]) :is([data-theme-section], .ambaz-scope) :where(a, button) {
+  transition: color 250ms ease, background-color 250ms ease, border-color 250ms ease, box-shadow 250ms ease, opacity 250ms ease, transform 250ms ease;
+}
+
+[data-theme="ambaz"] .container-main {
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: 15px;
+}
+@media (min-width: 750px) { [data-theme="ambaz"] .container-main { padding-inline: 20px; } }
+@media (min-width: 992px) { [data-theme="ambaz"] .container-main { padding-inline: 30px; } }
+@media (min-width: 1200px) { [data-theme="ambaz"] .container-main { padding-inline: 40px; } }
+
+/* Jarak antar-section Ambaz (.home-sections > * + * { margin-top: 80px }). */
+[data-theme="ambaz"] main > [data-theme-section] + [data-theme-section] { margin-top: 80px; }
+[data-theme="ambaz"] main:has(> [data-theme-section]) { padding-bottom: 80px; }
+
+[data-theme="ambaz"] .swiper { width: 100%; }
+[data-theme="ambaz"] .swiper-slide { width: 100%; display: flex; align-items: center; justify-content: center; }
+[data-theme="ambaz"] .swiper-button-next,
+[data-theme="ambaz"] .swiper-button-prev { display: none !important; }
+
+/* "Built with Sellosy" yang dipasang platform tepat setelah footer tema. */
+[data-theme="ambaz"] .ambaz-footer + .built-with {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 0 15px 24px;
+  font-size: 13px;
+  color: #777;
+}
+
+/* Slide Swiper memusatkan isinya (flex); kartu produk tetap selebar slide. */
+[data-theme="ambaz"] .swiper-slide > * { width: 100%; }

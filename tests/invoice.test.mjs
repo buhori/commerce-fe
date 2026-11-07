@@ -4,7 +4,11 @@ import test from "node:test";
 import vm from "node:vm";
 import ts from "typescript";
 
-// lib/invoice.ts tanpa Next.js: modul yang diimpornya diganti stub secukupnya.
+// lib/invoice.ts tanpa Next.js: modul yang diimpornya diganti stub secukupnya; lib/signed-access.ts yang asli.
+const signedAccess = {};
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL("../lib/signed-access.ts", import.meta.url), "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS },
+}).outputText, { exports: signedAccess });
 const exports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL("../lib/invoice.ts", import.meta.url), "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS },
@@ -16,6 +20,7 @@ vm.runInNewContext(ts.transpileModule(readFileSync(new URL("../lib/invoice.ts", 
     "./auth": { CUSTOMER_COOKIE: "customer_token" },
     "./checkout": { readOrderDiscount: () => ({}) },
     "./store-host": { currentStoreHeaders: async () => ({}) },
+    "./signed-access": signedAccess,
   })[name],
 });
 const { readInvoiceAccess } = exports;

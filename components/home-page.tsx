@@ -6,6 +6,7 @@ import { StoreHeader } from "./store-header";
 import { getPreviewState } from "@/lib/preview";
 import { getHomeSections, getStore } from "@/lib/store-api";
 import { getActiveTheme } from "@/themes/active";
+import { contractTemplates, renderTemplate } from "@/themes/contract";
 
 /**
  * Beranda: murni susunan dari builder milik tema yang tampil (tema aktif, atau tema/draf yang
@@ -30,6 +31,28 @@ export async function HomePage() {
   }
 
   const store = storeResult;
+
+  // Tema berkontrak dengan beranda: susunan template "home" dari panel (sdk/THEME-CONTRACT.md).
+  if (theme.contract && contractTemplates(theme.contract).has("home")) {
+    const sections = await renderTemplate(theme.contract, store, { template: "home" });
+    return (
+      <>
+        <StoreHeader name={store.name} logo={store.logo} />
+        {store.maintenance.active && <div className="container home-maintenance"><MaintenanceNotice reason={store.maintenance.reason} /></div>}
+        <main className="page home-page">
+          <h1 className="sr-only">{store.name}</h1>
+          {sections ?? (
+            <div className="container empty-state" role="alert">
+              <h1>Beranda belum dapat dimuat</h1>
+              <ButtonLink reloadDocument href="/">Coba lagi</ButtonLink>
+            </div>
+          )}
+        </main>
+        <SiteFooter store={store} />
+      </>
+    );
+  }
+
   const sections = await getHomeSections(preview?.token ?? null).catch(() => undefined);
 
   return (
