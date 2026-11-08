@@ -19,6 +19,7 @@
 .invoice-stamp[data-state="paid"] { color: #15803d; }
 .invoice-stamp[data-state="unpaid"] { color: #b45309; }
 .invoice-stamp[data-state="void"], .invoice-stamp[data-state="refunded"] { color: #6b7280; }
+.invoice-warning { margin: 20px 0 0; padding: 12px 14px; border: 1.5px solid #b91c1c; border-radius: 8px; background: #fef2f2; color: #991b1b; font-size: .8125rem; font-weight: 700; line-height: 1.5; letter-spacing: .02em; text-align: center; }
 .invoice-parties { display: flex; justify-content: space-between; gap: 24px; padding: 24px 0; }
 .invoice-parties h2 { color: #6b7280; font-size: .6875rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; }
 .invoice-parties strong { display: block; font-size: .9375rem; }
@@ -56,5 +57,5 @@
   .invoice-page { padding: 0; background: #fff; min-height: 0; }
   .invoice-toolbar { display: none; }
   .invoice-sheet { max-width: none; padding: 0; border: 0; border-radius: 0; }
-  .invoice-note, .invoice-powered { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .invoice-note, .invoice-warning, .invoice-powered { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
