@@ -549,6 +549,8 @@
 .prose :global(:is(p, ul, ol)) { margin: 0 0 1.1em; }
 .prose :global(:is(h2, h3)) { margin: 1.6em 0 0.6em; font-family: var(--ed-serif), Georgia, serif; font-weight: 400; }
 .prose :global(a) { border-bottom: 1px solid currentColor; }
+/* Gambar yang disisipkan di editor halaman tidak melebihi lebar kolom, juga di ponsel. */
+.prose :global(img) { display: block; max-width: 100%; height: auto; margin: 0 0 1.1em; }
 
 /* ---------- footer ---------- */
 
