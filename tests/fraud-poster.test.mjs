@@ -8,7 +8,7 @@ const exports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL("../lib/checkout.ts", import.meta.url), "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS },
 }).outputText, { exports });
-const { readOrder, paymentCompleted } = exports;
+const { readOrder } = exports;
 
 const order = (fields = {}, payment = {}) => readOrder({ data: {
   id: 9, status: "pending", total: 50000, shipping_cost: 10000, grand_total: 60000,
@@ -23,12 +23,18 @@ test("the store's anti-fraud poster is read as an absolute http(s) URL only", ()
   assert.equal(order({ fraud_poster: "" }).fraud_poster, null);
 });
 
-test("the poster waits until the buyer has paid: confirmed, gateway paid, or proof sent", () => {
-  assert.equal(paymentCompleted(order()), false);
-  assert.equal(paymentCompleted(order({ status: "paid" })), true);
-  assert.equal(paymentCompleted(order({ status: "delivering" })), true);
-  assert.equal(paymentCompleted(order({}, { has_proof: true })), true);
-  assert.equal(paymentCompleted(order({ status: "cancelled" }, { has_proof: true })), false);
-  assert.equal(paymentCompleted({ status: "pending", proof_uploaded: false, online_payment: { status: "paid" } }), true);
-  assert.equal(paymentCompleted({ status: "pending", proof_uploaded: false, online_payment: { status: "pending" } }), false);
+const dialog = readFileSync(new URL("../components/fraud-poster.tsx", import.meta.url), "utf8");
+const payment = readFileSync(new URL("../components/order-payment.tsx", import.meta.url), "utf8");
+
+test("the poster opens on the first visit to the payment page, whatever the payment status", () => {
+  assert.match(payment, /\{order\.fraud_poster && \(\s*<FraudPosterDialog/);
+});
+
+test("the poster closes only through its confirm button", () => {
+  assert.match(dialog, />Saya Mengerti Dan Waspada<\/Button>/);
+  // Escape dibatalkan, tidak ada tombol X atau klik di luar, dan penutupan lain membuka modal lagi.
+  assert.match(dialog, /onCancel=\{\(event\) => event\.preventDefault\(\)\}/);
+  assert.match(dialog, /if \(!confirmed\.current\) dialog\.current\?\.showModal\(\)/);
+  assert.doesNotMatch(dialog, /aria-label="Tutup"|event\.target === event\.currentTarget/);
+  assert.equal((dialog.match(/\.close\(\)/g) ?? []).length, 1);
 });

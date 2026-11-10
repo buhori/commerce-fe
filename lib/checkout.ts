@@ -250,7 +250,7 @@ export interface OrderSummary {
   /** Foto dan video masing-masing, sesuai Pengaturan Belanja toko. */
   review_photos: boolean;
   review_videos: boolean;
-  /** Poster anti penipuan dari Pengaturan Belanja, ditampilkan sekali setelah pembayaran berhasil; null bila tidak ada. */
+  /** Poster anti penipuan dari Pengaturan Belanja, ditampilkan sekali per pesanan saat halaman pembayaran pertama kali dibuka; null bila tidak ada. */
   fraud_poster: string | null;
 }
 
@@ -556,16 +556,6 @@ export function usesOnlinePayment(order: Pick<OrderSummary, "online_payment" | "
 }
 
 /** Status diperiksa berkala selama gateway belum mengonfirmasi tagihan pesanan yang masih menunggu. */
-/**
- * Pembeli sudah berhasil membayar: pesanan dikonfirmasi, tagihan payment gateway lunas, atau bukti transfer/QRIS
- * sudah terkirim (tinggal diperiksa toko).
- */
-export function paymentCompleted(order: Pick<OrderSummary, "status" | "online_payment" | "proof_uploaded">): boolean {
-  return ["paid", "processed", "delivering", "delivered", "done"].includes(order.status)
-    || order.online_payment?.status === "paid"
-    || (order.status === "pending" && order.proof_uploaded);
-}
-
 export function shouldPollPayment(order: Pick<OrderSummary, "status" | "online_payment" | "payment_method">): boolean {
   return order.status === "pending" && usesOnlinePayment(order) && order.online_payment?.status === "pending";
 }
