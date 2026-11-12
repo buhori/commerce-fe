@@ -5,7 +5,7 @@ import { headers } from "next/headers";
  * store whose identifier is "demo"; any other host falls back to STORE_ID.
  */
 export function storeIdFromHost(host: string | null | undefined): string {
-  const fallback = process.env.STORE_ID || "404";
+  const fallback = process.env.STORE_ID || "410";
   const root = process.env.STORE_ROOT_DOMAIN?.trim().toLowerCase().replace(/^\./, "");
   if (!host || !root) return fallback;
   const hostname = host.trim().toLowerCase().replace(/:\d+$/, "");
