@@ -9,7 +9,7 @@ vm.runInNewContext(ts.transpileModule(readFileSync(new URL("../lib/checkout.ts",
   compilerOptions: { module: ts.ModuleKind.CommonJS },
 }).outputText, { exports });
 const {
-  readOrder, readOnlinePayment, readPaymentMethods, paymentMethodSections, usesOnlinePayment, shouldPollPayment,
+  readOrder, readOnlinePayment, readPaymentMethods, paymentMethodSections, usesOnlinePayment, shouldPollPayment, renewsExpiredQr,
   paymentChangeErrorMessage, readHttpsUrl, readAppUrl,
 } = exports;
 
@@ -181,4 +181,19 @@ test("payment change errors prefer field errors and hide 5xx details", () => {
   assert.equal(paymentChangeErrorMessage(422, { message: "Ringkasan", errors: { bank_account_id: ["Pilih rekening."] } }), "Pilih rekening.");
   assert.equal(paymentChangeErrorMessage(500, { message: "SQLSTATE" }), "Metode pembayaran belum dapat diganti. Silakan coba lagi.");
   assert.equal(paymentChangeErrorMessage(404, null), "Metode pembayaran belum dapat diganti. Silakan coba lagi.");
+});
+
+test("an expired QR keeps the page checking while the order deadline is still ahead, so the store can replace it", () => {
+  const now = Date.parse("2026-10-18T10:00:00Z");
+  const qr = { type: "qr", qr_string: "000201", amount: 160000 };
+  const expiredQr = (deadline) => order(bill({ status: "expired", action: qr }), { payment_expires_at: deadline });
+
+  assert.equal(renewsExpiredQr(expiredQr("2026-10-18T11:00:00Z"), now), true);
+  assert.equal(shouldPollPayment(expiredQr("2026-10-18T11:00:00Z"), now), true);
+  // Batas pesanan tinggal beberapa menit, atau tanpa batas: tidak diganti, pemeriksaan berhenti.
+  assert.equal(shouldPollPayment(expiredQr("2026-10-18T10:03:00Z"), now), false);
+  assert.equal(shouldPollPayment(expiredQr(null), now), false);
+  // Bukan QR (mis. nomor VA), atau pesanan sudah tidak menunggu.
+  assert.equal(shouldPollPayment(order(bill({ status: "expired" }), { payment_expires_at: "2026-10-18T11:00:00Z" }), now), false);
+  assert.equal(shouldPollPayment(order(bill({ status: "expired", action: qr }), { status: "cancelled", payment_expires_at: "2026-10-18T11:00:00Z" }), now), false);
 });

@@ -575,9 +575,26 @@ export function usesOnlinePayment(order: Pick<OrderSummary, "online_payment" | "
   return order.online_payment !== null && !isManualPayment(order.payment_method);
 }
 
-/** Status diperiksa berkala selama gateway belum mengonfirmasi tagihan pesanan yang masih menunggu. */
-export function shouldPollPayment(order: Pick<OrderSummary, "status" | "online_payment" | "payment_method">): boolean {
-  return order.status === "pending" && usesOnlinePayment(order) && order.online_payment?.status === "pending";
+/** Sisa batas bayar pesanan minimal ini supaya toko mengganti QR yang kedaluwarsa (PluginPayments::RENEW_MIN_MINUTES). */
+const QR_RENEW_MIN_MS = 5 * 60 * 1000;
+
+/**
+ * Kode QR dari gateway yang kedaluwarsa sebelum batas bayar pesanan diganti otomatis oleh toko saat status
+ * diperiksa, jadi halaman pembayaran tetap memeriksa sampai QR barunya tampil.
+ */
+export function renewsExpiredQr(order: Pick<OrderSummary, "status" | "online_payment" | "payment_method" | "payment_expires_at">, now = Date.now()): boolean {
+  const deadline = order.payment_expires_at ? Date.parse(order.payment_expires_at) : NaN;
+  return order.status === "pending" && usesOnlinePayment(order) && order.online_payment?.status === "expired"
+    && order.online_payment.action?.type === "qr" && !Number.isNaN(deadline) && deadline - now > QR_RENEW_MIN_MS;
+}
+
+/**
+ * Status diperiksa berkala selama gateway belum mengonfirmasi tagihan pesanan yang masih menunggu, atau
+ * selama QR yang kedaluwarsa sedang diganti (renewsExpiredQr).
+ */
+export function shouldPollPayment(order: Pick<OrderSummary, "status" | "online_payment" | "payment_method" | "payment_expires_at">, now = Date.now()): boolean {
+  return (order.status === "pending" && usesOnlinePayment(order) && order.online_payment?.status === "pending")
+    || renewsExpiredQr(order, now);
 }
 
 /** Pesan untuk pembeli dari POST /orders/{id}/payment yang gagal. */

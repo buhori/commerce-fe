@@ -182,8 +182,9 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
   const itemCount = order.items.reduce((count, item) => count + item.amount, 0);
   // Batas bayar: yang paling awal antara tagihan gateway yang masih berjalan dan batas pesanan
   // (lewat dari itu toko membatalkan pesanan). Tagihan yang sedang diperiksa toko tidak perlu dibayar lagi.
+  // Kode QR yang kedaluwarsa lebih dulu diganti otomatis, jadi untuk QR batasnya batas pesanan.
   const paymentDeadline = online && ["needs_review", "paid"].includes(online.status) ? null
-    : [online?.status === "pending" ? online.expires_at : null, order.payment_expires_at]
+    : [online?.status === "pending" && online.action?.type !== "qr" ? online.expires_at : null, order.payment_expires_at]
       .filter((value): value is string => value !== null && !Number.isNaN(Date.parse(value)))
       .sort((a, b) => Date.parse(a) - Date.parse(b))[0] ?? null;
 
