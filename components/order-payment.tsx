@@ -335,6 +335,22 @@ export function OrderPayment({ orderId, currency, storeName }: { orderId: string
             </section>
           )}
 
+          {/* Produk digital: link download (sama dengan di email) selama pesanan lunas. */}
+          {confirmed && order.downloads.length > 0 && (
+            <section className="payment-shipment payment-downloads" aria-labelledby="payment-downloads-title">
+              <h2 id="payment-downloads-title">Unduh produk digital</h2>
+              <ul className="payment-download-list">
+                {order.downloads.map((file) => (
+                  <li key={file.url}>
+                    <span><strong>{file.name}</strong>{file.variant && <span>{file.variant}</span>}</span>
+                    <ButtonLink reloadDocument variant="secondary" size="sm" href={file.url} rel="noopener"><Icon name="download" />Unduh</ButtonLink>
+                  </li>
+                ))}
+              </ul>
+              <p className="field-hint">Link yang sama juga dikirim ke email Anda.</p>
+            </section>
+          )}
+
           {order.reviewable && <OrderReviews orderId={order.id} items={order.items} photos={order.review_photos} video={order.review_videos} />}
 
           {awaitingPayment && transferAvailable && (

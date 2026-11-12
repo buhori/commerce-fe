@@ -261,8 +261,10 @@ export function PaymentChoices({ payment, bankAccount, onPaymentChange, onBankAc
   );
 }
 
-export function DeliveryOptions({ shipping, payment, bankAccount, addressCode, currency, preorder = false, refreshKey = 0, onShippingChange, onPaymentChange, onBankAccountChange }: {
+export function DeliveryOptions({ shipping, payment, bankAccount, addressCode, currency, preorder = false, refreshKey = 0, digital = false, onShippingChange, onPaymentChange, onBankAccountChange }: {
   preorder?: boolean;
+  // Isinya produk digital semua: tidak ada kurir untuk dipilih.
+  digital?: boolean;
   // Bumped to reload shipping options, e.g. after the server says a chosen rate changed.
   refreshKey?: number;
   shipping: ShippingOption | null;
@@ -276,9 +278,21 @@ export function DeliveryOptions({ shipping, payment, bankAccount, addressCode, c
 }) {
   return (
     <div className="delivery-options">
-      <p className="checkout-description">Pilih layanan pengiriman dan cara pembayaran untuk pesanan ini. Pilihan bertanda * wajib diisi.</p>
-      <ShippingChoices key={`${addressCode}-${preorder}-${refreshKey}`} addressCode={addressCode} currency={currency}
-        preorder={preorder} selected={shipping} onSelect={onShippingChange} />
+      {digital ? (
+        <>
+          <p className="checkout-description">Pilih cara pembayaran untuk pesanan ini. Pilihan bertanda * wajib diisi.</p>
+          <p className="shipping-notice" role="status">
+            <Icon name="download" />
+            <span><strong>Produk digital, tanpa ongkos kirim.</strong> Link download dikirim ke email Anda setelah pembayaran diterima, dan juga tampil di halaman pesanan.</span>
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="checkout-description">Pilih layanan pengiriman dan cara pembayaran untuk pesanan ini. Pilihan bertanda * wajib diisi.</p>
+          <ShippingChoices key={`${addressCode}-${preorder}-${refreshKey}`} addressCode={addressCode} currency={currency}
+            preorder={preorder} selected={shipping} onSelect={onShippingChange} />
+        </>
+      )}
       <PaymentChoices payment={payment} bankAccount={bankAccount}
         onPaymentChange={onPaymentChange} onBankAccountChange={onBankAccountChange} />
     </div>

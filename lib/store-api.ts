@@ -94,6 +94,8 @@ export interface ProductSummary {
   image?: string | null;
   spreorder_duration?: number;
   preorder_duration?: number;
+  /** Produk digital: tanpa kurir dan ongkir; link download dikirim ke email pembeli setelah lunas. */
+  is_digital_product?: boolean;
   sku?: string;
   stock?: number;
   status?: string;

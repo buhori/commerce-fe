@@ -82,7 +82,7 @@ export default async function InvoicePage({ params, searchParams }: PageProps<"/
 
         {/* Pembeli ditipu lewat invoice yang dibagikan: peringatan ikut tercetak dan terlihat di setiap tangkapan layar. */}
         <p className="invoice-warning" role="note">
-          DILARANG SCREENSHOT INVOICE ATAU MENGINFORMASIKAN ISI INVOICE KEPADA SIAPAPUN. WASPADA PENIPUAN MENGATASNAMAKAN{" "}
+          DILARANG MENGINFORMASIKAN ISI INVOICE KEPADA SIAPAPUN. WASPADA PENIPUAN MENGATASNAMAKAN{" "}
           {store.name.toLocaleUpperCase("id-ID")} ATAU KURIR.
         </p>
 

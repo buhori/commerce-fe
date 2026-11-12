@@ -250,8 +250,28 @@ export interface OrderSummary {
   /** Foto dan video masing-masing, sesuai Pengaturan Belanja toko. */
   review_photos: boolean;
   review_videos: boolean;
+  /** Link download produk digital, satu per barang; hanya terisi selama pesanan lunas. */
+  downloads: OrderDownload[];
   /** Poster anti penipuan dari Pengaturan Belanja, ditampilkan sekali per pesanan saat halaman pembayaran pertama kali dibuka; null bila tidak ada. */
   fraud_poster: string | null;
+}
+
+/** Satu file produk digital yang bisa diunduh pembeli (link bertanda tangan dari backend). */
+export interface OrderDownload {
+  name: string;
+  variant: string | null;
+  url: string;
+}
+
+/** Blok `downloads` dari detail pesanan; baris tanpa nama atau URL http(s) dibuang. */
+export function readOrderDownloads(value: unknown): OrderDownload[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((row) => {
+    const entry = row as { name?: unknown; variant?: unknown; url?: unknown } | null;
+    const url = readHttpUrl(entry?.url);
+    if (!url || typeof entry?.name !== "string" || !entry.name) return [];
+    return [{ name: entry.name, variant: typeof entry.variant === "string" && entry.variant ? entry.variant : null, url }];
+  });
 }
 
 export interface OrderTracking {
@@ -617,6 +637,7 @@ export function readOrder(data: unknown): OrderSummary {
     review_media: row.review_media === true,
     review_photos: row.review_photos === true,
     review_videos: row.review_videos === true,
+    downloads: readOrderDownloads(row.downloads),
   };
 }
 

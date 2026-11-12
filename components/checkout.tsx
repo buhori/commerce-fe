@@ -52,10 +52,13 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
   // A shipping rate belongs to one address; changing it drops the chosen rate.
   const chooseAddress = (address: AddressDetails) => { setSelected(address); setShipping(null); };
   const needsBankAccount = payment?.code === "bank_transfer";
+  // Isinya produk digital semua: tanpa kurir dan ongkir, link download dikirim ke email setelah lunas.
+  const digitalOnly = items.length > 0 && items.every((item) => item.product?.is_digital_product === true);
+  const shippingCost = digitalOnly ? 0 : shipping?.cost ?? null;
   const couponStale = Boolean(coupon && coupon.cartKey !== cartKey);
   // Kupon yang belum diperiksa ulang tidak dihitung, supaya total di layar sama dengan tagihan backend.
   const activeCoupon = coupon && !couponStale ? coupon.applied : null;
-  const ready = Boolean(selected?.id && shipping && payment && (!needsBankAccount || bankAccount)) && !couponStale && !applyingCoupon;
+  const ready = Boolean(selected?.id && (digitalOnly || shipping) && payment && (!needsBankAccount || bankAccount)) && !couponStale && !applyingCoupon;
 
   async function applyCoupon(code: string) {
     const trimmed = code.trim();
@@ -101,8 +104,7 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
         method: "POST", credentials: "same-origin", headers: jsonHeaders(),
         body: JSON.stringify({
           address_id: selected!.id,
-          shipping_method_id: shipping!.shipping_method_id,
-          shipping_service: shipping!.service,
+          ...(digitalOnly ? {} : { shipping_method_id: shipping!.shipping_method_id, shipping_service: shipping!.service }),
           payment_method: payment!.code,
           ...(needsBankAccount ? { bank_account_id: bankAccount!.id } : {}),
           ...(activeCoupon ? { coupon_code: activeCoupon.code } : {}),
@@ -152,7 +154,7 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
   // Backend tidak memotong melebihi subtotal barang; ongkos kirim tidak ikut dipotong.
   const couponDiscount = activeCoupon ? Math.min(activeCoupon.discount, total) : 0;
   // Biaya admin payment gateway yang dibebankan ke pembeli (metode online); dihitung ulang dan disimpan di server.
-  const paymentFee = shipping && payment?.fee?.charged_to_customer ? gatewayFeeAmount(total - couponDiscount + shipping.cost, payment.fee) : 0;
+  const paymentFee = shippingCost !== null && payment?.fee?.charged_to_customer ? gatewayFeeAmount(total - couponDiscount + shippingCost, payment.fee) : 0;
   const longestPreorder = Math.max(0, ...items.map((item) => preorderDays(item.product)));
 
   return (
@@ -184,7 +186,7 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
         </ol>
         <div className="commerce-form-heading">
           <span className="commerce-section-icon"><Icon name={step === 0 ? "pin" : "truck"} /></span>
-          <div><p>LANGKAH {step + 1} DARI 2</p><h2 id="checkout-step-title">{step === 0 ? "Ke mana pesanan dikirim?" : "Pengiriman & pembayaran"}</h2></div>
+          <div><p>LANGKAH {step + 1} DARI 2</p><h2 id="checkout-step-title">{step === 0 ? (digitalOnly ? "Data pembeli" : "Ke mana pesanan dikirim?") : digitalOnly ? "Pembayaran" : "Pengiriman & pembayaran"}</h2></div>
         </div>
 
         {/* Keep the guest form mounted so switching modes or steps does not lose a draft. */}
@@ -202,7 +204,7 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
         </div>
         {step === 1 && selected && (
           <DeliveryOptions shipping={shipping} payment={payment} bankAccount={bankAccount}
-            addressCode={selected.address_code} currency={currency} preorder={preorder} refreshKey={optionsVersion}
+            addressCode={selected.address_code} currency={currency} preorder={preorder} refreshKey={optionsVersion} digital={digitalOnly}
             onShippingChange={setShipping}
             onPaymentChange={(method) => { setPayment(method); if (method.code !== "bank_transfer") setBankAccount(null); }}
             onBankAccountChange={setBankAccount} />
@@ -223,7 +225,7 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
             {!ready && !placing && (
               <p className="field-hint" role="status">
                 {!selected?.id ? "Alamat ini belum tersimpan di server, simpan ulang alamatnya dulu."
-                  : !shipping ? "Pilih layanan pengiriman dulu."
+                  : !shipping && !digitalOnly ? "Pilih layanan pengiriman dulu."
                   : !payment ? "Pilih metode pembayaran dulu."
                   : needsBankAccount && !bankAccount ? "Pilih rekening tujuan transfer dulu."
                   : applyingCoupon ? "Kupon sedang diperiksa…"
@@ -293,24 +295,28 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
         {activeCoupon && totalKnown && (
           <div className="checkout-coupon-discount"><span>Kupon {activeCoupon.code}</span><strong>−{formatPrice(couponDiscount, currency)}</strong></div>
         )}
-        <div><span>Ongkos kirim{shipping ? ` (${shippingOptionLabel(shipping)})` : ""}</span><strong>{shipping ? formatPrice(shipping.cost, currency) : "Belum dipilih"}</strong></div>
-        {shipping && totalKnown && paymentFee > 0 && payment?.fee && (
+        {digitalOnly
+          ? <div><span>Ongkos kirim</span><strong>Tidak ada (produk digital)</strong></div>
+          : <div><span>Ongkos kirim{shipping ? ` (${shippingOptionLabel(shipping)})` : ""}</span><strong>{shipping ? formatPrice(shipping.cost, currency) : "Belum dipilih"}</strong></div>}
+        {shippingCost !== null && totalKnown && paymentFee > 0 && payment?.fee && (
           <div className="checkout-payment-fee"><span>Biaya layanan pembayaran ({payment.name} {gatewayFeeRate(payment.fee)})</span><strong>{formatPrice(paymentFee, currency)}</strong></div>
         )}
-        {shipping && totalKnown
-          ? <div className="cart-total"><span>Total belanja</span><strong>{formatPrice(total - couponDiscount + shipping.cost + paymentFee, currency)}</strong></div>
+        {shippingCost !== null && totalKnown
+          ? <div className="cart-total"><span>Total belanja</span><strong>{formatPrice(total - couponDiscount + shippingCost + paymentFee, currency)}</strong></div>
           : <p>Belum termasuk ongkos kirim.</p>}
         {selected && (
           <section className="checkout-selected" aria-label="Alamat dipilih">
-            <h3>Dikirim ke</h3>
+            <h3>{digitalOnly ? "Data pembeli" : "Dikirim ke"}</h3>
             <AddressSummary address={selected} />
           </section>
         )}
         {(shipping || payment) && (
           <section className="checkout-selected" aria-label="Pengiriman dan pembayaran">
-            <h3>Pengiriman & pembayaran</h3>
+            <h3>{digitalOnly ? "Pembayaran" : "Pengiriman & pembayaran"}</h3>
             <dl className="checkout-choices">
-              <div><dt>Kurir</dt><dd>{shipping ? shippingOptionLabel(shipping) : "Belum dipilih"}</dd></div>
+              {digitalOnly
+                ? <div><dt>Pengiriman</dt><dd>Link download lewat email</dd></div>
+                : <div><dt>Kurir</dt><dd>{shipping ? shippingOptionLabel(shipping) : "Belum dipilih"}</dd></div>}
               {shipping?.etd && <div><dt>Estimasi</dt><dd>{shipping.etd}</dd></div>}
               <div><dt>Pembayaran</dt><dd>{payment?.name || "Belum dipilih"}</dd></div>
             </dl>
