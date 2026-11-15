@@ -24,6 +24,12 @@ const steps = [
   { title: "Pengiriman & pembayaran", hint: "Kurir dan cara bayar" },
 ] as const;
 
+// Produk digital semua: tidak ada alamat atau kurir, hanya data pembeli dan cara bayar.
+const digitalSteps = [
+  { title: "Data pembeli", hint: "Nama, WhatsApp, email" },
+  { title: "Pembayaran", hint: "Cara bayar" },
+] as const;
+
 // coupons: paket toko menyertakan kode kupon (store.features berisi "coupon").
 export function Checkout({ currency, preorder = false, coupons = false }: { currency: string; preorder?: boolean; coupons?: boolean }) {
   // A pre-order checkout reads its own one-product cart, never the shopping cart.
@@ -58,7 +64,9 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
   const couponStale = Boolean(coupon && coupon.cartKey !== cartKey);
   // Kupon yang belum diperiksa ulang tidak dihitung, supaya total di layar sama dengan tagihan backend.
   const activeCoupon = coupon && !couponStale ? coupon.applied : null;
-  const ready = Boolean(selected?.id && (digitalOnly || shipping) && payment && (!needsBankAccount || bankAccount)) && !couponStale && !applyingCoupon;
+  // Data pembeli tanpa alamat hanya cukup untuk produk digital; bila isi keranjang berubah, alamat diminta lagi.
+  const buyer = selected?.id && (digitalOnly || selected.address_code) ? selected : null;
+  const ready = Boolean(buyer && (digitalOnly || shipping) && payment && (!needsBankAccount || bankAccount)) && !couponStale && !applyingCoupon;
 
   async function applyCoupon(code: string) {
     const trimmed = code.trim();
@@ -103,7 +111,7 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
       const response = await fetch("/api/checkout", {
         method: "POST", credentials: "same-origin", headers: jsonHeaders(),
         body: JSON.stringify({
-          address_id: selected!.id,
+          address_id: buyer!.id,
           ...(digitalOnly ? {} : { shipping_method_id: shipping!.shipping_method_id, shipping_service: shipping!.service }),
           payment_method: payment!.code,
           ...(needsBankAccount ? { bank_account_id: bankAccount!.id } : {}),
@@ -174,10 +182,10 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
       }} />
       <section className="checkout-addresses" aria-labelledby="checkout-step-title">
         <ol className="checkout-steps">
-          {steps.map((entry, index) => (
+          {(digitalOnly ? digitalSteps : steps).map((entry, index) => (
             <li key={entry.title} aria-current={index === step ? "step" : undefined} data-complete={index < step}>
               {/* Step two stays locked until an address is ready to ship to. */}
-              <button type="button" onClick={() => setStep(index)} disabled={index > 0 && !selected}>
+              <button type="button" onClick={() => setStep(index)} disabled={index > 0 && !buyer}>
                 <span className="checkout-step-index" aria-hidden="true">{index < step ? <Icon name="check" /> : index + 1}</span>
                 <span className="checkout-step-label"><strong>{entry.title}</strong><span>{entry.hint}</span></span>
               </button>
@@ -189,8 +197,14 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
           <div><p>LANGKAH {step + 1} DARI 2</p><h2 id="checkout-step-title">{step === 0 ? (digitalOnly ? "Data pembeli" : "Ke mana pesanan dikirim?") : digitalOnly ? "Pembayaran" : "Pengiriman & pembayaran"}</h2></div>
         </div>
 
+        {/* Produk digital: hanya data pembeli, tanpa pilihan alamat tersimpan. */}
+        {digitalOnly && (
+          <div hidden={step !== 0}>
+            <AddressForm contactOnly submitLabel="Lanjut ke pembayaran" onSaved={(contact) => { chooseAddress(contact); setStep(1); }} />
+          </div>
+        )}
         {/* Keep the guest form mounted so switching modes or steps does not lose a draft. */}
-        <div hidden={step !== 0}>
+        <div hidden={step !== 0 || digitalOnly}>
           <div className="checkout-modes" role="group" aria-label="Sumber alamat">
             <button type="button" aria-pressed={mode === "new"} onClick={() => setMode("new")}>Tambah alamat</button>
             <button type="button" aria-pressed={mode === "saved"} onClick={() => setMode("saved")}>Alamat tersimpan</button>
@@ -202,18 +216,18 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
           {mode === "saved" && <SavedAddresses selectedId={selected?.id} onSelect={chooseAddress} onAdd={() => setMode("new")}
             onDeleted={(id) => { if (selected?.id === id) { setSelected(null); setShipping(null); } }} />}
         </div>
-        {step === 1 && selected && (
+        {step === 1 && buyer && (
           <DeliveryOptions shipping={shipping} payment={payment} bankAccount={bankAccount}
-            addressCode={selected.address_code} currency={currency} preorder={preorder} refreshKey={optionsVersion} digital={digitalOnly}
+            addressCode={buyer.address_code ?? ""} currency={currency} preorder={preorder} refreshKey={optionsVersion} digital={digitalOnly}
             onShippingChange={setShipping}
             onPaymentChange={(method) => { setPayment(method); if (method.code !== "bank_transfer") setBankAccount(null); }}
             onBankAccountChange={setBankAccount} />
         )}
 
-        {step === 0 && mode === "saved" && (
+        {step === 0 && mode === "saved" && !digitalOnly && (
           <div className="checkout-actions">
-            <Button type="button" disabled={!selected} onClick={() => setStep(1)}>Lanjut ke pengiriman</Button>
-            {!selected && <p className="field-hint" role="status">Pilih alamat dulu untuk melanjutkan.</p>}
+            <Button type="button" disabled={!buyer} onClick={() => setStep(1)}>Lanjut ke pengiriman</Button>
+            {!buyer && <p className="field-hint" role="status">Pilih alamat dulu untuk melanjutkan.</p>}
           </div>
         )}
         {step === 1 && (
@@ -221,10 +235,10 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
             <Button type="button" disabled={!ready || placing} onClick={placeOrder}>
               {placing ? "Membuat pesanan…" : "Buat pesanan"}<Icon name="arrow" />
             </Button>
-            <Button type="button" variant="secondary" disabled={placing} onClick={() => setStep(0)}>Kembali ke alamat</Button>
+            <Button type="button" variant="secondary" disabled={placing} onClick={() => setStep(0)}>{digitalOnly ? "Kembali ke data pembeli" : "Kembali ke alamat"}</Button>
             {!ready && !placing && (
               <p className="field-hint" role="status">
-                {!selected?.id ? "Alamat ini belum tersimpan di server, simpan ulang alamatnya dulu."
+                {!buyer ? (digitalOnly ? "Isi data pembeli dulu." : "Alamat ini belum tersimpan di server, simpan ulang alamatnya dulu.")
                   : !shipping && !digitalOnly ? "Pilih layanan pengiriman dulu."
                   : !payment ? "Pilih metode pembayaran dulu."
                   : needsBankAccount && !bankAccount ? "Pilih rekening tujuan transfer dulu."
@@ -304,10 +318,10 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
         {shippingCost !== null && totalKnown
           ? <div className="cart-total"><span>Total belanja</span><strong>{formatPrice(total - couponDiscount + shippingCost + paymentFee, currency)}</strong></div>
           : <p>Belum termasuk ongkos kirim.</p>}
-        {selected && (
-          <section className="checkout-selected" aria-label="Alamat dipilih">
+        {buyer && (
+          <section className="checkout-selected" aria-label={digitalOnly ? "Data pembeli" : "Alamat dipilih"}>
             <h3>{digitalOnly ? "Data pembeli" : "Dikirim ke"}</h3>
-            <AddressSummary address={selected} />
+            <AddressSummary address={buyer} />
           </section>
         )}
         {(shipping || payment) && (

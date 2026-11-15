@@ -9,8 +9,9 @@ export interface RegionMatch {
 export interface AddressDetails {
   id?: number;
   label?: string;
-  address_code: string;
-  address: string;
+  // Null for buyer contact without an address (cart of only digital products).
+  address_code: string | null;
+  address: string | null;
   recipent: string;
   contact: string | null;
   email?: string | null;
@@ -21,6 +22,8 @@ export interface AddressDetails {
 export interface ShippingAddress extends AddressDetails {
   id: number;
   label: string;
+  address_code: string;
+  address: string;
 }
 
 /** Satu kurir + layanan dari /shipping/options, mis. JNE REG Rp26.000 · 1 hari. */
@@ -346,6 +349,13 @@ export function isShippingAddress(value: unknown): value is ShippingAddress {
     typeof row.label === "string" && typeof row.address === "string" &&
     typeof row.address_code === "string" && typeof row.recipent === "string" &&
     (row.contact == null || typeof row.contact === "string");
+}
+
+/** Buyer contact saved without an address (`contact_only`), for a cart of only digital products. */
+export function isBuyerContact(value: unknown): value is AddressDetails & { id: number } {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Partial<AddressDetails>;
+  return Number.isSafeInteger(row.id) && Number(row.id) > 0 && typeof row.recipent === "string";
 }
 
 export function readAddresses(data: unknown): ShippingAddress[] {
