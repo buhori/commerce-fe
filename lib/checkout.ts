@@ -436,8 +436,8 @@ export function readPaymentMethods(data: unknown): PaymentMethod[] {
 
 // Urutan dan label kelompok metode online; kelompok lain digabung di "lainnya".
 const onlineGroups: [string, string][] = [
-  ["bank_transfer", "Virtual account"],
   ["qr", "QRIS"],
+  ["bank_transfer", "Virtual account"],
   ["ewallet", "E-wallet"],
   ["retail", "Gerai retail"],
   ["card", "Kartu kredit/debit"],

@@ -57,8 +57,8 @@ test("store methods come first, online methods are grouped in a fixed order", ()
   const sections = paymentMethodSections(methods);
   assert.deepEqual(plain(sections.map(({ key, label, methods }) => [key, label, methods.map((m) => m.code)])), [
     ["store", "Bayar langsung ke toko", ["qris"]],
-    ["online-bank_transfer", "Pembayaran online · Virtual account", ["p:va_bni", "p:va_bri"]],
     ["online-qr", "Pembayaran online · QRIS", ["p:qris"]],
+    ["online-bank_transfer", "Pembayaran online · Virtual account", ["p:va_bni", "p:va_bri"]],
     ["online-ewallet", "Pembayaran online · E-wallet", ["p:ovo"]],
     ["online-other", "Pembayaran online lainnya", ["p:paylater", "p:other"]],
   ]);
