@@ -1475,6 +1475,64 @@ p {
   font-weight: 600;
   letter-spacing: 0.02em;
 }
+/* Virtual account terlipat: satu kartu selebar daftar berisi beberapa logo bank. */
+.method-collapsed {
+  width: 100%;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+.method-collapsed-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  width: 100%;
+  font-size: 0.875rem;
+}
+.method-collapsed-logos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.method-collapsed-rest {
+  min-width: 32px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--primary-soft);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 24px;
+  text-align: center;
+}
+.method-collapsed-text {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 120px;
+}
+.method-collapsed-text span {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.method-collapsed-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.method-collapsed-more svg {
+  width: 16px;
+  height: 16px;
+  transform: rotate(90deg);
+}
+.method-collapse {
+  margin-top: 6px;
+}
 /* Kelompok metode termurah untuk nominal belanja ini (recommendedPaymentGroup). */
 .method-recommended {
   padding: 1px 8px;

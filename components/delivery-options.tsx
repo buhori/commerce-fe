@@ -4,7 +4,7 @@ import { BrandLogo } from "./brand-logo";
 import { Icon } from "./icons";
 import { Spinner } from "./spinner";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import {
   paymentMethodSections, readBankChoices, readPaymentMethods, readShippingQuote, shippingHighlights, shippingOptionKey, shippingOptionLabel,
   type BankChoice, type PaymentMethod, type ShippingOption, type ShippingQuote,
@@ -56,7 +56,7 @@ function MethodGroup<T>({ legend, name, state, retry, emptyText, errorText, keyO
   // Shown above the choices, e.g. a warning that applies to all of them.
   notice?: ReactNode;
   // Splits the choices under subheadings; still one radio group.
-  sections?: (rows: T[]) => { key: string; label: string | null; rows: T[]; recommended?: boolean }[];
+  sections?: (rows: T[]) => MethodSectionRows<T>[];
   children?: ReactNode;
 }) {
   if (state.status === "loading") return <section className="method-group"><h3>{legend} <span className="required-indicator" aria-hidden="true">*</span></h3><Spinner label={`Memuat ${legend.toLowerCase()}…`} /></section>;
@@ -81,20 +81,51 @@ function MethodGroup<T>({ legend, name, state, retry, emptyText, errorText, keyO
       <legend>{legend} <span className="required-indicator" aria-hidden="true">*</span></legend>
       {notice}
       {sections
-        ? sections(state.rows).map((section) => (
-          <div className="method-section" key={section.key}>
-            {section.label && (
-              <p className="method-section-title">
-                {section.label}
-                {section.recommended && <span className="method-recommended">Rekomendasi</span>}
-              </p>
-            )}
-            {list(section.rows)}
-          </div>
-        ))
+        ? sections(state.rows).map((section) => <MethodSection key={section.key} section={section} list={list} isSelected={isSelected} />)
         : list(state.rows)}
       {children}
     </fieldset>
+  );
+}
+
+type MethodSectionRows<T> = {
+  key: string;
+  label: string | null;
+  rows: T[];
+  recommended?: boolean;
+  // Diisi: bagian ini dilipat menjadi satu kartu ringkasan (mis. beberapa logo bank) sampai pembeli membukanya.
+  preview?: ReactNode;
+};
+
+/** Satu subjudul di daftar metode; bagian berpratinjau tetap terbuka selama salah satu isinya terpilih. */
+function MethodSection<T>({ section, list, isSelected }: {
+  section: MethodSectionRows<T>;
+  list: (rows: T[]) => ReactNode;
+  isSelected: (row: T) => boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  const holdsSelection = section.rows.some(isSelected);
+  const expanded = !section.preview || open || holdsSelection;
+  return (
+    <div className="method-section">
+      {section.label && (
+        <p className="method-section-title">
+          {section.label}
+          {section.recommended && <span className="method-recommended">Rekomendasi</span>}
+        </p>
+      )}
+      {expanded ? <div id={id}>{list(section.rows)}</div> : (
+        <button type="button" className="method-card method-collapsed" aria-expanded={false} onClick={() => setOpen(true)}>
+          {section.preview}
+        </button>
+      )}
+      {section.preview && expanded && !holdsSelection && (
+        <Button type="button" variant="text" size="sm" className="method-collapse" aria-expanded aria-controls={id} onClick={() => setOpen(false)}>
+          Tampilkan lebih sedikit
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -215,8 +246,36 @@ function BankAccounts({ selected, onSelect }: {
   );
 }
 
-const paymentSections = (base: number | null) => (methods: PaymentMethod[]) =>
-  paymentMethodSections(methods, base).map(({ key, label, methods: rows, recommended }) => ({ key, label, rows, recommended }));
+// Virtual account dengan banyak bank dilipat: beberapa logo dulu, daftar lengkap setelah dibuka.
+const COLLAPSE_FROM = 5;
+const PREVIEW_LOGOS = 5;
+
+function BankPreview({ methods }: { methods: PaymentMethod[] }) {
+  const logos = methods.filter((method) => method.icon).slice(0, PREVIEW_LOGOS);
+  const rest = methods.length - logos.length;
+  return (
+    <span className="method-collapsed-body">
+      <span className="method-collapsed-logos" aria-hidden="true">
+        {logos.map((method) => (
+          // eslint-disable-next-line @next/next/no-img-element -- logo penyedia dari backend, ukurannya kecil.
+          <img key={method.code} className="payment-method-logo" src={method.icon!} alt="" width={40} height={24} loading="lazy" referrerPolicy="no-referrer" />
+        ))}
+        {rest > 0 && <span className="method-collapsed-rest">+{rest}</span>}
+      </span>
+      <span className="method-collapsed-text">
+        <strong>Pilih bank</strong>
+        <span>{methods.length} bank tersedia</span>
+      </span>
+      <span className="method-collapsed-more">Lihat semua<Icon name="arrow" /></span>
+    </span>
+  );
+}
+
+const paymentSections = (base: number | null) => (methods: PaymentMethod[]): MethodSectionRows<PaymentMethod>[] =>
+  paymentMethodSections(methods, base).map(({ key, label, methods: rows, recommended }) => ({
+    key, label, rows, recommended,
+    preview: key === "online-bank_transfer" && rows.length >= COLLAPSE_FROM ? <BankPreview methods={rows} /> : undefined,
+  }));
 
 function PaymentMethodLabel({ method }: { method: PaymentMethod }) {
   if (!method.online) return <><strong>{method.name}</strong><span>Instruksi pembayaran dikirim setelah pesanan dibuat.</span></>;
