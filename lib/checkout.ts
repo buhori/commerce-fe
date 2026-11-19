@@ -128,6 +128,21 @@ export function gatewayFeeAmount(base: number, fee: GatewayFee | null): number {
   return Math.round((base * fee.percent) / 100) + fee.flat;
 }
 
+/** Biaya QRIS di atas ini (rupiah): virtual account yang direkomendasikan, bukan QRIS. */
+const QRIS_FEE_LIMIT = 3000;
+
+/**
+ * Kelompok metode online yang paling murah untuk pembeli pada nominal $base: QRIS (persentase) selama biayanya
+ * paling banyak Rp3.000, selebihnya virtual account (tarif tetap). Null bila tidak ada yang dibandingkan: salah
+ * satunya tidak tersedia, biayanya ditanggung toko, atau nominalnya belum diketahui.
+ */
+export function recommendedPaymentGroup(methods: PaymentMethod[], base: number | null): "qr" | "bank_transfer" | null {
+  const qris = methods.find((method) => method.online && method.group === "qr");
+  const virtualAccount = methods.some((method) => method.online && method.group === "bank_transfer");
+  if (base === null || base <= 0 || !virtualAccount || !qris?.fee?.charged_to_customer) return null;
+  return gatewayFeeAmount(base, qris.fee) > QRIS_FEE_LIMIT ? "bank_transfer" : "qr";
+}
+
 /** "0,7%", "Rp4.000", atau "2,9% + Rp2.000" untuk label biaya di ringkasan checkout. */
 export function gatewayFeeRate(fee: GatewayFee): string {
   const percent = fee.percent > 0 ? `${fee.percent.toLocaleString("id-ID", { maximumFractionDigits: 2 })}%` : null;
@@ -148,6 +163,8 @@ export interface PaymentMethodSection {
   key: string;
   label: string | null;
   methods: PaymentMethod[];
+  /** Bagian metode termurah untuk nominal belanja ini (recommendedPaymentGroup). */
+  recommended: boolean;
 }
 
 /**
@@ -430,18 +447,19 @@ const onlineGroups: [string, string][] = [
  * Metode toko (transfer, QRIS statis, ...) lebih dulu, lalu metode online per kelompok. Urutan di
  * dalam kelompok mengikuti backend.
  */
-export function paymentMethodSections(methods: PaymentMethod[]): PaymentMethodSection[] {
+export function paymentMethodSections(methods: PaymentMethod[], base: number | null = null): PaymentMethodSection[] {
   const manual = methods.filter((method) => !method.online);
   const online = methods.filter((method) => method.online);
-  if (!online.length) return manual.length ? [{ key: "store", label: null, methods: manual }] : [];
-  const sections: PaymentMethodSection[] = manual.length ? [{ key: "store", label: "Bayar langsung ke toko", methods: manual }] : [];
+  if (!online.length) return manual.length ? [{ key: "store", label: null, methods: manual, recommended: false }] : [];
+  const sections: PaymentMethodSection[] = manual.length ? [{ key: "store", label: "Bayar langsung ke toko", methods: manual, recommended: false }] : [];
+  const recommended = recommendedPaymentGroup(methods, base);
   const known = new Set(onlineGroups.map(([group]) => group));
   for (const [group, label] of onlineGroups) {
     const rows = online.filter((method) => method.group === group);
-    if (rows.length) sections.push({ key: `online-${group}`, label: `Pembayaran online · ${label}`, methods: rows });
+    if (rows.length) sections.push({ key: `online-${group}`, label: `Pembayaran online · ${label}`, methods: rows, recommended: group === recommended });
   }
   const others = online.filter((method) => !method.group || !known.has(method.group));
-  if (others.length) sections.push({ key: "online-other", label: "Pembayaran online lainnya", methods: others });
+  if (others.length) sections.push({ key: "online-other", label: "Pembayaran online lainnya", methods: others, recommended: false });
   return sections;
 }
 

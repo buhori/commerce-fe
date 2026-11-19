@@ -180,8 +180,10 @@ function Notice({ tone, title, children }: { tone: "waiting" | "error" | "neutra
 }
 
 /** Ganti metode bayar pesanan yang masih menunggu: tagihan online baru, atau transfer/QRIS toko. */
-function ChangePaymentMethod({ orderId, onChanged, onCancel }: {
+function ChangePaymentMethod({ orderId, feeBase, onChanged, onCancel }: {
   orderId: number;
+  // Tagihan tanpa biaya admin metode sebelumnya, untuk label "Rekomendasi".
+  feeBase: number;
   onChanged: (order: OrderSummary) => void;
   onCancel?: () => void;
 }) {
@@ -217,7 +219,7 @@ function ChangePaymentMethod({ orderId, onChanged, onCancel }: {
 
   return (
     <form className="payment-change" onSubmit={submit} aria-busy={pending}>
-      <PaymentChoices legend="Pilih metode lain" payment={payment} bankAccount={bankAccount}
+      <PaymentChoices legend="Pilih metode lain" payment={payment} bankAccount={bankAccount} feeBase={feeBase}
         onPaymentChange={(method) => { setPayment(method); setError(null); if (method.code !== "bank_transfer") setBankAccount(null); }}
         onBankAccountChange={setBankAccount} />
       <div className="payment-online-actions">
@@ -245,7 +247,7 @@ export function OnlinePaymentPanel({ order, payment, currency, onOrderChange }: 
 }) {
   const [changing, setChanging] = useState(false);
   const change = (cancellable: boolean) => (
-    <ChangePaymentMethod orderId={order.id} onCancel={cancellable ? () => setChanging(false) : undefined}
+    <ChangePaymentMethod orderId={order.id} feeBase={order.grand_total - order.payment_fee} onCancel={cancellable ? () => setChanging(false) : undefined}
       onChanged={(updated) => { setChanging(false); onOrderChange(updated); }} />
   );
 

@@ -56,7 +56,7 @@ function MethodGroup<T>({ legend, name, state, retry, emptyText, errorText, keyO
   // Shown above the choices, e.g. a warning that applies to all of them.
   notice?: ReactNode;
   // Splits the choices under subheadings; still one radio group.
-  sections?: (rows: T[]) => { key: string; label: string | null; rows: T[] }[];
+  sections?: (rows: T[]) => { key: string; label: string | null; rows: T[]; recommended?: boolean }[];
   children?: ReactNode;
 }) {
   if (state.status === "loading") return <section className="method-group"><h3>{legend} <span className="required-indicator" aria-hidden="true">*</span></h3><Spinner label={`Memuat ${legend.toLowerCase()}…`} /></section>;
@@ -83,7 +83,12 @@ function MethodGroup<T>({ legend, name, state, retry, emptyText, errorText, keyO
       {sections
         ? sections(state.rows).map((section) => (
           <div className="method-section" key={section.key}>
-            {section.label && <p className="method-section-title">{section.label}</p>}
+            {section.label && (
+              <p className="method-section-title">
+                {section.label}
+                {section.recommended && <span className="method-recommended">Rekomendasi</span>}
+              </p>
+            )}
             {list(section.rows)}
           </div>
         ))
@@ -210,8 +215,8 @@ function BankAccounts({ selected, onSelect }: {
   );
 }
 
-const paymentSections = (methods: PaymentMethod[]) =>
-  paymentMethodSections(methods).map(({ key, label, methods: rows }) => ({ key, label, rows }));
+const paymentSections = (base: number | null) => (methods: PaymentMethod[]) =>
+  paymentMethodSections(methods, base).map(({ key, label, methods: rows, recommended }) => ({ key, label, rows, recommended }));
 
 function PaymentMethodLabel({ method }: { method: PaymentMethod }) {
   if (!method.online) return <><strong>{method.name}</strong><span>Instruksi pembayaran dikirim setelah pesanan dibuat.</span></>;
@@ -233,8 +238,10 @@ function PaymentMethodLabel({ method }: { method: PaymentMethod }) {
  * Metode pembayaran toko lalu metode online dari plugin, plus pilihan rekening untuk transfer bank.
  * Dipakai di checkout dan saat mengganti metode bayar di halaman pembayaran.
  */
-export function PaymentChoices({ payment, bankAccount, onPaymentChange, onBankAccountChange, legend = "Metode pembayaran" }: {
+export function PaymentChoices({ payment, bankAccount, feeBase = null, onPaymentChange, onBankAccountChange, legend = "Metode pembayaran" }: {
   payment: PaymentMethod | null;
+  // Nominal dasar biaya admin (barang − kupon + ongkir) untuk label "Rekomendasi"; null bila belum diketahui.
+  feeBase?: number | null;
   bankAccount: BankChoice | null;
   onPaymentChange: (method: PaymentMethod) => void;
   onBankAccountChange: (account: BankChoice) => void;
@@ -252,7 +259,7 @@ export function PaymentChoices({ payment, bankAccount, onPaymentChange, onBankAc
         keyOf={(method) => method.code}
         isSelected={(method) => payment?.code === method.code}
         onSelect={onPaymentChange}
-        sections={paymentSections}
+        sections={paymentSections(feeBase)}
         render={(method) => <PaymentMethodLabel method={method} />} />
       {payment?.code === "bank_transfer" && (
         <BankAccounts selected={bankAccount} onSelect={onBankAccountChange} />
@@ -261,7 +268,8 @@ export function PaymentChoices({ payment, bankAccount, onPaymentChange, onBankAc
   );
 }
 
-export function DeliveryOptions({ shipping, payment, bankAccount, addressCode, currency, preorder = false, refreshKey = 0, digital = false, onShippingChange, onPaymentChange, onBankAccountChange }: {
+export function DeliveryOptions({ shipping, payment, bankAccount, addressCode, currency, preorder = false, refreshKey = 0, digital = false, feeBase = null, onShippingChange, onPaymentChange, onBankAccountChange }: {
+  feeBase?: number | null;
   preorder?: boolean;
   // Isinya produk digital semua: tidak ada kurir untuk dipilih.
   digital?: boolean;
@@ -293,7 +301,7 @@ export function DeliveryOptions({ shipping, payment, bankAccount, addressCode, c
             preorder={preorder} selected={shipping} onSelect={onShippingChange} />
         </>
       )}
-      <PaymentChoices payment={payment} bankAccount={bankAccount}
+      <PaymentChoices payment={payment} bankAccount={bankAccount} feeBase={feeBase}
         onPaymentChange={onPaymentChange} onBankAccountChange={onBankAccountChange} />
     </div>
   );

@@ -8,7 +8,7 @@ const exports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL("../lib/checkout.ts", import.meta.url), "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS },
 }).outputText, { exports });
-const { readRegionMatches, readAddresses, readShippingQuote, shippingOptionKey, shippingOptionLabel, etdRange, shippingHighlights, readPaymentMethods, readBankAccounts, readBankChoices, readOrder, gatewayFeeAmount, gatewayFeeRate } = exports;
+const { readRegionMatches, readAddresses, readShippingQuote, shippingOptionKey, shippingOptionLabel, etdRange, shippingHighlights, readPaymentMethods, readBankAccounts, readBankChoices, readOrder, gatewayFeeAmount, gatewayFeeRate, recommendedPaymentGroup, paymentMethodSections } = exports;
 
 test("delivery estimates are read as day ranges", () => {
   assert.deepEqual([...etdRange("1-2 hari")], [1, 2]);
@@ -179,4 +179,25 @@ test("order lines carry photos and pre-order data, skipping malformed rows", () 
   const plain = readOrder({ id: 5, status: "pending", total: 1, shipping_cost: 0, grand_total: 1 });
   assert.deepEqual(JSON.parse(JSON.stringify(plain.items)), []);
   assert.equal(plain.preorder_ready_at, null);
+});
+
+test("QRIS is recommended up to a Rp3.000 fee, virtual account above it", () => {
+  const charged = (percent, flat) => ({ percent, flat, charged_to_customer: true });
+  const methods = [
+    { code: "bank_transfer", name: "Transfer bank", icon: null, online: false, group: null, provider: null, fee: null },
+    { code: "payment-singapay:va_bca", name: "Virtual Account BCA", icon: null, online: true, group: "bank_transfer", provider: "SingaPay", fee: charged(0, 4000) },
+    { code: "payment-singapay:qris", name: "QRIS", icon: null, online: true, group: "qr", provider: "SingaPay", fee: charged(0.7, 0) },
+  ];
+  // 0,7% × Rp428.571 = Rp3.000 (dibulatkan): batasnya masih QRIS.
+  assert.equal(recommendedPaymentGroup(methods, 428_571), "qr");
+  assert.equal(recommendedPaymentGroup(methods, 500_000), "bank_transfer");
+  assert.equal(recommendedPaymentGroup(methods, null), null);
+  // Biaya ditanggung toko, atau salah satu kelompok tidak ada: tidak ada yang dibandingkan.
+  assert.equal(recommendedPaymentGroup(methods.map((method) => method.fee ? { ...method, fee: { ...method.fee, charged_to_customer: false } } : method), 500_000), null);
+  assert.equal(recommendedPaymentGroup(methods.filter((method) => method.group !== "bank_transfer"), 500_000), null);
+
+  const flagged = (base) => [...paymentMethodSections(methods, base).filter((section) => section.recommended).map((section) => section.key)];
+  assert.deepEqual(flagged(500_000), ["online-bank_transfer"]);
+  assert.deepEqual(flagged(100_000), ["online-qr"]);
+  assert.deepEqual(flagged(null), []);
 });

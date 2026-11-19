@@ -1465,11 +1465,26 @@ p {
   margin-top: 16px;
 }
 .method-section-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
   margin-bottom: 8px;
   color: var(--muted);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.02em;
+}
+/* Kelompok metode termurah untuk nominal belanja ini (recommendedPaymentGroup). */
+.method-recommended {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--success-soft);
+  color: var(--success);
+  font-size: 0.6875rem;
+  letter-spacing: 0;
+  line-height: 1.5;
+  white-space: nowrap;
 }
 .payment-method-head {
   display: flex;

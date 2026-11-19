@@ -219,6 +219,7 @@ export function Checkout({ currency, preorder = false, coupons = false }: { curr
         {step === 1 && buyer && (
           <DeliveryOptions shipping={shipping} payment={payment} bankAccount={bankAccount}
             addressCode={buyer.address_code ?? ""} currency={currency} preorder={preorder} refreshKey={optionsVersion} digital={digitalOnly}
+            feeBase={shippingCost !== null && totalKnown ? total - couponDiscount + shippingCost : null}
             onShippingChange={setShipping}
             onPaymentChange={(method) => { setPayment(method); if (method.code !== "bank_transfer") setBankAccount(null); }}
             onBankAccountChange={setBankAccount} />
