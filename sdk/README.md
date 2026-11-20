@@ -74,7 +74,7 @@ merender `<main>` sendiri; header dan footer dipasang platform di sekitarnya.
 | `Header` | `store`, `navigation`, `query`, `accounts` | Tampilkan tombol akun hanya bila `accounts` true. |
 | `Footer` | `store`, `pages` | **Wajib** memuat `<BuiltWith />`, tanpa syarat: di toko whitelabel (`store.hide_branding`) komponen itu sendiri tidak merender apa pun. |
 | `CatalogPage` | `store`, `categories`, `category`, `filter`, `q`, `sort`, `title`, `products` | `category` null kecuali tepat satu kategori. Teruskan `filter` ke `<SortSelect filter>` supaya produk pilihan dan kategori tidak hilang saat urutan diganti. |
-| `ProductPage` | `store`, `product`, `view`, `url` | `view` berisi `gallery`, `availability`, `specs`, `preorder`, `stock` yang sudah dihitung. `url` adalah URL lengkap (kanonik) produk. |
+| `ProductPage` | `store`, `product`, `view`, `url` | `view` berisi `gallery`, `availability`, `specs`, `preorder`, `newsletter`, `stock` yang sudah dihitung. `url` adalah URL lengkap (kanonik) produk. |
 | `InfoPage` | `store`, `page` | Isi halaman lewat `<PageContent page={page} />`. |
 
 Tipe lengkap ada di [`sdk/types.ts`](./types.ts).
@@ -173,6 +173,18 @@ untuk pembelian grosir. Tampilkan tombol "Tanya via WhatsApp" hanya bila terisi,
 - Buka dengan `target="_blank" rel="noopener noreferrer"`. Jangan dimatikan saat perawatan toko atau untuk
   pre-order: tombol ini hanya membuka chat, bukan membuat pesanan.
 
+### Produk segera hadir (newsletter)
+
+`product.newsletter` (juga `view.newsletter`) `true` berarti produk tampil tetapi belum bisa dibeli: backend
+menolak keranjang, pre-order, dan checkout-nya. Pembeli meninggalkan email dan dikabari otomatis saat penjual
+membukanya. `availability.tone` bernilai `"soon"` ("Segera hadir").
+
+- Teruskan `newsletter={view.newsletter}` ke `<AddToCart>` (form emailnya ikut dirender sebagai ganti varian,
+  jumlah, dan tombol beli) atau `useAddToCart()`, yang lalu mengembalikan `newsletter: true` dan `disabled: true`.
+- Untuk tampilan sendiri: `<ProductNewsletter productId>` atau `useProductNewsletter(productId)` (`email`,
+  `changeEmail`, `submit`, `error`, `sending`, `done`, `savedEmail`). Email pembeli yang masuk terisi otomatis.
+- Di kartu produk, tampilkan lencana "Segera hadir" sebagai ganti "Habis".
+
 ## Yang disediakan SDK
 
 Semuanya diimpor dari `@sellosy/theme`.
@@ -182,6 +194,7 @@ Semuanya diimpor dari `@sellosy/theme`.
 | Komponen | Hook untuk tampilan sendiri | Fungsi |
 | --- | --- | --- |
 | `<AddToCart>` | `useAddToCart()` | Pilih varian, jumlah, tambah ke keranjang, beli sekarang, pre-order |
+| `<ProductNewsletter productId>` | `useProductNewsletter()` | Form email "Kabari saya" untuk produk segera hadir |
 | `<CartButton>` | `useCartCount()` | Tautan keranjang dengan jumlah barang |
 | `<AccountButton>` | `useCustomer()` | Masuk atau buka profil |
 | `<ProductGrid>` | `useProductFeed()` | Grid produk yang memuat halaman berikutnya saat digulir |

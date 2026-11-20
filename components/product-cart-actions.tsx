@@ -8,6 +8,7 @@ import { cartKeys, startPreorder } from "@/lib/cart-queries";
 import { showCartToast } from "./cart-toast";
 import { useCart } from "./cart-provider";
 import { Icon } from "./icons";
+import { ProductNewsletter } from "./product-newsletter";
 import type { Discount, Product } from "@/lib/store-api";
 import { formatDate, formatPrice } from "@/lib/format";
 import { discountEndDate, priceView, type PriceView } from "@/lib/price";
@@ -28,6 +29,11 @@ export interface AddToCartOptions {
   currency: string;
   variants?: Product["variants"];
   preorder?: boolean;
+  /**
+   * product.newsletter: segera hadir, belum bisa dibeli. Hook mematikan semua aksi beli; <AddToCart> menampilkan
+   * form email (ProductNewsletter) sebagai ganti pilihan varian, jumlah, dan tombol beli.
+   */
+  newsletter?: boolean;
   /** store.maintenance.active: beli sekarang dan pre-order ditutup, tambah ke keranjang tetap bisa. */
   maintenance?: boolean;
   /**
@@ -45,7 +51,7 @@ export interface AddToCartOptions {
  * Buying logic without markup: variant choice, quantity limits, price, and the add/buy actions.
  * Pre-orders skip the cart and open their own checkout.
  */
-export function useAddToCart({ productId, stock, price, finalPrice, discount, currency, variants = [], preorder = false, maintenance = false, whatsapp = null, productName = null, image = null }: AddToCartOptions) {
+export function useAddToCart({ productId, stock, price, finalPrice, discount, currency, variants = [], preorder = false, newsletter = false, maintenance = false, whatsapp = null, productName = null, image = null }: AddToCartOptions) {
   const { modify, pending } = useCart();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -59,8 +65,9 @@ export function useAddToCart({ productId, stock, price, finalPrice, discount, cu
   // Pre-orders are not limited by stock; ready items are limited by the chosen variant.
   const available = selectedVariant?.stock ?? stock;
   const max = preorder ? MAX_QUANTITY : Math.min(MAX_QUANTITY, Math.max(0, available));
-  const soldOut = !preorder && complete && max === 0;
-  const disabled = pending || !complete || soldOut;
+  const soldOut = !newsletter && !preorder && complete && max === 0;
+  // Segera hadir: backend menolak keranjang dan checkout, jadi tombolnya ikut mati.
+  const disabled = newsletter || pending || !complete || soldOut;
   // Alasan tombol yang menuju checkout dimatikan; pre-order selalu langsung ke checkout.
   const checkoutNote = maintenance ? MAINTENANCE_NOTE : null;
   // Semua harga di sini adalah harga setelah diskon, sama dengan yang ditagihkan di keranjang.
@@ -148,6 +155,8 @@ export function useAddToCart({ productId, stock, price, finalPrice, discount, cu
   return {
     variants, selectedVariant, selectVariant, quantity, changeQuantity, max, complete, soldOut, disabled, pending,
     preorder, unitPrice, priceLabel, subtotal: unitPrice * quantity, activeAction, feedback, add, checkoutNote,
+    /** Segera hadir: tampilkan <ProductNewsletter>/useProductNewsletter() sebagai ganti tombol beli. */
+    newsletter,
     /** Harga normal yang dicoret (satu harga atau rentang); null bila tidak ada diskon. */
     originalPriceLabel,
     /** Lencana diskon, mis. "-20%". */
@@ -174,8 +183,36 @@ export function ProductCartActions(options: AddToCartOptions) {
   const {
     variants, selectedVariant, selectVariant, quantity, changeQuantity, max, complete, soldOut, disabled, pending,
     preorder, unitPrice, priceLabel, activeAction, feedback, add, checkoutNote,
-    originalPriceLabel, discountLabel, discountEnds, variantPrice, basePrice, whatsappUrl, whatsappNote,
+    originalPriceLabel, discountLabel, discountEnds, variantPrice, basePrice, whatsappUrl, whatsappNote, newsletter,
   } = useAddToCart(options);
+
+  const whatsappLink = whatsappUrl && (
+    <ButtonLink variant="secondary" className="purchase-whatsapp" href={whatsappUrl} reloadDocument target="_blank" rel="noopener noreferrer">
+      <Icon name="whatsapp" />
+      Tanya via WhatsApp<span className="sr-only"> (membuka tab baru)</span>
+    </ButtonLink>
+  );
+
+  // Segera hadir: harga sebagai informasi, lalu form email sebagai ganti varian, jumlah, dan tombol beli.
+  if (newsletter) {
+    return (
+      <section className="product-cart-actions" aria-label="Produk segera hadir">
+        <div className="purchase-price-block">
+          <span className="purchase-price-label">Harga produk</span>
+          <p className="detail-price">{originalPriceLabel && <span className="sr-only">Harga diskon </span>}{priceLabel}</p>
+          {originalPriceLabel && (
+            <p className="detail-price-discount">
+              <s className="price-original"><span className="sr-only">Harga normal </span>{originalPriceLabel}</s>
+              {discountLabel && <span className="price-badge"><span className="sr-only">Diskon </span>{discountLabel}</span>}
+            </p>
+          )}
+          <span className="purchase-price-caption">Belum bisa dibeli</span>
+        </div>
+        <ProductNewsletter productId={productId} />
+        {whatsappLink}
+      </section>
+    );
+  }
 
   return (
     <section className="product-cart-actions" aria-label="Beli produk" aria-busy={pending}>
@@ -265,12 +302,7 @@ export function ProductCartActions(options: AddToCartOptions) {
 
       {checkoutNote && <p className="maintenance-note" role="status">{checkoutNote}</p>}
       {/* Di luar dock supaya bar bawah di HP tetap ringkas; tautan biasa karena tujuannya di luar toko. */}
-      {whatsappUrl && (
-        <ButtonLink variant="secondary" className="purchase-whatsapp" href={whatsappUrl} reloadDocument target="_blank" rel="noopener noreferrer">
-          <Icon name="whatsapp" />
-          Tanya via WhatsApp<span className="sr-only"> (membuka tab baru)</span>
-        </ButtonLink>
-      )}
+      {whatsappLink}
       {whatsappNote && (
         <>
           <Button variant="secondary" className="purchase-whatsapp" type="button" disabled aria-describedby={`${variantGroupId}-whatsapp`}>

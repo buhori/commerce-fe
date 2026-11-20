@@ -96,6 +96,8 @@ export interface ProductSummary {
   preorder_duration?: number;
   /** Produk digital: tanpa kurir dan ongkir; link download dikirim ke email pembeli setelah lunas. */
   is_digital_product?: boolean;
+  /** Segera hadir: belum bisa dibeli; halaman produk meminta email pembeli untuk dikabari saat tersedia. */
+  newsletter?: boolean;
   sku?: string;
   stock?: number;
   status?: string;

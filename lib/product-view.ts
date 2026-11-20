@@ -2,7 +2,7 @@ import { formatWeight } from "./format";
 import type { Product } from "./store-api";
 import { preorderDays } from "./store-shared";
 
-export type Availability = { tone: "preorder" | "ok" | "low" | "out"; text: string };
+export type Availability = { tone: "preorder" | "ok" | "low" | "out" | "soon"; text: string };
 export type Spec = { label: string; value: string };
 
 /** Ready-to-show product facts, shared by the default product page and themes. */
@@ -11,6 +11,8 @@ export interface ProductView {
   gallery: string[];
   /** Days until a pre-order ships; 0 for ready stock. */
   preorder: number;
+  /** Coming soon (product.newsletter): not for sale yet; show <ProductNewsletter> instead of the buy buttons. */
+  newsletter: boolean;
   /** Stock across variants when they carry their own, otherwise the product's. */
   stock: number;
   availability: Availability;
@@ -27,7 +29,10 @@ export function productView(product: Product): ProductView {
     : null;
   const stock = variantStock ?? product.stock;
 
-  const availability: Availability = preorder > 0
+  const newsletter = product.newsletter === true;
+  const availability: Availability = newsletter
+    ? { tone: "soon", text: "Segera hadir" }
+    : preorder > 0
     ? { tone: "preorder", text: "Pre-order" }
     : stock > 5 ? { tone: "ok", text: "Stok tersedia" }
     : stock > 0 ? { tone: "low", text: `Sisa ${stock}` }
@@ -45,5 +50,5 @@ export function productView(product: Product): ProductView {
     dimensions.every((value) => value && value > 0) ? { label: "Ukuran", value: `${dimensions.join(" × ")} cm` } : null,
   ].filter((spec): spec is Spec => spec !== null && !writtenLabels.has(spec.label.toLowerCase()));
 
-  return { gallery, preorder, stock, availability, specs: [...written, ...derived] };
+  return { gallery, preorder, newsletter, stock, availability, specs: [...written, ...derived] };
 }

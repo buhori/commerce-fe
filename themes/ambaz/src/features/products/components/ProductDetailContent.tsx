@@ -9,7 +9,7 @@ import { Navigation } from 'swiper/modules';
 import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
 import 'swiper/css/navigation';
-import { RichText, useAddToCart, type Spec } from '@sellosy/theme';
+import { RichText, useAddToCart, useProductNewsletter, type Spec } from '@sellosy/theme';
 import { useUIStore } from '../../../store/uiStore';
 import { useWishlistStore } from '../../../store/wishlistStore';
 import { useCompareStore } from '../../../store/compareStore';
@@ -480,6 +480,31 @@ interface ProductDetailContentProps {
   productHrefBase?: string;
 }
 
+/** Coming soon: buyers leave their email and get notified when the product can be bought (platform logic). */
+function NotifyMe({ productId }: { productId: number }) {
+  const form = useProductNewsletter(productId);
+
+  if (form.done) {
+    return <p role="status" style={{ marginBottom: '20px', fontSize: '15px', color: '#222', lineHeight: 1.6 }}>Thank you! We will email <strong>{form.savedEmail}</strong> when this product is available.</p>;
+  }
+
+  return (
+    <form onSubmit={(event) => void form.submit(event)} noValidate style={{ marginBottom: '20px' }}>
+      <p className="pdp-info-field-label" style={{ fontSize: '15px', fontWeight: 600, color: '#222', marginBottom: '6px' }}>Coming soon</p>
+      <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.6, marginBottom: '12px' }}>This product cannot be bought yet. Leave your email and we will let you know when it is available.</p>
+      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <input type="email" aria-label="Email address" autoComplete="email" inputMode="email" maxLength={255} placeholder="Email address"
+          value={form.email} disabled={form.sending} aria-invalid={form.error ? true : undefined} onChange={(event) => form.changeEmail(event.target.value)}
+          style={{ flex: '1 1 220px', minWidth: 0, height: '48px', padding: '0 14px', border: `1px solid ${form.error ? '#b42318' : '#e0e0e0'}`, borderRadius: '0', fontSize: '16px', color: '#222' }} />
+        <button type="submit" disabled={form.sending} style={{ flex: '1 1 140px', height: '48px', backgroundColor: '#222', color: '#fff', fontSize: '16px', fontWeight: 600, border: 'none', borderRadius: '0', cursor: form.sending ? 'wait' : 'pointer' }}>
+          {form.sending ? 'Saving...' : 'Notify me'}
+        </button>
+      </div>
+      {form.error && <p role="alert" style={{ marginTop: '10px', fontSize: '14px', color: '#b42318' }}>{form.error}</p>}
+    </form>
+  );
+}
+
 /**
  * Halaman produk Ambaz (features/products/components/ProductDetailContent.tsx) dengan produk toko. Pembelian lewat
  * useAddToCart platform (varian, stok, pre-order, perawatan toko, WhatsApp); bagian demo Ambaz yang tidak punya data
@@ -662,6 +687,8 @@ export function ProductDetailContent({
                 </div>
               )}
 
+              {/* Coming soon (product.newsletter): an email form replaces quantity and the buy buttons. */}
+              {cart.newsletter ? <NotifyMe productId={purchase.productId} /> : <>
               {/* Quantity + Add to Cart */}
               <div ref={addToCartCallbackRef} className="pdp-info-qty-block" style={{ marginBottom: '16px' }}>
                 <p className="pdp-info-field-label" style={{ fontSize: '15px', fontWeight: 600, color: '#222', marginBottom: '10px' }}>Quantity</p>
@@ -685,6 +712,7 @@ export function ProductDetailContent({
                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#222'; e.currentTarget.style.color = '#fff'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#fff'; e.currentTarget.style.color = '#222'; }}
               >{cart.activeAction === 'buy' ? 'Processing...' : 'Buy it now'}</button>}
+              </>}
 
               {/* Wishlist + Compare */}
               <div className="pdp-info-actions-row" style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '24px' }}>
@@ -896,7 +924,7 @@ export function ProductDetailContent({
       <div className="pdp-sticky-spacer" />
 
       {/* ── Sticky Bottom Add to Cart Bar ── */}
-      <div
+      {!cart.newsletter && <div
         className="pdp-sticky-bar"
         style={{
           position: 'fixed', left: 0, right: 0, zIndex: 9998,
@@ -944,7 +972,7 @@ export function ProductDetailContent({
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#fff'; e.currentTarget.style.color = '#222'; }}
           >Buy it now</button>}
         </div>
-      </div>
+      </div>}
 
       {/* ── Gallery styles ── */}
       <style>{`

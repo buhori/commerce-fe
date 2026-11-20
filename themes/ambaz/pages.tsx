@@ -44,6 +44,7 @@ export function ProductPage({ store, product, view, url }: ProductPageProps) {
           productId: product.id,
           variants: product.variants || [],
           preorder: view.preorder > 0,
+          newsletter: view.newsletter,
           stock: product.stock,
           price: product.price,
           finalPrice: product.final_price,

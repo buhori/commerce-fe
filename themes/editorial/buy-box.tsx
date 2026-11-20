@@ -1,7 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import { CompareButton, formatDate, formatPrice, ShareButton, useAddToCart, WishlistButton, type Product } from "@sellosy/theme";
+import { CompareButton, formatDate, formatPrice, ShareButton, useAddToCart, useProductNewsletter, WishlistButton, type Product } from "@sellosy/theme";
 import { WhatsappIcon } from "./icons";
 import s from "./editorial.module.css";
 
@@ -15,7 +15,7 @@ export function BuyBox({ product, currency, preorder, maintenance, storeName, ur
   const name = useId();
   const cart = useAddToCart({
     productId: product.id, stock: product.stock, price: product.price, finalPrice: product.final_price, discount: product.discount,
-    currency, variants: product.variants, preorder, maintenance,
+    currency, variants: product.variants, preorder, maintenance, newsletter: product.newsletter === true,
     whatsapp: product.whatsapp ? { ...product.whatsapp, storeName, productName: product.name, productUrl: url } : null,
     productName: product.name,
     image: product.images,
@@ -30,6 +30,7 @@ export function BuyBox({ product, currency, preorder, maintenance, storeName, ur
       </p>
       {cart.discountEnds && <p className={s.hint}>Diskon berakhir {formatDate(cart.discountEnds)}</p>}
 
+      {cart.newsletter ? <NotifyMe productId={product.id} /> : <>
       {cart.variants.length > 0 && (
         <fieldset className={s.variants} disabled={cart.pending}>
           <legend>Varian {cart.selectedVariant && <span>· {cart.selectedVariant.label}</span>}</legend>
@@ -72,6 +73,7 @@ export function BuyBox({ product, currency, preorder, maintenance, storeName, ur
         {cart.activeAction === "buy" ? "Memproses…" : preorder ? "Pre-order sekarang" : "Beli sekarang"}
       </button>
       {cart.checkoutNote && <p className={s.hint} role="status">{cart.checkoutNote}</p>}
+      </>}
       {/* Tetap tampil saat perawatan dan untuk pre-order: hanya tautan chat, bukan pesanan. */}
       {cart.whatsappUrl && (
         <a className={`${s.secondaryButton} ${s.whatsappButton}`} href={cart.whatsappUrl} target="_blank" rel="noopener noreferrer">
@@ -99,5 +101,31 @@ export function BuyBox({ product, currency, preorder, maintenance, storeName, ur
         </p>
       )}
     </div>
+  );
+}
+
+/** Segera hadir (product.newsletter): email pembeli untuk dikabari saat produk bisa dibeli; logikanya dari platform. */
+function NotifyMe({ productId }: { productId: number }) {
+  const id = useId();
+  const form = useProductNewsletter(productId);
+
+  if (form.done) {
+    return (
+      <p className={s.feedback} role="status">
+        Terima kasih! Kami akan mengabari <strong>{form.savedEmail}</strong> saat produk ini tersedia.
+      </p>
+    );
+  }
+
+  return (
+    <form className={s.notify} onSubmit={(event) => void form.submit(event)} noValidate>
+      <p className={s.hint}>Produk ini belum bisa dibeli. Tinggalkan email, kami kabari begitu tersedia.</p>
+      <label htmlFor={`${id}-email`} className={s.srOnly}>Alamat email</label>
+      <input id={`${id}-email`} type="email" autoComplete="email" inputMode="email" maxLength={255} placeholder="Alamat email"
+        value={form.email} disabled={form.sending} aria-invalid={form.error ? true : undefined}
+        aria-describedby={form.error ? `${id}-error` : undefined} onChange={(event) => form.changeEmail(event.target.value)} />
+      <button type="submit" className={s.primaryButton} disabled={form.sending}>{form.sending ? "Menyimpan…" : "Kabari saya"}</button>
+      {form.error && <p className={s.feedbackError} id={`${id}-error`} role="alert">{form.error}</p>}
+    </form>
   );
 }

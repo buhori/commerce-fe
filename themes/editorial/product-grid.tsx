@@ -6,7 +6,8 @@ import s from "./editorial.module.css";
 
 export function ProductCard({ product, currency }: { product: ProductSummary; currency: string }) {
   const preorder = preorderDays(product);
-  const soldOut = !preorder && product.stock === 0;
+  const soon = product.newsletter === true;
+  const soldOut = !soon && !preorder && product.stock === 0;
   const price = priceView(product);
   return (
     <div className={s.cardWrap}>
@@ -16,7 +17,7 @@ export function ProductCard({ product, currency }: { product: ProductSummary; cu
         <div className={s.cardImage}>
           <ProductImage src={product.images} name={product.name} />
           {soldOut && <span className={s.badge}>Habis</span>}
-          {preorder > 0 && <span className={s.badge}>Pre-order</span>}
+          {soon ? <span className={s.badge}>Segera hadir</span> : preorder > 0 && <span className={s.badge}>Pre-order</span>}
         </div>
         <p className={s.cardName}>{product.name}</p>
         <p className={s.cardPrice}>

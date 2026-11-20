@@ -9,6 +9,8 @@ export * from "./schema";
 
 // Bagian fungsional: logika keranjang, akun, dan pembayaran tetap milik platform.
 export { ProductCartActions as AddToCart, useAddToCart } from "@/components/product-cart-actions";
+// Produk segera hadir (product.newsletter / view.newsletter): form email "Kabari saya" sebagai ganti tombol beli.
+export { ProductNewsletter, useProductNewsletter } from "@/components/product-newsletter";
 export { CartIndicator as CartButton } from "@/components/cart-indicator";
 export { AccountMenu as AccountButton } from "@/components/account-menu";
 export { SortSelect } from "@/components/sort-select";

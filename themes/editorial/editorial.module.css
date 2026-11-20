@@ -482,7 +482,7 @@
 .crumbs a:hover { color: var(--text); }
 .productName { font-size: clamp(36px, 4.4vw, 60px); }
 .availability { margin-top: 12px !important; font-size: 13px; letter-spacing: 0.04em; color: var(--muted); }
-.availability[data-tone="low"], .availability[data-tone="preorder"] { color: var(--accent-text, var(--accent)); }
+.availability[data-tone="low"], .availability[data-tone="preorder"], .availability[data-tone="soon"] { color: var(--accent-text, var(--accent)); }
 .productPrice { margin-bottom: 20px !important; font-size: 22px; }
 .productDescription { margin-top: 14px !important; font-size: 16px; color: var(--muted); max-width: 52ch; }
 
@@ -533,6 +533,11 @@
 .whatsappButton:hover svg { color: currentColor; }
 
 .feedback, .feedbackError { font-size: 14px; }
+/* Segera hadir: email sebagai ganti tombol beli. */
+.notify { display: grid; gap: 12px; }
+.notify input { width: 100%; padding: 16px; border: 1px solid var(--line-strong); background: none; color: var(--text); font-size: 16px; }
+.notify input:focus { outline: none; border-color: var(--ink); }
+.notify input[aria-invalid="true"] { border-color: var(--danger); }
 .feedback a { border-bottom: 1px solid currentColor; }
 .feedbackError { color: var(--danger); }
 

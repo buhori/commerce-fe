@@ -265,13 +265,15 @@ export function jsonLdString(data: unknown): string {
   return JSON.stringify(data).replace(/</g, "\\u003c");
 }
 
-export type AvailabilityTone = "preorder" | "ok" | "low" | "out";
+export type AvailabilityTone = "preorder" | "ok" | "low" | "out" | "soon";
 
 const AVAILABILITY: Record<AvailabilityTone, string> = {
   ok: "https://schema.org/InStock",
   low: "https://schema.org/InStock",
   out: "https://schema.org/OutOfStock",
   preorder: "https://schema.org/PreOrder",
+  // Segera hadir (newsletter): belum bisa dibeli.
+  soon: "https://schema.org/OutOfStock",
 };
 
 const validPrice = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0;

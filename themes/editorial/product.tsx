@@ -18,7 +18,7 @@ export function ProductPage({ store, product, view, url }: ProductPageProps) {
           </nav>
           <h1 className={s.productName}>{product.name}</h1>
           <p className={s.availability} data-tone={view.availability.tone}>
-            {view.availability.text}{view.preorder > 0 && ` · dikirim ${view.preorder} hari setelah pesan`}
+            {view.availability.text}{view.preorder > 0 && !view.newsletter && ` · dikirim ${view.preorder} hari setelah pesan`}
           </p>
           <BuyBox key={product.id} product={product} currency={store.currency || "IDR"} preorder={view.preorder > 0}
             maintenance={store.maintenance.active} storeName={store.name} url={url} />

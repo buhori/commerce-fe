@@ -86,6 +86,10 @@ test("online_payment fields are normalized and the amount falls back to the orde
   assert.equal(read.paid_at, null);
   assert.equal(read.expires_at, "2026-10-18T10:00:00.000000Z");
   assert.equal(readOnlinePayment(bill({ method_label: null })).method_label, "va_bca");
+  // Logo bank hanya dari URL http(s) absolut, karena dipakai sebagai src gambar.
+  assert.equal(readOnlinePayment(bill({ method_icon: "https://cdn.example.com/banks/bca.webp" })).method_icon, "https://cdn.example.com/banks/bca.webp");
+  assert.equal(readOnlinePayment(bill({ method_icon: "javascript:alert(1)" })).method_icon, null);
+  assert.equal(readOnlinePayment(bill()).method_icon, null);
   for (const status of ["pending", "paid", "failed", "expired", "needs_review"]) {
     assert.equal(readOnlinePayment(bill({ status })).status, status);
   }

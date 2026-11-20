@@ -327,6 +327,8 @@ export interface OnlinePayment {
   public_id: string;
   method: string;
   method_label: string;
+  /** Logo bank tagihan Virtual Account; null untuk metode lain. */
+  method_icon: string | null;
   provider: string | null;
   amount: number;
   currency: string;
@@ -587,6 +589,8 @@ export function readOnlinePayment(value: unknown, fallbackAmount = 0): OnlinePay
     public_id: readText(row.public_id) ?? "",
     method,
     method_label: readText(row.method_label) ?? method,
+    // Dipakai sebagai src gambar, jadi hanya URL http(s) absolut.
+    method_icon: readHttpUrl(row.method_icon),
     provider: readText(row.provider),
     amount,
     currency: readText(row.currency) ?? "IDR",

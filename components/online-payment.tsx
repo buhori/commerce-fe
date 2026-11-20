@@ -22,10 +22,20 @@ function subscribeTouch(listener: () => void) {
 }
 const useTouchDevice = () => useSyncExternalStore(subscribeTouch, () => window.matchMedia(touchQuery).matches, () => false);
 
-function SectionHeading({ id, icon, title, payment }: { id: string; icon: "bank" | "qr" | "arrow" | "phone" | "clock"; title: string; payment: OnlinePayment }) {
+function SectionHeading({ id, icon, logo = null, title, payment }: {
+  id: string;
+  icon: "bank" | "qr" | "arrow" | "phone" | "clock";
+  // Logo bank (Virtual Account) menggantikan ikon bila ada.
+  logo?: string | null;
+  title: string;
+  payment: OnlinePayment;
+}) {
   return (
     <div className="payment-section-heading">
-      <span className="payment-small-icon"><Icon name={icon} /></span>
+      {logo
+        // eslint-disable-next-line @next/next/no-img-element -- logo bank dari backend, ukurannya kecil.
+        ? <img className="payment-bank-logo" src={logo} alt="" width={64} height={42} referrerPolicy="no-referrer" />
+        : <span className="payment-small-icon"><Icon name={icon} /></span>}
       <div><h3 id={id}>{title}</h3><p>{payment.method_label}{payment.provider ? ` · ${payment.provider}` : ""}</p></div>
     </div>
   );
@@ -41,7 +51,7 @@ function DisplayAction({ payment, display, currency }: { payment: OnlinePayment;
   ];
   return (
     <section className="payment-bank payment-online" aria-labelledby="online-payment-title">
-      <SectionHeading id="online-payment-title" icon="bank" payment={payment}
+      <SectionHeading id="online-payment-title" icon="bank" payment={payment} logo={virtualAccount ? payment.method_icon : null}
         title={virtualAccount ? `Transfer ke Virtual Account${display.bank ? ` ${display.bank}` : ""}` : "Kode pembayaran"} />
       <div className="payment-account">
         {display.account_number && (

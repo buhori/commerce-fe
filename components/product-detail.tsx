@@ -12,7 +12,7 @@ import type { ProductPageProps } from "@/sdk";
 
 /** The built-in product page, used when the active theme has no ProductPage. */
 export function ProductDetail({ store, product, view, url }: ProductPageProps) {
-  const { gallery, preorder, availability: status, specs } = view;
+  const { gallery, preorder, newsletter, availability: status, specs } = view;
   const variants = product.variants || [];
   const currency = store.currency || "IDR";
 
@@ -42,6 +42,7 @@ export function ProductDetail({ store, product, view, url }: ProductPageProps) {
               productId={product.id}
               variants={variants}
               preorder={preorder > 0}
+              newsletter={newsletter}
               stock={product.stock}
               price={product.price}
               finalPrice={product.final_price}
@@ -57,13 +58,13 @@ export function ProductDetail({ store, product, view, url }: ProductPageProps) {
               <CompareButton product={product} />
               <ShareButton url={url} title={product.name} />
             </div>
-            <div className="detail-delivery">
+            {!newsletter && <div className="detail-delivery">
               <span className="detail-delivery-icon"><Icon name="truck" /></span>
               <div>
                 <strong>{preorder > 0 ? `Produk pre-order · ${preorder} hari` : "Informasi pengiriman"}</strong>
                 <p>{preorder > 0 ? `Estimasi siap dikirim ${formatDate(addDays(preorder))}.` : "Pengiriman diproses setelah pembayaran diterima."} Ongkos kirim dihitung saat checkout.</p>
               </div>
-            </div>
+            </div>}
             {(store.email || store.phone || publicAddress(store)) && <a className="detail-help" href="#kontak"><Icon name="mail" /><span>Ada pertanyaan? <strong>Hubungi toko</strong></span><Icon name="arrow" /></a>}
           </div>
         </article>

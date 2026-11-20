@@ -47,7 +47,7 @@ export interface Product {
   tags: string[];
   brand: string;
   availability: 'in-stock' | 'out-of-stock' | 'pre-order';
-  badge: 'sale' | 'new' | 'pre-order' | null;
+  badge: 'sale' | 'new' | 'pre-order' | 'coming soon' | null;
   description: string;
   features: string[];
   rating: number;

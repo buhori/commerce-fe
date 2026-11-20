@@ -28,6 +28,8 @@ export function toAmbazProduct(product: ProductSummary | StoreProduct, currency 
   const detail = isDetail(product) ? product : null;
   const stock = product.stock ?? null;
   const preorder = (product.preorder_duration ?? 0) > 0;
+  // Coming soon (newsletter): not for sale yet, so never "in stock".
+  const soon = product.newsletter === true;
   const variants: ProductVariant[] = (product.variants ?? []).map((variant) => {
     const view = priceView(variant, product);
     return {
@@ -58,8 +60,8 @@ export function toAmbazProduct(product: ProductSummary | StoreProduct, currency 
     category: detail?.categories?.[0]?.slug ?? "",
     tags: [],
     brand: "",
-    availability: preorder ? "pre-order" : soldOut ? "out-of-stock" : "in-stock",
-    badge: preorder ? "pre-order" : price.original !== null ? "sale" : null,
+    availability: soon ? "out-of-stock" : preorder ? "pre-order" : soldOut ? "out-of-stock" : "in-stock",
+    badge: soon ? "coming soon" : preorder ? "pre-order" : price.original !== null ? "sale" : null,
     description: detail?.description ?? "",
     features: [],
     rating: product.rating ?? 0,

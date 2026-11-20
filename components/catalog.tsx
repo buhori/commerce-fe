@@ -12,7 +12,8 @@ export function Catalog({ products, currency }: { products: ProductSummary[]; cu
     <ul className="product-grid">
       {products.map((product) => {
         const preorder = preorderDays(product);
-        const soldOut = !preorder && product.stock === 0;
+        const soon = product.newsletter === true;
+        const soldOut = !soon && !preorder && product.stock === 0;
         const stats = formatProductStats(product);
         return (
           <li key={product.id} className="product-card-item">
@@ -22,6 +23,7 @@ export function Catalog({ products, currency }: { products: ProductSummary[]; cu
               <div className="product-art">
                 <ProductImage key={product.images} src={product.images} name={product.name} />
                 {soldOut && <span className="product-badge product-badge-muted">Habis</span>}
+                {soon && <span className="product-badge">Segera hadir</span>}
               </div>
               <div className="product-info">
                 <div className="product-card-heading">
